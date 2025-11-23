@@ -1,0 +1,9 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "edutrace-local",
+    "compatibility_date": "2025-11-24",
+    "assets": {
+        "directory": "./dist",
+        "not_found_handling": "single-page-application"
+    }
+}
