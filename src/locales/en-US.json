@@ -1,0 +1,147 @@
+{
+    "app": {
+        "title": "Edutrace",
+        "settings": "Settings"
+    },
+    "nav": {
+        "reports": "Reports",
+        "analytics": "Analytics",
+        "groups": "Groups",
+        "students": "Students",
+        "marks": "Marks"
+    },
+    "settings": {
+        "title": "Settings",
+        "close": "Close",
+        "tabs": {
+            "general": "General",
+            "data": "Data Management",
+            "advanced": "Advanced"
+        },
+        "general": {
+            "language": {
+                "label": "Language",
+                "description": "Select your preferred language",
+                "en-US": "English (US)",
+                "uk-UA": "Українська (Ukrainian)"
+            },
+            "defaultTeacher": {
+                "label": "Default Teacher",
+                "placeholder": "Enter default teacher name",
+                "save": "Save",
+                "description": "This will be pre-filled when creating new groups"
+            },
+            "durationLimit": {
+                "label": "Duration Limit (minutes)",
+                "placeholder": "0 = no limit",
+                "save": "Save",
+                "applyToAll": "Apply to All",
+                "description": "Maximum session duration for attendance tracking, 75 minutes is default"
+            },
+            "teachers": {
+                "label": "Teachers",
+                "manage": "Manage Teachers",
+                "description": "Exclude teachers from student lists and stats"
+            }
+        },
+        "data": {
+            "reports": {
+                "title": "Reports (Meets)",
+                "memory": "Memory"
+            },
+            "groups": {
+                "title": "Groups",
+                "memory": "Memory"
+            },
+            "marks": {
+                "title": "Marks (with Tasks)",
+                "memory": "Memory"
+            },
+            "members": {
+                "title": "Members (Dynamic)",
+                "memory": "Memory"
+            },
+            "actions": {
+                "export": "Export",
+                "import": "Import",
+                "erase": "Erase"
+            }
+        },
+        "advanced": {
+            "global": {
+                "title": "Global Operations",
+                "description": "Manage all data at once (Reports, Groups, Members, Marks and Settings)",
+                "totalRecords": "Total Records",
+                "totalMemory": "Total Memory",
+                "exportAll": "Export All",
+                "importAll": "Import All",
+                "eraseAll": "Erase All"
+            },
+            "sync": {
+                "title": "Cloud Sync",
+                "comingSoon": "Coming Soon",
+                "description": "Synchronize your data across devices using cloud storage. This feature is currently in development.",
+                "configure": "Configure"
+            }
+        }
+    },
+    "confirm": {
+        "import": {
+            "title": "Import Data",
+            "message": "This will replace existing data. Are you sure?",
+            "confirm": "Import"
+        },
+        "eraseAll": {
+            "title": "Erase All Data",
+            "message": "This will permanently delete all data. This action cannot be undone.",
+            "confirm": "Erase All"
+        },
+        "eraseReports": {
+            "title": "Erase Reports",
+            "message": "This will permanently delete all reports. This action cannot be undone.",
+            "confirm": "Erase"
+        },
+        "eraseGroups": {
+            "title": "Erase Groups",
+            "message": "This will permanently delete all groups. This action cannot be undone.",
+            "confirm": "Erase"
+        },
+        "eraseMarks": {
+            "title": "Erase Marks",
+            "message": "This will permanently delete all marks and tasks. This action cannot be undone.",
+            "confirm": "Erase"
+        },
+        "eraseMembers": {
+            "title": "Erase Members",
+            "message": "This will permanently delete all members. This action cannot be undone.",
+            "confirm": "Erase"
+        },
+        "cancel": "Cancel"
+    },
+    "toast": {
+        "defaultTeacherSaved": "Default teacher saved",
+        "durationLimitSaved": "Duration limit saved",
+        "durationLimitApplied": "Duration limit applied to {count} meets",
+        "dataExported": "Data exported successfully",
+        "dataExportFailed": "Failed to export data",
+        "reportsExported": "Reports exported successfully",
+        "reportsExportFailed": "Failed to export reports",
+        "groupsExported": "Groups exported successfully",
+        "groupsExportFailed": "Failed to export groups",
+        "marksExported": "Marks exported successfully",
+        "marksExportFailed": "Failed to export marks",
+        "invalidJson": "Invalid JSON file",
+        "dataImported": "Data imported successfully",
+        "dataImportFailed": "Failed to import data",
+        "allDataErased": "All data erased",
+        "dataEraseFailed": "Failed to erase data",
+        "reportsErased": "Reports erased",
+        "reportsEraseFailed": "Failed to erase reports",
+        "groupsErased": "Groups erased",
+        "groupsEraseFailed": "Failed to erase groups",
+        "marksErased": "Marks erased",
+        "marksEraseFailed": "Failed to erase marks",
+        "membersErased": "Members erased",
+        "membersEraseFailed": "Failed to erase members"
+    }
+}
