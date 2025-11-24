@@ -24,7 +24,7 @@ const props = defineProps({
 const emit = defineEmits(['view-details', 'delete-meet', 'bulk-delete']);
 
 // State
-// State
+
 const router = useRouter();
 const route = useRoute();
 const { formatDate, formatTime, formatCompactDate } = useFormatters();
@@ -174,9 +174,6 @@ function handleSearchPaste(event) {
             class="pl-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
         </div>
 
-        <!-- Dropzone -->
-        <DropZone :is-processing="isProcessing" @files-dropped="handleFilesDropped"
-          :prompt="$t('dropZone.reportsPrompt')" />
         <!-- Bulk Delete -->
         <div v-if="selectedIds.size > 0" class="flex items-center gap-2 animate-in fade-in slide-in-from-right-4">
           <span class="text-sm text-muted-foreground">{{ $t('reports.selected', { count: selectedIds.size }) }}</span>

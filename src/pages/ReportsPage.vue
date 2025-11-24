@@ -19,14 +19,7 @@ onMounted(() => {
 
 // File handling
 function onFilesDropped(files) {
-    handleFilesDropped(files, () => {
-        // Optional: refresh dashboard if needed, but loadMeets is already called in handleFilesDropped
-        // If we had a dashboard ref here, we could call refresh.
-        // But ReportsPage doesn't seem to have the dashboard chart component that needs refresh.
-        // Wait, App.vue had dashboardRef.value.refresh().
-        // GlobalView doesn't have refresh method. AnalyticsDashboard does.
-        // ReportsPage uses GlobalView, so no need to refresh charts here.
-    });
+    handleFilesDropped(files, () => { });
 }
 
 // Delete handling
@@ -64,16 +57,14 @@ async function handleBulkDelete(ids) {
 }
 
 function handleViewDetails(id) {
-    // This logic was in App.vue, but GlobalView emits view-details with id.
-    // App.vue checked route path to decide where to go.
-    // Since we are in ReportsPage, we go to ReportDetails.
     router.push({ name: 'ReportDetails', params: { id } });
 }
 </script>
 
 <template>
     <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <DropZone :is-processing="isProcessing" @files-dropped="onFilesDropped" prompt="Drop Attendance Reports" />
+        <DropZone :is-processing="isProcessing" @files-dropped="onFilesDropped"
+            :prompt="$t('dropZone.reportsPrompt')" />
 
         <ReportsList :meets="meets" :groups-map="groupsMap" @view-details="handleViewDetails"
             @delete-meet="handleDeleteMeet" @bulk-delete="handleBulkDelete" />

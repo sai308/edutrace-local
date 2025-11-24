@@ -139,16 +139,6 @@ function parseTextContent(text, filename) {
             const duration = parseDuration(durationStr);
             const joinTime = joinTimeKey ? row[joinTimeKey] : null;
 
-            // Debug logging for first row
-            if (!uniqueParticipants[processedName]) {
-                console.log('CSV Parser - First participant:', {
-                    name: processedName,
-                    joinTimeKey,
-                    joinTime,
-                    availableKeys: Object.keys(row)
-                });
-            }
-
             const p = {
                 id: uuidv4(),
                 name: processedName,

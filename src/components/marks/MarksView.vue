@@ -50,10 +50,6 @@ const activeFilterCount = computed(() => {
 });
 
 // Sorting
-// Sorting
-// const sortField = ref('createdAt'); // Default sort by Added
-// const sortDirection = ref('desc');
-
 useQuerySync({
     search: searchQuery,
     format: selectedFormat,
@@ -71,6 +67,8 @@ const selectedMarks = ref(new Set());
 const showGroupModal = ref(false);
 const pendingGroup = ref(null);
 const pendingFile = ref(null);
+const fileQueue = ref([]); // Queue for multiple files
+const isQueueProcessing = ref(false);
 
 // Delete Modal State
 const showDeleteModal = ref(false);
@@ -125,16 +123,6 @@ const filteredMarks = computed(() => {
     return result;
 });
 
-// function handleSort(field) {
-//     if (sortField.value === field) {
-//         sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-//     } else {
-//         sortField.value = field;
-//         sortDirection.value = 'asc'; // Default to asc for new field, except maybe date?
-//         if (field === 'createdAt') sortDirection.value = 'desc';
-//     }
-// }
-
 function toggleSelection(id) {
     if (selectedMarks.value.has(id)) {
         selectedMarks.value.delete(id);
@@ -151,19 +139,26 @@ function toggleSelectAll() {
     }
 }
 
-async function handleFilesDropped(files) {
-    if (files.length === 0) return;
-    const file = files[0];
+async function processNextInQueue() {
+    if (fileQueue.value.length === 0) {
+        isQueueProcessing.value = false;
+        return;
+    }
 
+    isQueueProcessing.value = true;
+    const file = fileQueue.value[0];
     const filename = file.name;
     const match = filename.match(/^([^_]+)_/);
     const rawPrefix = match ? match[1] : null;
 
     if (!rawPrefix) {
-        toast.error('Could not determine group from filename. Filename must start with "GroupName_"');
+        toast.error(`Could not determine group from filename: ${filename}`);
+        fileQueue.value.shift(); // Skip invalid file
+        processNextInQueue();
         return;
     }
 
+    // Check if group exists
     let matchedGroup = props.groups.find(g => g.name === rawPrefix);
     if (!matchedGroup) {
         const normalizedPrefix = rawPrefix.replace(/-/g, '');
@@ -172,22 +167,23 @@ async function handleFilesDropped(files) {
 
     if (matchedGroup) {
         emit('process-file', { file, groupName: matchedGroup.name });
+        fileQueue.value.shift(); // Done with this file
+        processNextInQueue();
     } else {
-        // We need a default teacher if we are creating a group.
-        // Since we removed repository access, we can't get default teacher here easily without prop.
-        // But wait, the original code used repository.getDefaultTeacher().
-        // Ideally we should pass this as a prop or handle it in the parent.
-        // For now, let's just pass a placeholder or handle it in the parent.
-        // Actually, let's emit an event to request group creation UI or just show modal with empty teacher?
-        // The modal needs a teacher.
-        // Let's assume the parent handles the "default teacher" logic if we emit 'request-create-group'?
-        // No, the modal is inside this component.
-        // We can just set pendingGroup with empty teacher and let user select?
-        // Or we can fetch it in onMounted in parent and pass it down?
-        // Let's keep it simple: just show modal, user picks teacher.
+        // Prompt to create group
         pendingGroup.value = { name: rawPrefix, meetId: '', teacher: '' };
         pendingFile.value = file;
         showGroupModal.value = true;
+        // Wait for user action (handleCreateGroup or modal close)
+    }
+}
+
+function handleFilesDropped(files) {
+    if (files.length === 0) return;
+    fileQueue.value.push(...Array.from(files));
+
+    if (!isQueueProcessing.value && !showGroupModal.value) {
+        processNextInQueue();
     }
 }
 
@@ -195,10 +191,26 @@ function handleCreateGroup(groupData) {
     if (pendingFile.value) {
         emit('create-group', { ...groupData, _pendingFile: pendingFile.value });
         pendingFile.value = null;
+        fileQueue.value.shift(); // Remove processed file from queue
+
+        // Small delay to allow modal to close and state to update
+        setTimeout(() => {
+            processNextInQueue();
+        }, 100);
     } else {
         emit('create-group', groupData);
     }
     showGroupModal.value = false;
+}
+
+function handleGroupModalClose() {
+    showGroupModal.value = false;
+    if (isQueueProcessing.value) {
+        // User cancelled group creation for this file
+        pendingFile.value = null;
+        fileQueue.value.shift(); // Skip this file
+        processNextInQueue();
+    }
 }
 
 function toggleSynced(mark) {
@@ -235,85 +247,10 @@ function applyFilters(filters) {
     filterGroup.value = filters.group;
 }
 
-// function formatDate(isoString) {
-//     if (!isoString) return '-';
-//     return new Date(isoString).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-// }
-
-// function formatTime(isoString) {
-//     if (!isoString) return '-';
-//     return new Date(isoString).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-// }
-
-function formatTaskName(name) {
-    return name.replace(/_/g, ' ');
+function formatTaskName(taskName) {
+    return taskName.replace(/_/g, ' ');
 }
 
-// function getMarkTooltip(score, maxPoints) {
-//     const max = maxPoints || 100;
-//     const percent = (score / max) * 100;
-
-//     const scale100 = Math.round(percent);
-
-//     let scale5 = 0;
-//     let ects = 'F';
-
-//     if (percent >= 90) { scale5 = 5; ects = 'A'; }
-//     else if (percent >= 82) { scale5 = 4; ects = 'B'; }
-//     else if (percent >= 75) { scale5 = 4; ects = 'C'; }
-//     else if (percent >= 67) { scale5 = 3; ects = 'D'; }
-//     else if (percent >= 60) { scale5 = 3; ects = 'E'; }
-//     else if (percent >= 35) { scale5 = 2; ects = 'FX'; }
-//     else { scale5 = 1; ects = 'F'; }
-
-//     return [`5-scale: ${scale5}`, `100-scale: ${scale100}`, `ECTS: ${ects}`];
-// }
-
-// function formatMarkToFiveScale(mark) {
-//     const max = mark.maxPoints || 100;
-//     const percent = (mark.score / max) * 100;
-
-//     if (percent >= 90) return 5;
-//     if (percent >= 75) return 4;
-//     if (percent >= 60) return 3;
-//     if (percent >= 35) return 2;
-//     return 1;
-// }
-
-// function formatMarkToECTS(mark) {
-//     const max = mark.maxPoints || 100;
-//     const percent = (mark.score / max) * 100;
-
-//     if (percent >= 90) return 'A';
-//     if (percent >= 82) return 'B';
-//     if (percent >= 75) return 'C';
-//     if (percent >= 67) return 'D';
-//     if (percent >= 60) return 'E';
-//     if (percent >= 35) return 'FX';
-
-//     return 'F';
-// }
-
-// function getFormattedMark(mark) {
-//     if (selectedFormat.value === 'raw') return mark.score;
-
-//     const max = mark.maxPoints || 100;
-//     const percent = (mark.score / max) * 100;
-
-//     if (selectedFormat.value === '100-scale') {
-//         return Math.round(percent);
-//     }
-
-//     if (selectedFormat.value === '5-scale') {
-//         return formatMarkToFiveScale(mark);
-//     }
-
-//     if (selectedFormat.value === 'ects') {
-//         return formatMarkToECTS(mark);
-//     }
-
-//     return mark.score;
-// }
 </script>
 
 <template>
@@ -337,7 +274,7 @@ function formatTaskName(name) {
                 <!-- Format Selector with Label (Custom Dropdown) -->
                 <div class="relative flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card">
                     <span class="text-xs font-medium text-muted-foreground whitespace-nowrap">{{ $t('marks.gradeScale')
-                        }}</span>
+                    }}</span>
 
                     <div class="relative">
                         <button @click="showFormatDropdown = !showFormatDropdown"
@@ -552,7 +489,7 @@ function formatTaskName(name) {
 
         <!-- Group Modal -->
         <GroupModal :is-open="showGroupModal" :group="pendingGroup" :all-meet-ids="allMeetIds"
-            :all-teachers="allTeachers" @close="showGroupModal = false" @save="handleCreateGroup" />
+            :all-teachers="allTeachers" @close="handleGroupModalClose" @save="handleCreateGroup" />
 
         <!-- Delete Confirmation Modal -->
         <ConfirmModal :is-open="showDeleteModal"
