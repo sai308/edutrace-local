@@ -1,9 +1,14 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+
 import { Trash2, Eye, Calendar, Clock, ArrowUp, ArrowDown, ArrowUpDown, Search, X } from 'lucide-vue-next';
 import ConfirmModal from '../ConfirmModal.vue';
 import { useQuerySync } from '../../composables/useQuerySync';
+
+import { useFormatters } from '../../composables/useFormatters';
+import { useSort } from '../../composables/useSort';
+import { useInputHandlers } from '../../composables/useInputHandlers';
 
 const props = defineProps({
   meets: {
@@ -22,10 +27,11 @@ const emit = defineEmits(['view-details', 'delete-meet', 'bulk-delete']);
 // State
 const router = useRouter();
 const route = useRoute();
+const { formatDate, formatTime, formatCompactDate } = useFormatters();
+const { sortField: sortKey, sortDirection: sortOrder, toggleSort } = useSort('date', 'desc');
+const { handleMeetIdPasteUtil } = useInputHandlers();
 
 const searchQuery = ref('');
-const sortKey = ref('date'); // 'meetId', 'date', 'filename', 'uploadedAt'
-const sortOrder = ref('desc'); // 'asc', 'desc'
 const selectedIds = ref(new Set());
 const showBulkDeleteConfirm = ref(false);
 const selectedMeetId = ref(null); // For filtering by meetId
@@ -48,37 +54,6 @@ function getGroupName(meetId) {
 function getDisplayName(meetId) {
   const group = props.groupsMap[meetId];
   return group ? `${group.name} (${meetId})` : meetId;
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString(undefined, {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-}
-
-function formatDateTime(dateStr) {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}
-
-function formatCompactDate(isoString) {
-  if (!isoString) return '-';
-  return new Date(isoString).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function formatTime(isoString) {
-  if (!isoString) return '-';
-  return new Date(isoString).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
 // Sorting & Filtering
@@ -133,14 +108,6 @@ const filteredMeets = computed(() => {
   return result;
 });
 
-function toggleSort(key) {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortKey.value = key;
-    sortOrder.value = 'desc'; // Default to desc for new sort
-  }
-}
 
 // Selection
 const allSelected = computed(() => {
@@ -182,18 +149,9 @@ function filterByGroup(groupName) {
 }
 
 function handleSearchPaste(event) {
-  const text = event.clipboardData.getData('text');
-  if (!text) return;
-
-  // Regex to match Google Meet IDs (xxx-xxxx-xxx)
-  // It might be part of a URL like https://meet.google.com/abc-defg-hij
-  // or just the ID itself.
-  const match = text.match(/[a-z]{3}-[a-z]{4}-[a-z]{3}/);
-  if (match) {
-    event.preventDefault();
-    searchQuery.value = match[0];
-  }
+  handleMeetIdPasteUtil(event, searchQuery);
 }
+
 </script>
 
 <template>

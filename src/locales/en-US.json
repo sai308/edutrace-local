@@ -41,7 +41,20 @@
             "teachers": {
                 "label": "Teachers",
                 "manage": "Manage Teachers",
-                "description": "Exclude teachers from student lists and stats"
+                "description": "Exclude teachers from student lists and stats",
+                "modal": {
+                    "title": "Manage Teachers",
+                    "manualPlaceholder": "Enter name manually...",
+                    "add": "Add",
+                    "searchPlaceholder": "Search students...",
+                    "selected": "Selected",
+                    "available": "Available",
+                    "noParticipants": "No participants found.",
+                    "teachersCount": "{count} teachers",
+                    "ignoredCount": "{count} participants ignored",
+                    "clearAll": "Clear All",
+                    "done": "Done"
+                }
             }
         },
         "data": {
@@ -172,7 +185,10 @@
             "name": "Name",
             "groups": "Groups",
             "save": "Save",
-            "cancel": "Cancel"
+            "cancel": "Cancel",
+            "email": "Email",
+            "emailPlaceholder": "Email Address",
+            "groupHint": "Start typing to see existing groups."
         }
     },
     "groups": {
@@ -302,6 +318,17 @@
             "calendar": {
                 "members": "members",
                 "end": "End:"
+            },
+            "dayDetails": {
+                "title": "Session Details",
+                "table": {
+                    "participant": "Participant",
+                    "duration": "Duration",
+                    "status": "Status"
+                },
+                "noParticipants": "No participants found for this session.",
+                "total": "Total: {count} participants",
+                "close": "Close"
             }
         },
         "session": {
@@ -359,6 +386,30 @@
         "toast": {
             "copySuccess": "Meet ID copied to clipboard",
             "copyError": "Failed to copy Meet ID"
+        }
+    },
+    "duration": {
+        "hours": "h",
+        "minutes": "m"
+    },
+    "calendar": {
+        "weekDays": {
+            "sun": "Sun",
+            "mon": "Mon",
+            "tue": "Tue",
+            "wed": "Wed",
+            "thu": "Thu",
+            "fri": "Fri",
+            "sat": "Sat"
+        }
+    },
+    "qrCode": {
+        "title": "QR Code",
+        "generating": "Generating...",
+        "copy": "Copy Link",
+        "save": "Save Image",
+        "toast": {
+            "success": "Link copied to clipboard"
         }
     },
     "footer": {

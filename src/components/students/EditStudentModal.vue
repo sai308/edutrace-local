@@ -33,7 +33,7 @@ function save() {
 
 <template>
   <div v-if="isOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 !-mt-6 animate-in fade-in duration-200">
     <div class="bg-card w-full max-w-md rounded-lg shadow-lg border flex flex-col animate-in zoom-in-95 duration-200">
 
       <!-- Header -->
@@ -64,15 +64,15 @@ function save() {
             </datalist>
           </div>
           <p class="text-xs text-muted-foreground" v-if="allGroups.length > 0">
-            Start typing to see existing groups.
+            {{ $t('students.editModal.groupHint') }}
           </p>
         </div>
 
         <div class="space-y-2">
-          <label class="text-sm font-medium">Email</label>
+          <label class="text-sm font-medium">{{ $t('students.editModal.email') }}</label>
           <input v-model="formData.email" type="email"
             class="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-            placeholder="Email Address" />
+            :placeholder="$t('students.editModal.emailPlaceholder')" />
         </div>
       </div>
 

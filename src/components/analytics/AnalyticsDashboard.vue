@@ -222,7 +222,7 @@ defineExpose({ refresh: () => emit('refresh') });
                 </div>
                 <div :title="$t('analytics.card.tooltips.avgDuration')">
                   <p class="text-sm font-medium text-muted-foreground">{{ $t('analytics.card.avgDuration') }}</p>
-                  <p class="text-2xl font-bold">{{ stat.avgDuration.toFixed(2) }}m</p>
+                  <p class="text-2xl font-bold">~{{ stat.avgDuration.toFixed(0) }}{{ $t('duration.minutes') }}</p>
                 </div>
                 <div :title="$t('analytics.card.tooltips.participants')">
                   <p class="text-sm font-medium text-muted-foreground">{{ $t('analytics.card.participants') }}</p>

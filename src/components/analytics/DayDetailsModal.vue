@@ -31,7 +31,7 @@ function formatDuration(seconds) {
       <!-- Header -->
       <div class="flex items-center justify-between p-6 border-b shrink-0">
         <div>
-          <h3 class="text-xl font-bold tracking-tight">Session Details</h3>
+          <h3 class="text-xl font-bold tracking-tight">{{ $t('reports.details.dayDetails.title') }}</h3>
           <p class="text-muted-foreground text-sm mt-1">
             {{ date }} • {{ meetId }}
           </p>
@@ -46,15 +46,15 @@ function formatDuration(seconds) {
         <table class="w-full text-sm text-left">
           <thead class="bg-muted/50 text-muted-foreground sticky top-0 z-10">
             <tr>
-              <th class="px-6 py-3 font-medium">Participant</th>
-              <th class="px-6 py-3 font-medium text-center">Duration</th>
-              <th class="px-6 py-3 font-medium text-center">Status</th>
+              <th class="px-6 py-3 font-medium">{{ $t('reports.details.dayDetails.table.participant') }}</th>
+              <th class="px-6 py-3 font-medium text-center">{{ $t('reports.details.dayDetails.table.duration') }}</th>
+              <th class="px-6 py-3 font-medium text-center">{{ $t('reports.details.dayDetails.table.status') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y">
             <tr v-if="participants.length === 0">
               <td colspan="3" class="px-6 py-8 text-center text-muted-foreground">
-                No participants found for this session.
+                {{ $t('reports.details.dayDetails.noParticipants') }}
               </td>
             </tr>
             <tr v-for="(p, index) in participants" :key="p.name"
@@ -79,11 +79,11 @@ function formatDuration(seconds) {
       <!-- Footer -->
       <div class="p-4 border-t bg-muted/20 shrink-0 flex justify-between items-center">
         <div class="text-xs text-muted-foreground">
-          Total: {{ participants.length }} participants
+          {{ $t('reports.details.dayDetails.total', { count: participants.length }) }}
         </div>
         <button @click="$emit('close')"
           class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors">
-          Close
+          {{ $t('reports.details.dayDetails.close') }}
         </button>
       </div>
     </div>

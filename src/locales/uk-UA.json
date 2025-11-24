@@ -41,7 +41,20 @@
             "teachers": {
                 "label": "Викладачі",
                 "manage": "Керувати викладачами",
-                "description": "Виключити викладачів зі списків студентів та статистики"
+                "description": "Виключити викладачів зі списків студентів та статистики",
+                "modal": {
+                    "title": "Керувати викладачами",
+                    "manualPlaceholder": "Введіть ім'я вручну...",
+                    "add": "Додати",
+                    "searchPlaceholder": "Пошук студентів...",
+                    "selected": "Вибрано",
+                    "available": "Доступно",
+                    "noParticipants": "Учасників не знайдено.",
+                    "teachersCount": "{count} викладачів",
+                    "ignoredCount": "{count} учасників ігнорується",
+                    "clearAll": "Очистити все",
+                    "done": "Готово"
+                }
             }
         },
         "data": {
@@ -172,7 +185,10 @@
             "name": "Ім'я",
             "groups": "Групи",
             "save": "Зберегти",
-            "cancel": "Скасувати"
+            "cancel": "Скасувати",
+            "email": "Email",
+            "emailPlaceholder": "Email адреса",
+            "groupHint": "Почніть вводити, щоб побачити існуючі групи."
         }
     },
     "groups": {
@@ -302,6 +318,17 @@
             "calendar": {
                 "members": "учасників",
                 "end": "Кінець:"
+            },
+            "dayDetails": {
+                "title": "Деталі сесії",
+                "table": {
+                    "participant": "Учасник",
+                    "duration": "Тривалість",
+                    "status": "Статус"
+                },
+                "noParticipants": "Учасників не знайдено для цієї сесії.",
+                "total": "Всього: {count} учасників",
+                "close": "Закрити"
             }
         },
         "session": {
@@ -359,6 +386,30 @@
         "toast": {
             "copySuccess": "ID зустрічі скопійовано в буфер обміну",
             "copyError": "Не вдалося скопіювати ID зустрічі"
+        }
+    },
+    "duration": {
+        "hours": "год",
+        "minutes": "хв"
+    },
+    "calendar": {
+        "weekDays": {
+            "sun": "Нд",
+            "mon": "Пн",
+            "tue": "Вт",
+            "wed": "Ср",
+            "thu": "Чт",
+            "fri": "Пт",
+            "sat": "Сб"
+        }
+    },
+    "qrCode": {
+        "title": "QR-код",
+        "generating": "Генерується...",
+        "copy": "Копіювати",
+        "save": "Зберегти",
+        "toast": {
+            "success": "Посилання скопійовано"
         }
     },
     "footer": {

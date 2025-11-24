@@ -6,6 +6,10 @@ import GroupModal from '../groups/GroupModal.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import MarksFilterModal from './MarksFilterModal.vue';
 import { useQuerySync } from '../../composables/useQuerySync';
+
+import { useFormatters } from '../../composables/useFormatters';
+import { useSort } from '../../composables/useSort';
+import { useMarkFormat } from '../../composables/useMarkFormat';
 import { Calendar, Search, Clock, Trash2, CircleCheckBig, Filter, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -17,6 +21,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['process-file', 'create-group', 'delete-mark', 'bulk-delete-marks', 'toggle-synced', 'refresh']);
+const { formatDate, formatTime } = useFormatters();
+const { sortField, sortDirection, toggleSort: handleSort } = useSort('createdAt', 'desc');
+const { getFormattedMark, getMarkTooltip, formatMarkToFiveScale, formatMarkToECTS } = useMarkFormat();
 
 const searchQuery = ref('');
 const showFormatDropdown = ref(false);
@@ -43,8 +50,9 @@ const activeFilterCount = computed(() => {
 });
 
 // Sorting
-const sortField = ref('createdAt'); // Default sort by Added
-const sortDirection = ref('desc');
+// Sorting
+// const sortField = ref('createdAt'); // Default sort by Added
+// const sortDirection = ref('desc');
 
 useQuerySync({
     search: searchQuery,
@@ -117,15 +125,15 @@ const filteredMarks = computed(() => {
     return result;
 });
 
-function handleSort(field) {
-    if (sortField.value === field) {
-        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-    } else {
-        sortField.value = field;
-        sortDirection.value = 'asc'; // Default to asc for new field, except maybe date?
-        if (field === 'createdAt') sortDirection.value = 'desc';
-    }
-}
+// function handleSort(field) {
+//     if (sortField.value === field) {
+//         sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+//     } else {
+//         sortField.value = field;
+//         sortDirection.value = 'asc'; // Default to asc for new field, except maybe date?
+//         if (field === 'createdAt') sortDirection.value = 'desc';
+//     }
+// }
 
 function toggleSelection(id) {
     if (selectedMarks.value.has(id)) {
@@ -227,92 +235,85 @@ function applyFilters(filters) {
     filterGroup.value = filters.group;
 }
 
-function formatDate(isoString) {
-    if (!isoString) return '-';
-    return new Date(isoString).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
+// function formatDate(isoString) {
+//     if (!isoString) return '-';
+//     return new Date(isoString).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+// }
 
-function formatTime(isoString) {
-    if (!isoString) return '-';
-    return new Date(isoString).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-}
+// function formatTime(isoString) {
+//     if (!isoString) return '-';
+//     return new Date(isoString).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+// }
 
 function formatTaskName(name) {
     return name.replace(/_/g, ' ');
 }
 
-function getMarkTooltip(score, maxPoints) {
-    const max = maxPoints || 100;
-    const percent = (score / max) * 100;
+// function getMarkTooltip(score, maxPoints) {
+//     const max = maxPoints || 100;
+//     const percent = (score / max) * 100;
 
-    const scale100 = Math.round(percent);
+//     const scale100 = Math.round(percent);
 
-    let scale5 = 0;
-    let ects = 'F';
+//     let scale5 = 0;
+//     let ects = 'F';
 
-    if (percent >= 90) { scale5 = 5; ects = 'A'; }
-    else if (percent >= 82) { scale5 = 4; ects = 'B'; }
-    else if (percent >= 75) { scale5 = 4; ects = 'C'; }
-    else if (percent >= 67) { scale5 = 3; ects = 'D'; }
-    else if (percent >= 60) { scale5 = 3; ects = 'E'; }
-    else if (percent >= 35) { scale5 = 2; ects = 'FX'; }
-    else { scale5 = 1; ects = 'F'; }
+//     if (percent >= 90) { scale5 = 5; ects = 'A'; }
+//     else if (percent >= 82) { scale5 = 4; ects = 'B'; }
+//     else if (percent >= 75) { scale5 = 4; ects = 'C'; }
+//     else if (percent >= 67) { scale5 = 3; ects = 'D'; }
+//     else if (percent >= 60) { scale5 = 3; ects = 'E'; }
+//     else if (percent >= 35) { scale5 = 2; ects = 'FX'; }
+//     else { scale5 = 1; ects = 'F'; }
 
-    return [`5-scale: ${scale5}`, `100-scale: ${scale100}`, `ECTS: ${ects}`];
-}
+//     return [`5-scale: ${scale5}`, `100-scale: ${scale100}`, `ECTS: ${ects}`];
+// }
 
-function formatMarkToFiveScale(mark) {
-    const max = mark.maxPoints || 100;
-    const percent = (mark.score / max) * 100;
+// function formatMarkToFiveScale(mark) {
+//     const max = mark.maxPoints || 100;
+//     const percent = (mark.score / max) * 100;
 
-    if (percent >= 90) return 5;
-    if (percent >= 75) return 4;
-    if (percent >= 60) return 3;
-    if (percent >= 35) return 2;
-    return 1;
-}
+//     if (percent >= 90) return 5;
+//     if (percent >= 75) return 4;
+//     if (percent >= 60) return 3;
+//     if (percent >= 35) return 2;
+//     return 1;
+// }
 
-function formatMarkToECTS(mark) {
-    const max = mark.maxPoints || 100;
-    const percent = (mark.score / max) * 100;
+// function formatMarkToECTS(mark) {
+//     const max = mark.maxPoints || 100;
+//     const percent = (mark.score / max) * 100;
 
-    if (percent >= 90) return 'A';
-    if (percent >= 82) return 'B';
-    if (percent >= 75) return 'C';
-    if (percent >= 67) return 'D';
-    if (percent >= 60) return 'E';
-    if (percent >= 35) return 'FX';
+//     if (percent >= 90) return 'A';
+//     if (percent >= 82) return 'B';
+//     if (percent >= 75) return 'C';
+//     if (percent >= 67) return 'D';
+//     if (percent >= 60) return 'E';
+//     if (percent >= 35) return 'FX';
 
-    return 'F';
-}
+//     return 'F';
+// }
 
-function formatMarkTo100Scale(mark) {
-    const max = mark.maxPoints || 100;
-    const percent = (mark.score / max) * 100;
+// function getFormattedMark(mark) {
+//     if (selectedFormat.value === 'raw') return mark.score;
 
-    return Math.round(percent);
-}
+//     const max = mark.maxPoints || 100;
+//     const percent = (mark.score / max) * 100;
 
-function getFormattedMark(mark) {
-    if (selectedFormat.value === 'raw') return mark.score;
+//     if (selectedFormat.value === '100-scale') {
+//         return Math.round(percent);
+//     }
 
-    const max = mark.maxPoints || 100;
-    const percent = (mark.score / max) * 100;
+//     if (selectedFormat.value === '5-scale') {
+//         return formatMarkToFiveScale(mark);
+//     }
 
-    if (selectedFormat.value === '100-scale') {
-        return Math.round(percent);
-    }
+//     if (selectedFormat.value === 'ects') {
+//         return formatMarkToECTS(mark);
+//     }
 
-    if (selectedFormat.value === '5-scale') {
-        return formatMarkToFiveScale(mark);
-    }
-
-    if (selectedFormat.value === 'ects') {
-        return formatMarkToECTS(mark);
-    }
-
-    return mark.score;
-}
+//     return mark.score;
+// }
 </script>
 
 <template>
@@ -508,7 +509,7 @@ function getFormattedMark(mark) {
                                     <span
                                         class="font-mono font-bold cursor-help border-b border-dotted border-muted-foreground/50 group"
                                         @mouseenter="mark.showTooltip = true" @mouseleave="mark.showTooltip = false">
-                                        {{ getFormattedMark(mark) }}
+                                        {{ getFormattedMark(mark, selectedFormat) }}
                                         <Transition name="fade">
                                             <div v-if="mark.showTooltip"
                                                 class="absolute z-10 px-3 py-2.5 bg-card border border-border rounded-md shadow-md text-xs text-card-foreground whitespace-nowrap right-full top-1/2 -translate-y-1/2 mr-2 pointer-events-none transition-opacity duration-200 ease-in-out">

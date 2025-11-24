@@ -4,12 +4,11 @@ import { useRouter, useRoute } from 'vue-router';
 import { analytics } from '../services/analytics';
 import { repository } from '../services/repository';
 import { ArrowLeft, LayoutGrid, List, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Users, Eye } from 'lucide-vue-next';
-import {
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
-  format, addMonths, subMonths, isSameMonth, isSameDay, isToday, parseISO
-} from 'date-fns';
 import DayDetailsModal from './analytics/DayDetailsModal.vue';
 import SingleSessionView from './reports/SingleSessionView.vue';
+import { useFormatters } from '../composables/useFormatters';
+import { useCalendar } from '../composables/useCalendar';
+import { format } from 'date-fns';
 
 const props = defineProps({
   meetId: {
@@ -34,6 +33,7 @@ const emit = defineEmits(['back', 'view-details', 'delete-meet', 'bulk-delete', 
 
 const route = useRoute();
 const router = useRouter();
+const { formatDate, formatDuration } = useFormatters();
 
 // Use either meetId prop or id prop (from router params)
 const effectiveMeetId = computed(() => props.meetId || props.id || route.params.id);
@@ -41,7 +41,7 @@ const stats = ref({ dates: [], matrix: [], sessions: {}, metadata: null });
 const loading = ref(true);
 const viewMode = ref(route.query.view || 'overview'); // 'overview', 'table', 'calendar'
 const ignoredUsers = ref(new Set());
-const currentMonth = ref(new Date());
+const { currentMonth, weekDays, nextMonth, prevMonth, generateCalendarDays } = useCalendar();
 
 const isReportContext = computed(() => route.name === 'ReportDetails');
 const effectiveId = computed(() => props.id || props.meetId);
@@ -59,16 +59,6 @@ watch(viewMode, (newView) => {
   });
 });
 
-// Force table view for Report Context - REMOVED to allow deep linking
-// watch(isReportContext, (isReport) => {
-//   if (isReport) {
-//     viewMode.value = 'table';
-//   }
-// }, { immediate: true });
-
-// ... (rest of script)
-
-
 
 // Modal State
 const showDayModal = ref(false);
@@ -78,7 +68,6 @@ const selectedDayDetails = ref({
   participants: []
 });
 const error = ref(null); // Added error ref
-const selectedDay = ref(null); // Added selectedDay ref
 
 const displayName = computed(() => {
   if (isReportContext.value) {
@@ -118,22 +107,6 @@ async function loadData() {
 onMounted(loadData);
 watch(() => effectiveId.value, loadData);
 
-function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric'
-  });
-}
-
-function formatDuration(seconds) {
-  if (!seconds) return '-';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
-}
-
 function getSessionDuration(date) {
   // Find max duration for this date from matrix
   let max = 0;
@@ -170,8 +143,15 @@ function getParticipantsForDate(date) {
     .sort((a, b) => b.duration - a.duration);
 }
 
-// Calendar Logic
-const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const filteredStudents = computed(() => {
+  if (!stats.value.matrix) return [];
+  return stats.value.matrix.filter(row => {
+    if (teacherName.value && row.name === teacherName.value) return false;
+    if (ignoredUsers.value.has(row.name)) return false;
+    return true;
+  });
+});
+
 
 const sessionsMap = computed(() => {
   if (!stats.value.dates) return new Map();
@@ -194,38 +174,9 @@ const sessionsMap = computed(() => {
 });
 
 const calendarDays = computed(() => {
-  const start = startOfWeek(startOfMonth(currentMonth.value));
-  const end = endOfWeek(endOfMonth(currentMonth.value));
-
-  return eachDayOfInterval({ start, end }).map(date => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    let session = null;
-
-    // Search for matching date in map keys
-    for (const [key, val] of sessionsMap.value.entries()) {
-      if (isSameDay(parseISO(key), date)) {
-        session = val;
-        break;
-      }
-    }
-
-    return {
-      date,
-      dateStr,
-      isCurrentMonth: isSameMonth(date, currentMonth.value),
-      isToday: isToday(date),
-      session
-    };
-  });
+  return generateCalendarDays(sessionsMap.value);
 });
 
-function nextMonth() {
-  currentMonth.value = addMonths(currentMonth.value, 1);
-}
-
-function prevMonth() {
-  currentMonth.value = subMonths(currentMonth.value, 1);
-}
 
 function handleDayClick(day) {
   if (!day.session) return;
@@ -236,10 +187,6 @@ function handleDayClick(day) {
     participants: day.session.participants
   };
   showDayModal.value = true;
-}
-
-function navigateToReportDetails(reportId = effectiveMeetId.value) {
-  router.push({ name: 'ReportDetails', params: { id: reportId } });
 }
 
 async function getReportIdForDate(date) {

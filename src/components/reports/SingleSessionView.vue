@@ -5,6 +5,8 @@ import {
     startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
     format, addMonths, subMonths, isSameMonth, isSameDay, isToday, parseISO
 } from 'date-fns';
+import { useFormatters } from '../../composables/useFormatters';
+import { useCalendar } from '../../composables/useCalendar';
 
 const props = defineProps({
     stats: {
@@ -24,71 +26,81 @@ const localViewMode = computed({
     set: (value) => emit('update:viewMode', value)
 });
 
-const currentMonth = ref(new Date());
+const { formatDuration, formatTime, formatDate } = useFormatters();
+const { currentMonth, weekDays, nextMonth, prevMonth, generateCalendarDays } = useCalendar();
 
 const sessionDate = computed(() => {
     if (!props.stats.metadata?.date) return null;
     return parseISO(props.stats.metadata.date);
 });
 
-const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const calendarDays = computed(() => {
-    const start = startOfWeek(startOfMonth(currentMonth.value));
-    const end = endOfWeek(endOfMonth(currentMonth.value));
+    // We need to adapt generateCalendarDays to match the specific logic here (isSessionDay, participantCount)
+    // The composable returns basic day info. We can map over it or pass a custom session map.
+    // But here we only have ONE session.
 
-    return eachDayOfInterval({ start, end }).map(date => {
-        const isSessionDay = sessionDate.value && isSameDay(date, sessionDate.value);
+    // Let's use the composable's generator but we need to pass a map or handle the single session logic.
+    // The composable expects a sessionsMap. Let's construct a simple one or just map the result.
 
-        return {
-            date,
-            dateStr: format(date, 'yyyy-MM-dd'),
-            isCurrentMonth: isSameMonth(date, currentMonth.value),
-            isToday: isToday(date),
-            isSessionDay,
-            participantCount: isSessionDay ? props.stats.matrix.length : 0
-        };
-    });
+    // Actually, the composable logic for `generateCalendarDays` is a bit specific to having a map of sessions.
+    // Here we have a single session date.
+    // Let's see if we can reuse the composable.
+
+    // The composable accepts `sessionsMap` and `sessionDate`.
+    // If we pass `null` for map and `sessionDate` for the second arg, it might work if we adjust the composable?
+    // Wait, I wrote the composable to accept `sessionsMap` and `sessionDate`.
+    // And it sets `isSessionDay` based on `sessionDate`.
+    // But `participantCount` logic is specific here.
+
+    // Let's use the composable to get the days, then map to add our specific props.
+    const days = generateCalendarDays(null, sessionDate.value);
+
+    return days.map(day => ({
+        ...day,
+        participantCount: day.isSessionDay ? props.stats.matrix.length : 0
+    }));
 });
 
-function formatDuration(seconds) {
-    if (!seconds) return '-';
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    if (h > 0) return `${h}h ${m}m`;
-    return `${m}m`;
-}
+// function formatDuration(seconds) {
+//     if (!seconds) return '-';
+//     const h = Math.floor(seconds / 3600);
+//     const m = Math.floor((seconds % 3600) / 60);
+//     if (h > 0) return `${h}h ${m}m`;
+//     return `${m}m`;
+// }
 
-function formatTime(timeStr) {
-    if (!timeStr) return '-';
-    try {
-        return new Date(timeStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch (e) {
-        return timeStr;
-    }
-}
+// function formatTime(timeStr) {
+//     if (!timeStr) return '-';
+//     try {
+//         return new Date(timeStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+//     } catch (e) {
+//         return timeStr;
+//     }
+// }
 
-function formatDate(dateStr) {
-    if (!dateStr) return '-';
-    try {
-        return new Date(dateStr).toLocaleDateString(undefined, {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    } catch (e) {
-        return dateStr;
-    }
-}
+// function formatDate(dateStr) {
+//     if (!dateStr) return '-';
+//     try {
+//         return new Date(dateStr).toLocaleDateString(undefined, {
+//             weekday: 'long',
+//             year: 'numeric',
+//             month: 'long',
+//             day: 'numeric'
+//         });
+//     } catch (e) {
+//         return dateStr;
+//     }
+// }
 
-function nextMonth() {
-    currentMonth.value = addMonths(currentMonth.value, 1);
-}
+// function nextMonth() {
+//     currentMonth.value = addMonths(currentMonth.value, 1);
+// }
 
-function prevMonth() {
-    currentMonth.value = subMonths(currentMonth.value, 1);
-}
+// function prevMonth() {
+//     currentMonth.value = subMonths(currentMonth.value, 1);
+// }
 
 // Timeline calculations for Overview
 const timelineData = computed(() => {
@@ -199,7 +211,8 @@ function formatTimeHHMM(date) {
                     <div class="text-sm text-muted-foreground">
                         {{ $t('reports.session.timeline.session', {
                             start: formatTimeHHMM(timelineData.startTime), end:
-                                formatTimeHHMM(timelineData.endTime) }) }}
+                                formatTimeHHMM(timelineData.endTime)
+                        }) }}
                     </div>
                 </div>
 

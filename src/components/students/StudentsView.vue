@@ -6,6 +6,10 @@ import EditStudentModal from './EditStudentModal.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import { useQuerySync } from '../../composables/useQuerySync';
 
+import { useFormatters } from '../../composables/useFormatters';
+import { useSort } from '../../composables/useSort';
+import { useColors } from '../../composables/useColors';
+
 const props = defineProps({
   students: { type: Array, default: () => [] },
   groupsMap: { type: Object, default: () => ({}) },
@@ -13,12 +17,15 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['save-student', 'delete-student', 'bulk-delete-students', 'refresh']);
+const { formatDuration } = useFormatters();
+const { sortField, sortDirection, toggleSort } = useSort('name', 'asc');
+const { getScoreColor } = useColors();
 
 const router = useRouter();
 const searchQuery = ref('');
 const selectedGroup = ref(null);
-const sortField = ref('name');
-const sortDirection = ref('asc');
+// const sortField = ref('name');
+// const sortDirection = ref('asc');
 
 useQuerySync({
   search: searchQuery,
@@ -87,27 +94,27 @@ const allGroupsList = computed(() => {
 });
 
 
-function formatDuration(seconds) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  return `${h}h ${m}m`;
-}
+// function formatDuration(seconds) {
+//   const h = Math.floor(seconds / 3600);
+//   const m = Math.floor((seconds % 3600) / 60);
+//   return `${h}h ${m}m`;
+// }
 
-function toggleSort(field) {
-  if (sortField.value === field) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortField.value = field;
-    sortDirection.value = 'asc';
-  }
-}
+// function toggleSort(field) {
+//   if (sortField.value === field) {
+//     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+//   } else {
+//     sortField.value = field;
+//     sortDirection.value = 'asc';
+//   }
+// }
 
-function getScoreColor(score) {
-  if (score >= 90) return 'text-green-600 font-bold';
-  if (score >= 75) return 'text-green-500';
-  if (score >= 50) return 'text-yellow-600';
-  return 'text-red-500';
-}
+// function getScoreColor(score) {
+//   if (score >= 90) return 'text-green-600 font-bold';
+//   if (score >= 75) return 'text-green-500';
+//   if (score >= 50) return 'text-yellow-600';
+//   return 'text-red-500';
+// }
 
 function openAnalytics(meetId) {
   router.push({ name: 'AnalyticsDetails', params: { id: meetId } });
