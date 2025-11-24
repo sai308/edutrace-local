@@ -301,27 +301,32 @@ function getFormattedMark(mark) {
 <template>
     <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <!-- Dropzone -->
-        <DropZone :is-processing="isProcessing" @files-dropped="handleFilesDropped" prompt="Drop Marks Reports" />
+        <DropZone :is-processing="isProcessing" @files-dropped="handleFilesDropped"
+            :prompt="$t('dropZone.marksPrompt')" />
 
         <div class="flex flex-col md:flex-row items-center justify-between gap-4">
             <div class="space-y-1">
                 <div class="flex items-center gap-4">
-                    <h2 class="text-2xl font-bold tracking-tight">Marks</h2>
-                    <span class="text-muted-foreground text-sm">{{ filteredMarks.length }} of {{ marks.length }}
-                        marks</span>
+                    <h2 class="text-2xl font-bold tracking-tight">{{ $t('marks.title') }}</h2>
+                    <span class="text-muted-foreground text-sm">{{ $t('marks.subtitle', {
+                        count: filteredMarks.length,
+                        total: marks.length
+                    }) }}</span>
                 </div>
             </div>
 
             <div class="flex items-center gap-4 w-full md:w-auto">
                 <!-- Format Selector with Label (Custom Dropdown) -->
                 <div class="relative flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card">
-                    <span class="text-xs font-medium text-muted-foreground whitespace-nowrap">Grade Scale:</span>
+                    <span class="text-xs font-medium text-muted-foreground whitespace-nowrap">{{ $t('marks.gradeScale')
+                    }}</span>
 
                     <div class="relative">
                         <button @click="showFormatDropdown = !showFormatDropdown"
                             class="flex items-center justify-between min-w-[100px] text-sm font-medium focus:outline-none cursor-pointer bg-transparent pr-6">
-                            {{ selectedFormat === 'raw' ? 'Default' : selectedFormat === '5-scale' ? '5-Point' :
-                                selectedFormat === '100-scale' ? '100-Point' : 'ECTS' }}
+                            {{ selectedFormat === 'raw' ? $t('marks.scales.default') : selectedFormat === '5-scale' ?
+                                $t('marks.scales.5point') :
+                                selectedFormat === '100-scale' ? $t('marks.scales.100point') : $t('marks.scales.ects') }}
 
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -336,19 +341,23 @@ function getFormattedMark(mark) {
 
                             <button @click="selectedFormat = 'raw'; showFormatDropdown = false"
                                 :class="{ 'bg-accent text-accent-foreground': selectedFormat === 'raw' }"
-                                class="block w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">Default</button>
+                                class="block w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">{{
+                                    $t('marks.scales.default') }}</button>
 
                             <button @click="selectedFormat = '5-scale'; showFormatDropdown = false"
                                 :class="{ 'bg-accent text-accent-foreground': selectedFormat === '5-scale' }"
-                                class="block w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">5-Point</button>
+                                class="block w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">{{
+                                    $t('marks.scales.5point') }}</button>
 
                             <button @click="selectedFormat = '100-scale'; showFormatDropdown = false"
                                 :class="{ 'bg-accent text-accent-foreground': selectedFormat === '100-scale' }"
-                                class="block w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">100-Point</button>
+                                class="block w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">{{
+                                    $t('marks.scales.100point') }}</button>
 
                             <button @click="selectedFormat = 'ects'; showFormatDropdown = false"
                                 :class="{ 'bg-accent text-accent-foreground': selectedFormat === 'ects' }"
-                                class="block w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">ECTS</button>
+                                class="block w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">{{
+                                    $t('marks.scales.ects') }}</button>
                         </div>
                     </div>
                 </div>
@@ -364,7 +373,7 @@ function getFormattedMark(mark) {
                     class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors relative"
                     :class="activeFilterCount > 0 ? 'bg-primary/10 text-primary border-primary/20' : 'bg-background text-muted-foreground hover:text-foreground'">
                     <Filter class="w-4 h-4" />
-                    Filters
+                    {{ $t('marks.filters') }}
                     <span v-if="activeFilterCount > 0"
                         class="ml-1 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full">
                         {{ activeFilterCount }}
@@ -374,8 +383,8 @@ function getFormattedMark(mark) {
                 <!-- Search -->
                 <div class="relative w-full md:w-64">
                     <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <input v-model="searchQuery" placeholder="Search across fields..."
-                        title="Supported fields: student, group, task"
+                    <input v-model="searchQuery" :placeholder="$t('marks.searchPlaceholder')"
+                        :title="$t('marks.searchTitle')"
                         class="pl-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
                 </div>
             </div>
@@ -396,7 +405,7 @@ function getFormattedMark(mark) {
                             <th class="p-3 text-left w-32 cursor-pointer hover:text-foreground transition-colors select-none"
                                 @click="handleSort('createdAt')">
                                 <div class="flex items-center gap-1">
-                                    Added
+                                    {{ $t('marks.table.added') }}
                                     <ArrowUp v-if="sortField === 'createdAt' && sortDirection === 'asc'"
                                         class="w-3 h-3" />
                                     <ArrowDown v-if="sortField === 'createdAt' && sortDirection === 'desc'"
@@ -407,7 +416,7 @@ function getFormattedMark(mark) {
                             <th class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
                                 @click="handleSort('studentName')">
                                 <div class="flex items-center gap-1">
-                                    Student
+                                    {{ $t('marks.table.student') }}
                                     <ArrowUp v-if="sortField === 'studentName' && sortDirection === 'asc'"
                                         class="w-3 h-3" />
                                     <ArrowDown v-if="sortField === 'studentName' && sortDirection === 'desc'"
@@ -418,7 +427,7 @@ function getFormattedMark(mark) {
                             <th class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
                                 @click="handleSort('groupName')">
                                 <div class="flex items-center gap-1">
-                                    Group
+                                    {{ $t('marks.table.group') }}
                                     <ArrowUp v-if="sortField === 'groupName' && sortDirection === 'asc'"
                                         class="w-3 h-3" />
                                     <ArrowDown v-if="sortField === 'groupName' && sortDirection === 'desc'"
@@ -429,7 +438,7 @@ function getFormattedMark(mark) {
                             <th class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
                                 @click="handleSort('taskName')">
                                 <div class="flex items-center gap-1">
-                                    Task
+                                    {{ $t('marks.table.task') }}
                                     <ArrowUp v-if="sortField === 'taskName' && sortDirection === 'asc'"
                                         class="w-3 h-3" />
                                     <ArrowDown v-if="sortField === 'taskName' && sortDirection === 'desc'"
@@ -437,8 +446,8 @@ function getFormattedMark(mark) {
                                     <ArrowUpDown v-if="sortField !== 'taskName'" class="w-3 h-3 opacity-50" />
                                 </div>
                             </th>
-                            <th class="p-3 text-center">Mark</th>
-                            <th class="p-3 text-right">Actions</th>
+                            <th class="p-3 text-center">{{ $t('marks.table.mark') }}</th>
+                            <th class="p-3 text-right">{{ $t('marks.table.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
@@ -495,7 +504,7 @@ function getFormattedMark(mark) {
                                     <div class="w-2 h-2 flex items-center justify-center">
                                         <span v-if="!mark.synced"
                                             class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"
-                                            title="Unsynced"></span>
+                                            :title="$t('marks.tooltips.unSynced')"></span>
                                     </div>
                                 </div>
                             </td>
@@ -503,12 +512,12 @@ function getFormattedMark(mark) {
                                 <div class="flex items-center justify-end gap-2">
                                     <button @click="toggleSynced(mark)" class="p-1.5 rounded-md transition-colors"
                                         :class="mark.synced ? 'text-green-600 hover:bg-green-50' : 'text-muted-foreground hover:text-primary hover:bg-muted'"
-                                        :title="mark.synced ? 'Mark as Unsynced' : 'Mark as Synced'">
+                                        :title="mark.synced ? $t('marks.tooltips.markAsUnsynced') : $t('marks.tooltips.markAsSynced')">
                                         <CircleCheckBig class="w-4 h-4" />
                                     </button>
                                     <button @click="confirmDelete(mark)"
                                         class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                                        title="Delete Mark">
+                                        :title="$t('marks.tooltips.delete')">
                                         <Trash2 class="w-4 h-4" />
                                     </button>
                                 </div>
@@ -520,7 +529,7 @@ function getFormattedMark(mark) {
         </div>
 
         <div v-else class="text-center py-12 text-muted-foreground">
-            {{ searchQuery ? 'No marks match your search.' : 'No marks found. Upload a CSV to get started.' }}
+            {{ searchQuery ? $t('marks.noMatch') : $t('marks.noMarks') }}
         </div>
 
         <!-- Group Modal -->
@@ -528,9 +537,10 @@ function getFormattedMark(mark) {
             :all-teachers="allTeachers" @close="showGroupModal = false" @save="handleCreateGroup" />
 
         <!-- Delete Confirmation Modal -->
-        <ConfirmModal :is-open="showDeleteModal" :title="isBulkDelete ? 'Delete Marks' : 'Delete Mark'"
-            :message="isBulkDelete ? `Are you sure you want to delete ${selectedMarks.size} marks?` : 'Are you sure you want to delete this mark?'"
-            confirm-text="Delete" @cancel="showDeleteModal = false" @confirm="handleDelete" />
+        <ConfirmModal :is-open="showDeleteModal"
+            :title="isBulkDelete ? $t('marks.deleteModal.bulkTitle') : $t('marks.deleteModal.title')"
+            :message="isBulkDelete ? $t('marks.deleteModal.bulkMessage', { count: selectedMarks.size }) : $t('marks.deleteModal.message')"
+            :confirm-text="$t('marks.deleteModal.confirm')" @cancel="showDeleteModal = false" @confirm="handleDelete" />
 
         <!-- Filter Modal -->
         <MarksFilterModal :is-open="showFilterModal" :filters="activeFilters" :groups="groups"

@@ -267,11 +267,11 @@ async function handleViewReportForDate(date) {
           <ArrowLeft class="w-5 h-5" />
         </button>
         <div>
-          <h2 class="text-2xl font-bold tracking-tight">Report Detailed Analytics</h2>
+          <h2 class="text-2xl font-bold tracking-tight">{{ $t('reports.details.title') }}</h2>
           <div class="flex flex-wrap items-center md:gap-x-16 gap-x-4 text-muted-foreground">
             <span>{{ displayName }}</span>
             <span v-if="teacherName" class="flex items-center gap-x-2">
-              <span>Teacher (Excluded):</span>
+              <span>{{ $t('reports.details.teacher') }}</span>
               <span class="text-xs bg-muted px-2 py-0.5 rounded">
                 {{ teacherName }}
               </span>
@@ -317,7 +317,7 @@ async function handleViewReportForDate(date) {
               <div class="flex items-center gap-2">
                 <Eye
                   class="w-4 h-4 cursor-pointer text-muted-foreground hover:text-foreground hover:text-primary transition-colors"
-                  @click="handleViewReportForDate(date)" title="View Report Details" />
+                  @click="handleViewReportForDate(date)" :title="$t('reports.details.viewReport')" />
                 <div class="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
                   {{ getSessionDuration(date) }}
                 </div>
@@ -349,14 +349,14 @@ async function handleViewReportForDate(date) {
               <thead class="bg-muted/50 text-muted-foreground">
                 <tr>
                   <th class="sticky left-0 z-10 bg-muted/95 border-b border-r h-12 px-4 font-medium min-w-[200px]">
-                    Participant
+                    {{ $t('reports.details.table.participant') }}
                   </th>
                   <th v-for="date in stats.dates" :key="date"
                     class="border-b h-12 px-4 font-medium text-center min-w-[100px]">
                     {{ formatDate(date) }}
                   </th>
                   <th class="border-b h-12 px-4 font-medium text-center min-w-[100px]">
-                    Total %
+                    {{ $t('reports.details.table.total') }}
                   </th>
                 </tr>
               </thead>
@@ -438,12 +438,13 @@ async function handleViewReportForDate(date) {
                   <!-- Members Count -->
                   <div class="flex items-center gap-1 text-xs text-muted-foreground">
                     <Users class="w-3 h-3" />
-                    {{ day.session.attendees }} members
+                    {{ day.session.attendees }} {{ $t('reports.details.calendar.members') }}
                   </div>
 
                   <!-- End Time -->
                   <div v-if="day.session.endTime" class="flex items-center gap-1 text-xs text-muted-foreground">
-                    <span class="text-[10px] uppercase font-bold text-muted-foreground/70">End:</span>
+                    <span class="text-[10px] uppercase font-bold text-muted-foreground/70">{{
+                      $t('reports.details.calendar.end') }}</span>
                     {{ day.session.endTime }}
                   </div>
                 </div>

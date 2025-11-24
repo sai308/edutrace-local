@@ -216,25 +216,31 @@ function handleSearchPaste(event) {
     <!-- Main Header Row -->
     <div class="flex items-center justify-between gap-4">
       <div class="flex items-center gap-4">
-        <h2 class="text-2xl font-bold tracking-tight">Reports</h2>
-        <span class="text-muted-foreground text-sm">{{ filteredMeets.length }} of {{ meets.length }} reports</span>
+        <h2 class="text-2xl font-bold tracking-tight">{{ $t('reports.title') }}</h2>
+        <span class="text-muted-foreground text-sm">{{ $t('reports.subtitle', {
+          count: filteredMeets.length, total:
+            meets.length
+        }) }}</span>
       </div>
 
       <div class="flex items-center gap-2">
         <!-- Search -->
         <div class="relative w-full md:w-64">
           <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <input v-model="searchQuery" placeholder="Search by meet ID (link)" @paste="handleSearchPaste"
+          <input v-model="searchQuery" :placeholder="$t('reports.searchPlaceholder')" @paste="handleSearchPaste"
             class="pl-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
         </div>
 
+        <!-- Dropzone -->
+        <DropZone :is-processing="isProcessing" @files-dropped="handleFilesDropped"
+          :prompt="$t('dropZone.reportsPrompt')" />
         <!-- Bulk Delete -->
         <div v-if="selectedIds.size > 0" class="flex items-center gap-2 animate-in fade-in slide-in-from-right-4">
-          <span class="text-sm text-muted-foreground">{{ selectedIds.size }} selected</span>
+          <span class="text-sm text-muted-foreground">{{ $t('reports.selected', { count: selectedIds.size }) }}</span>
           <button @click="handleBulkDelete"
             class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md transition-colors">
             <Trash2 class="w-4 h-4" />
-            Delete Selected
+            {{ $t('reports.deleteSelected') }}
           </button>
         </div>
       </div>
@@ -242,19 +248,19 @@ function handleSearchPaste(event) {
 
     <!-- Active Filters Row -->
     <div v-if="selectedMeetId || selectedGroup" class="flex items-center gap-3 px-1">
-      <span class="text-sm text-muted-foreground">Active filters:</span>
+      <span class="text-sm text-muted-foreground">{{ $t('reports.activeFilters') }}</span>
 
       <!-- Active MeetId Filter -->
       <button v-if="selectedMeetId" @click="selectedMeetId = null"
         class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
-        Meet ID: {{ selectedMeetId }}
+        {{ $t('reports.filterMeetId', { id: selectedMeetId }) }}
         <X class="w-3 h-3" />
       </button>
 
       <!-- Active Group Filter -->
       <button v-if="selectedGroup" @click="selectedGroup = null"
         class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
-        Group: {{ selectedGroup }}
+        {{ $t('reports.filterGroup', { group: selectedGroup }) }}
         <X class="w-3 h-3" />
       </button>
     </div>
@@ -272,7 +278,7 @@ function handleSearchPaste(event) {
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('group')">
                 <div class="flex items-center gap-1">
-                  Group
+                  {{ $t('reports.table.group') }}
                   <ArrowUp v-if="sortKey === 'group' && sortOrder === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortKey === 'group' && sortOrder === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortKey !== 'group'" class="w-3 h-3 opacity-50" />
@@ -282,7 +288,7 @@ function handleSearchPaste(event) {
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('meetId')">
                 <div class="flex items-center gap-1">
-                  Meet ID
+                  {{ $t('reports.table.meetId') }}
                   <ArrowUp v-if="sortKey === 'meetId' && sortOrder === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortKey === 'meetId' && sortOrder === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortKey !== 'meetId'" class="w-3 h-3 opacity-50" />
@@ -292,18 +298,19 @@ function handleSearchPaste(event) {
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('date')">
                 <div class="flex items-center gap-1">
-                  Date
+                  {{ $t('reports.table.date') }}
                   <ArrowUp v-if="sortKey === 'date' && sortOrder === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortKey === 'date' && sortOrder === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortKey !== 'date'" class="w-3 h-3 opacity-50" />
                 </div>
               </th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Participants</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{{
+                $t('reports.table.participants') }}</th>
               <th
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('filename')">
                 <div class="flex items-center gap-1">
-                  Filename
+                  {{ $t('reports.table.filename') }}
                   <ArrowUp v-if="sortKey === 'filename' && sortOrder === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortKey === 'filename' && sortOrder === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortKey !== 'filename'" class="w-3 h-3 opacity-50" />
@@ -313,19 +320,20 @@ function handleSearchPaste(event) {
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('uploadedAt')">
                 <div class="flex items-center gap-1">
-                  Uploaded at
+                  {{ $t('reports.table.uploadedAt') }}
                   <ArrowUp v-if="sortKey === 'uploadedAt' && sortOrder === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortKey === 'uploadedAt' && sortOrder === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortKey !== 'uploadedAt'" class="w-3 h-3 opacity-50" />
                 </div>
               </th>
-              <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
+              <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">{{
+                $t('reports.table.actions') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="filteredMeets.length === 0">
               <td colspan="7" class="p-8 text-center text-muted-foreground">
-                {{ searchQuery ? 'No reports match your filter.' : 'No reports uploaded yet.' }}
+                {{ searchQuery ? $t('reports.noMatch') : $t('reports.noReports') }}
               </td>
             </tr>
             <tr v-for="(meet, index) in filteredMeets" :key="meet.id"
@@ -377,11 +385,12 @@ function handleSearchPaste(event) {
                   <button
                     @click="router.push({ name: 'ReportDetails', params: { id: meet.id }, query: { view: 'table' } })"
                     class="p-2 hover:bg-primary/10 text-primary rounded-md transition-colors"
-                    title="View Report Details">
+                    :title="$t('reports.tooltips.view')">
                     <Eye class="w-4 h-4" />
                   </button>
                   <button @click="$emit('delete-meet', meet.id)"
-                    class="p-2 hover:bg-destructive/10 text-destructive rounded-md transition-colors" title="Delete">
+                    class="p-2 hover:bg-destructive/10 text-destructive rounded-md transition-colors"
+                    :title="$t('reports.tooltips.delete')">
                     <Trash2 class="w-4 h-4" />
                   </button>
                 </div>
@@ -391,9 +400,9 @@ function handleSearchPaste(event) {
         </table>
       </div>
 
-      <ConfirmModal :is-open="showBulkDeleteConfirm" title="Delete Selected Reports"
-        :message="`Are you sure you want to delete ${selectedIds.size} selected reports? This action cannot be undone.`"
-        confirm-text="Delete Selected" variant="danger" @confirm="confirmBulkDelete"
+      <ConfirmModal :is-open="showBulkDeleteConfirm" :title="$t('reports.deleteModal.title')"
+        :message="$t('reports.deleteModal.message', { count: selectedIds.size })"
+        :confirm-text="$t('reports.deleteModal.confirm')" variant="danger" @confirm="confirmBulkDelete"
         @cancel="showBulkDeleteConfirm = false" />
     </div>
   </div>

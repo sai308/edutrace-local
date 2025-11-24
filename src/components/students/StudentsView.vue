@@ -175,14 +175,15 @@ async function handleDeleteConfirm() {
     <div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
       <div class="space-y-1">
         <div class="flex items-center gap-4">
-          <h2 class="text-2xl font-bold tracking-tight">Students</h2>
-          <span class="text-muted-foreground text-sm">{{ filteredStudents.length }} of {{ students.length -
-            (teachers.size || 0) }}
-            students</span>
+          <h2 class="text-2xl font-bold tracking-tight">{{ $t('students.title') }}</h2>
+          <span class="text-muted-foreground text-sm">{{ $t('students.subtitle', {
+            count: filteredStudents.length,
+            total: students.length - (teachers.size || 0)
+          }) }}</span>
         </div>
 
         <div v-if="selectedGroup" class="flex items-center gap-2">
-          <span class="text-sm text-muted-foreground">Group filter:</span>
+          <span class="text-sm text-muted-foreground">{{ $t('students.groupFilter') }}</span>
           <button @click="selectedGroup = null"
             class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
             {{ selectedGroup }}
@@ -195,12 +196,12 @@ async function handleDeleteConfirm() {
         <button v-if="selectedStudents.size > 0" @click="openBulkDeleteModal"
           class="px-4 py-2 text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md transition-colors flex items-center gap-2">
           <Trash2 class="w-4 h-4" />
-          Delete ({{ selectedStudents.size }})
+          {{ $t('students.delete', { count: selectedStudents.size }) }}
         </button>
 
         <div class="relative w-full sm:w-72">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input v-model="searchQuery" type="text" placeholder="Search students or groups..."
+          <input v-model="searchQuery" type="text" :placeholder="$t('students.searchPlaceholder')"
             class="w-full pl-9 pr-4 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
         </div>
       </div>
@@ -220,7 +221,7 @@ async function handleDeleteConfirm() {
               <th class="w-12 px-4 py-3 text-center">#</th>
               <th class="px-4 py-3 cursor-pointer hover:text-foreground transition-colors" @click="toggleSort('name')">
                 <div class="flex items-center gap-2">
-                  Student Name
+                  {{ $t('students.table.name') }}
                   <ArrowUp v-if="sortField === 'name' && sortDirection === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortField === 'name' && sortDirection === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortField !== 'name'" class="w-3 h-3 opacity-50" />
@@ -229,7 +230,7 @@ async function handleDeleteConfirm() {
               <th class="px-4 py-3 cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('groups')">
                 <div class="flex items-center gap-2">
-                  Groups
+                  {{ $t('students.table.groups') }}
                   <ArrowUp v-if="sortField === 'groups' && sortDirection === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortField === 'groups' && sortDirection === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortField !== 'groups'" class="w-3 h-3 opacity-50" />
@@ -238,7 +239,7 @@ async function handleDeleteConfirm() {
               <th class="px-4 py-3 cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('meetIds')">
                 <div class="flex items-center gap-2">
-                  Meet IDs
+                  {{ $t('students.table.meetIds') }}
                   <ArrowUp v-if="sortField === 'meetIds' && sortDirection === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortField === 'meetIds' && sortDirection === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortField !== 'meetIds'" class="w-3 h-3 opacity-50" />
@@ -247,7 +248,7 @@ async function handleDeleteConfirm() {
               <th class="px-4 py-3 text-right cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('sessionCount')">
                 <div class="flex items-center justify-end gap-2">
-                  Sessions
+                  {{ $t('students.table.sessions') }}
                   <ArrowUp v-if="sortField === 'sessionCount' && sortDirection === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortField === 'sessionCount' && sortDirection === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortField !== 'sessionCount'" class="w-3 h-3 opacity-50" />
@@ -256,7 +257,7 @@ async function handleDeleteConfirm() {
               <th class="px-4 py-3 text-right cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('averageAttendancePercent')">
                 <div class="flex items-center justify-end gap-2">
-                  Avg
+                  {{ $t('students.table.avg') }}
                   <Timer class="w-3 h-3" /> %
                   <ArrowUp v-if="sortField === 'averageAttendancePercent' && sortDirection === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortField === 'averageAttendancePercent' && sortDirection === 'desc'"
@@ -267,7 +268,7 @@ async function handleDeleteConfirm() {
               <th class="px-4 py-3 text-right cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('totalAttendancePercent')">
                 <div class="flex items-center justify-end gap-2">
-                  Total
+                  {{ $t('students.table.total') }}
                   <Timer class="w-3 h-3" /> %
                   <ArrowUp v-if="sortField === 'totalAttendancePercent' && sortDirection === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortField === 'totalAttendancePercent' && sortDirection === 'desc'"
@@ -275,7 +276,7 @@ async function handleDeleteConfirm() {
                   <ArrowUpDown v-if="sortField !== 'totalAttendancePercent'" class="w-3 h-3 opacity-50" />
                 </div>
               </th>
-              <th class="px-4 py-3 text-right">Actions</th>
+              <th class="px-4 py-3 text-right">{{ $t('students.table.actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y">
@@ -338,7 +339,7 @@ async function handleDeleteConfirm() {
             </tr>
             <tr v-if="filteredStudents.length === 0">
               <td colspan="8" class="px-4 py-8 text-center text-muted-foreground">
-                No students found matching your search.
+                {{ $t('students.noStudents') }}
               </td>
             </tr>
           </tbody>
@@ -350,8 +351,10 @@ async function handleDeleteConfirm() {
     <EditStudentModal :is-open="showEditModal" :student="studentToEdit" :all-groups="allGroupsList"
       @close="showEditModal = false" @save="handleSaveStudent" />
 
-    <ConfirmModal :is-open="showDeleteModal" :title="isBulkDelete ? 'Delete Students' : 'Delete Student'"
-      :message="isBulkDelete ? `Are you sure you want to delete ${selectedStudents.size} students?` : 'Are you sure you want to delete this student?'"
-      confirm-text="Delete" @cancel="showDeleteModal = false" @confirm="handleDeleteConfirm" />
+    <ConfirmModal :is-open="showDeleteModal"
+      :title="isBulkDelete ? $t('students.deleteModal.bulkTitle') : $t('students.deleteModal.title')"
+      :message="isBulkDelete ? $t('students.deleteModal.bulkMessage', { count: selectedStudents.size }) : $t('students.deleteModal.message')"
+      :confirm-text="$t('students.deleteModal.confirm')" @cancel="showDeleteModal = false"
+      @confirm="handleDeleteConfirm" />
   </div>
 </template>

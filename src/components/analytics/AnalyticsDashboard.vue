@@ -1,8 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { QrCode, Copy, Search, ChevronDown, ChevronRight } from 'lucide-vue-next';
 import QrCodeModal from '../groups/QrCodeModal.vue';
 import { toast } from '../../services/toast';
+
+const { t } = useI18n();
 
 const props = defineProps({
   stats: { type: Array, default: () => [] },
@@ -98,11 +101,11 @@ const groupedStats = computed(() => {
 
   // Return as array of sections for easy iteration
   return [
-    { title: '4th Course', items: groups[4], id: 'course-4' },
-    { title: '3rd Course', items: groups[3], id: 'course-3' },
-    { title: '2nd Course', items: groups[2], id: 'course-2' },
-    { title: '1st Course', items: groups[1], id: 'course-1' },
-    { title: 'Other Meets', items: groups.other, id: 'other' }
+    { title: '4th Course', items: groups[4], id: 'course-4', key: 'course4' },
+    { title: '3rd Course', items: groups[3], id: 'course-3', key: 'course3' },
+    { title: '2nd Course', items: groups[2], id: 'course-2', key: 'course2' },
+    { title: '1st Course', items: groups[1], id: 'course-1', key: 'course1' },
+    { title: 'Other Meets', items: groups.other, id: 'other', key: 'other' }
   ].filter(section => section.items.length > 0);
 });
 
@@ -118,10 +121,10 @@ function openQrCode(meetId) {
 async function copyMeetId(meetId) {
   try {
     await navigator.clipboard.writeText(meetId);
-    toast.success('Meet ID copied to clipboard');
+    toast.success(t('analytics.toast.copySuccess'));
   } catch (e) {
     console.error('Failed to copy:', e);
-    toast.error('Failed to copy Meet ID');
+    toast.error(t('analytics.toast.copyError'));
   }
 }
 
@@ -131,10 +134,10 @@ defineExpose({ refresh: () => emit('refresh') });
 <template>
   <div class="space-y-8">
     <div class="flex items-center justify-between">
-      <h2 class="text-2xl font-bold tracking-tight">Analytics Dashboard</h2>
+      <h2 class="text-2xl font-bold tracking-tight">{{ $t('analytics.title') }}</h2>
       <div class="relative w-64">
         <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-        <input v-model="searchQuery" placeholder="Search meets..."
+        <input v-model="searchQuery" :placeholder="$t('analytics.searchPlaceholder')"
           class="pl-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" />
       </div>
     </div>
@@ -145,7 +148,7 @@ defineExpose({ refresh: () => emit('refresh') });
 
     <template v-else>
       <div v-if="groupedStats.length === 0" class="text-center py-12 text-muted-foreground">
-        No analytics data available. Upload some files to get started.
+        {{ $t('analytics.noData') }}
       </div>
 
       <div v-for="section in groupedStats" :key="section.id" class="space-y-4">
@@ -155,7 +158,7 @@ defineExpose({ refresh: () => emit('refresh') });
               class="w-4 h-4 text-muted-foreground" />
             <ChevronDown v-else class="w-4 h-4 text-muted-foreground" />
           </div>
-          <h3 class="text-lg font-semibold text-muted-foreground">{{ section.title }}</h3>
+          <h3 class="text-lg font-semibold text-muted-foreground">{{ $t(`analytics.sections.${section.key}`) }}</h3>
 
           <div v-if="collapsedSections.has(section.id) && !searchQuery"
             class="ml-2 px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground rounded-full">
@@ -169,30 +172,33 @@ defineExpose({ refresh: () => emit('refresh') });
           class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div v-for="stat in section.items" :key="stat.meetId"
             class="rounded-xl border bg-card text-card-foreground shadow hover:shadow-lg transition-all duration-200 cursor-pointer group relative overflow-hidden"
-            @click="openDetails(stat)" title="Click to view detailed analytics">
+            @click="openDetails(stat)" :title="$t('analytics.card.tooltips.viewDetails')">
             <div class="p-6 space-y-4">
               <div class="flex items-start justify-between">
                 <div class="space-y-1">
-                  <h3 class="font-semibold leading-none tracking-tight flex items-center gap-2" title="Group Name">
+                  <h3 class="font-semibold leading-none tracking-tight flex items-center gap-2"
+                    :title="$t('analytics.card.tooltips.groupName')">
                     {{ stat.displayName || stat.meetId }}
                     <span v-if="stat.teacherName"
                       class="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full"
-                      title="Teacher">
+                      :title="$t('analytics.card.tooltips.teacher')">
                       {{ stat.teacherName }}
                     </span>
                   </h3>
-                  <div class="flex items-center gap-2 text-sm text-muted-foreground" title="Meet ID">
+                  <div class="flex items-center gap-2 text-sm text-muted-foreground"
+                    :title="$t('analytics.card.tooltips.meetId')">
                     {{ stat.meetId }}
                     <button @click.stop="copyMeetId(stat.meetId)"
                       class="p-1 hover:bg-muted rounded-full transition-colors opacity-0 group-hover:opacity-100"
-                      title="Copy Meet ID">
+                      :title="$t('analytics.card.tooltips.copyMeetId')">
                       <Copy class="w-3 h-3" />
                     </button>
                   </div>
                 </div>
                 <div class="flex gap-1">
                   <button @click.stop="openQrCode(stat.meetId)"
-                    class="p-2 hover:bg-muted rounded-full transition-colors" title="Show QR Code">
+                    class="p-2 hover:bg-muted rounded-full transition-colors"
+                    :title="$t('analytics.card.tooltips.showQr')">
                     <QrCode class="w-4 h-4 text-muted-foreground hover:text-foreground" />
                   </button>
                   <div :class="[
@@ -200,23 +206,23 @@ defineExpose({ refresh: () => emit('refresh') });
                     stat.attendancePercentage >= 75 ? 'bg-green-100 text-green-800' :
                       stat.attendancePercentage >= 50 ? 'bg-yellow-100 text-yellow-800' :
                         'bg-red-100 text-red-800'
-                  ]" title="Attendance Percentage (Based on Total Possible Appearances)">
+                  ]" :title="$t('analytics.card.tooltips.attendance')">
                     {{ stat.attendancePercentage }}%
                   </div>
                 </div>
               </div>
 
               <div class="grid grid-cols-3 gap-4 pt-4 border-t">
-                <div title="Total number of sessions held">
-                  <p class="text-sm font-medium text-muted-foreground">Total Sessions</p>
+                <div :title="$t('analytics.card.tooltips.totalSessions')">
+                  <p class="text-sm font-medium text-muted-foreground">{{ $t('analytics.card.totalSessions') }}</p>
                   <p class="text-2xl font-bold">{{ stat.totalSessions }}</p>
                 </div>
-                <div title="Average session duration in minutes">
-                  <p class="text-sm font-medium text-muted-foreground">Avg Duration</p>
+                <div :title="$t('analytics.card.tooltips.avgDuration')">
+                  <p class="text-sm font-medium text-muted-foreground">{{ $t('analytics.card.avgDuration') }}</p>
                   <p class="text-2xl font-bold">{{ stat.avgDuration.toFixed(2) }}m</p>
                 </div>
-                <div title="Active Participants / Total Students in Group">
-                  <p class="text-sm font-medium text-muted-foreground">Participants</p>
+                <div :title="$t('analytics.card.tooltips.participants')">
+                  <p class="text-sm font-medium text-muted-foreground">{{ $t('analytics.card.participants') }}</p>
                   <p class="text-2xl font-bold flex items-baseline gap-1">
                     {{ stat.activeParticipantsCount }}
                     <span class="text-sm font-normal text-muted-foreground">/ {{ stat.uniqueParticipantsCount }}</span>

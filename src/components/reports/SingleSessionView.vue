@@ -136,23 +136,28 @@ function formatTimeHHMM(date) {
         <!-- Metadata Section -->
         <div v-if="stats.metadata" class="bg-card rounded-lg border p-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
             <div>
-                <div class="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">Session Date</div>
+                <div class="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">{{
+                    $t('reports.session.metadata.date') }}</div>
                 <div class="font-medium">{{ formatDate(stats.metadata.date) }}</div>
             </div>
             <div>
-                <div class="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">Filename</div>
+                <div class="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">{{
+                    $t('reports.session.metadata.filename') }}</div>
                 <div class="font-medium truncate" :title="stats.metadata.filename">{{ stats.metadata.filename }}</div>
             </div>
             <div>
-                <div class="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">Uploaded At</div>
+                <div class="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">{{
+                    $t('reports.session.metadata.uploaded') }}</div>
                 <div class="font-medium">{{ new Date(stats.metadata.uploadedAt).toLocaleString() }}</div>
             </div>
             <div>
-                <div class="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">Meeting Code</div>
+                <div class="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">{{
+                    $t('reports.session.metadata.code') }}</div>
                 <div class="font-medium">{{ stats.metadata.meetId }}</div>
             </div>
             <div>
-                <div class="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">Time Range</div>
+                <div class="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">{{
+                    $t('reports.session.metadata.timeRange') }}</div>
                 <div class="font-medium">
                     {{ stats.metadata.startTime ? new Date(stats.metadata.startTime).toLocaleTimeString() : '-' }} -
                     {{ stats.metadata.endTime ? new Date(stats.metadata.endTime).toLocaleTimeString() : '-' }}
@@ -162,7 +167,7 @@ function formatTimeHHMM(date) {
 
         <!-- View Mode Toggle -->
         <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">Session Details</h3>
+            <h3 class="text-lg font-semibold">{{ $t('reports.session.title') }}</h3>
             <div class="flex bg-muted p-1 rounded-lg">
                 <button @click="localViewMode = 'overview'"
                     class="px-3 py-1.5 text-sm font-medium rounded-md transition-all capitalize flex items-center gap-2"
@@ -189,10 +194,12 @@ function formatTimeHHMM(date) {
         <div v-if="localViewMode === 'overview'" class="space-y-4">
             <div class="border rounded-lg p-6">
                 <div class="flex items-center justify-between mb-6">
-                    <h4 class="text-sm font-semibold text-muted-foreground">PARTICIPANT TIMELINE</h4>
+                    <h4 class="text-sm font-semibold text-muted-foreground">{{ $t('reports.session.timeline.title') }}
+                    </h4>
                     <div class="text-sm text-muted-foreground">
-                        Session: {{ formatTimeHHMM(timelineData.startTime) }} - {{ formatTimeHHMM(timelineData.endTime)
-                        }}
+                        {{ $t('reports.session.timeline.session', {
+                            start: formatTimeHHMM(timelineData.startTime), end:
+                                formatTimeHHMM(timelineData.endTime) }) }}
                     </div>
                 </div>
 
@@ -255,10 +262,14 @@ function formatTimeHHMM(date) {
                 <table class="w-full text-sm text-left border-collapse">
                     <thead class="bg-muted/50 text-muted-foreground">
                         <tr>
-                            <th class="border-b h-12 px-4 font-medium text-left">Participant</th>
-                            <th class="border-b h-12 px-4 font-medium text-center">First Seen At</th>
-                            <th class="border-b h-12 px-4 font-medium text-center">Duration</th>
-                            <th class="border-b h-12 px-4 font-medium text-center">Percentage</th>
+                            <th class="border-b h-12 px-4 font-medium text-left">{{
+                                $t('reports.details.table.participant') }}</th>
+                            <th class="border-b h-12 px-4 font-medium text-center">{{
+                                $t('reports.details.table.firstSeen') }}</th>
+                            <th class="border-b h-12 px-4 font-medium text-center">{{
+                                $t('reports.details.table.duration') }}</th>
+                            <th class="border-b h-12 px-4 font-medium text-center">{{
+                                $t('reports.details.table.percentage') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
@@ -268,7 +279,7 @@ function formatTimeHHMM(date) {
                             <td class="p-4 font-medium">{{ participant.name }}</td>
                             <td class="p-4 text-center font-mono text-xs">{{ formatTime(participant.joinTime) }}</td>
                             <td class="p-4 text-center font-mono text-xs">{{ formatDuration(participant.totalDuration)
-                                }}
+                            }}
                             </td>
                             <td class="p-4 text-center">
                                 <div class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium min-w-[3rem]"
@@ -330,7 +341,7 @@ function formatTimeHHMM(date) {
                         <div v-if="day.isSessionDay" class="flex flex-col gap-1.5">
                             <!-- Session Badge -->
                             <div class="bg-green-500 text-white text-xs font-medium px-2 py-1 rounded">
-                                Session
+                                {{ $t('reports.session.badge') }}
                             </div>
 
                             <!-- Time Range -->
@@ -343,7 +354,7 @@ function formatTimeHHMM(date) {
                             <!-- Participants Count -->
                             <div class="flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400">
                                 <Users class="w-3 h-3" />
-                                {{ day.participantCount }} participants
+                                {{ $t('reports.session.participants', { count: day.participantCount }) }}
                             </div>
                         </div>
                     </div>

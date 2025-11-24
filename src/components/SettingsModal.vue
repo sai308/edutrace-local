@@ -388,7 +388,7 @@ async function executeEraseMembers() {
                         <!-- Duration Limit -->
                         <div class="space-y-2">
                             <label class="text-sm font-medium">{{ $t('settings.general.durationLimit.label') }}</label>
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap gap-2">
                                 <input v-model.number="durationLimit" type="number" min="0"
                                     :placeholder="$t('settings.general.durationLimit.placeholder')"
                                     class="flex-1 px-3 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
@@ -435,7 +435,7 @@ async function executeEraseMembers() {
                             <p v-if="entitySizes.reports > 0" class="text-xs text-muted-foreground">
                                 {{ $t('settings.data.reports.memory') }}: {{ formatBytes(entitySizes.reports) }}
                             </p>
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap gap-2">
                                 <button @click="exportReports"
                                     class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
                                     <Download class="w-4 h-4" />
@@ -466,7 +466,7 @@ async function executeEraseMembers() {
                             <p v-if="entitySizes.groups > 0" class="text-xs text-muted-foreground">
                                 {{ $t('settings.data.groups.memory') }}: {{ formatBytes(entitySizes.groups) }}
                             </p>
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap gap-2">
                                 <button @click="exportGroups"
                                     class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
                                     <Download class="w-4 h-4" />
@@ -497,7 +497,7 @@ async function executeEraseMembers() {
                             <p v-if="entitySizes.marks > 0" class="text-xs text-muted-foreground">
                                 {{ $t('settings.data.marks.memory') }}: {{ formatBytes(entitySizes.marks) }}
                             </p>
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap gap-2">
                                 <button @click="exportMarks"
                                     class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
                                     <Download class="w-4 h-4" />
@@ -554,7 +554,7 @@ async function executeEraseMembers() {
                                     entitySizes.groups +
                                     entitySizes.marks + entitySizes.members) }}
                             </p>
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap gap-2">
                                 <button @click="exportAll"
                                     class="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors">
                                     <Download class="w-4 h-4" />

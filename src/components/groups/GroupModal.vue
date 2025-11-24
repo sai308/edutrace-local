@@ -137,7 +137,7 @@ function handlePaste(event) {
       <div
         class="relative transform overflow-visible bg-card text-left shadow-xl transition-all sm:my-8 w-full max-w-2xl rounded-lg border p-6">
         <div class="flex items-center justify-between border-b pb-4 mb-4">
-          <h3 class="text-lg font-bold">{{ group ? 'Edit Group' : 'Add New Group' }}</h3>
+          <h3 class="text-lg font-bold">{{ group ? $t('groups.modal.editTitle') : $t('groups.modal.addTitle') }}</h3>
           <button @click="emit('close')" class="p-1 hover:bg-muted rounded-md transition-colors">
             <X class="w-4 h-4" />
           </button>
@@ -146,24 +146,27 @@ function handlePaste(event) {
         <div class="space-y-4">
           <!-- Group Name -->
           <div class="space-y-2">
-            <label class="text-sm font-medium">Group Name <span class="text-destructive">*</span></label>
-            <input v-model="formData.name" type="text" placeholder="e.g. CS-101"
+            <label class="text-sm font-medium">{{ $t('groups.modal.name') }} <span
+                class="text-destructive">*</span></label>
+            <input v-model="formData.name" type="text" :placeholder="$t('groups.modal.namePlaceholder')"
               class="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none"
               autofocus />
           </div>
 
           <!-- Course -->
           <div class="space-y-2">
-            <label class="text-sm font-medium">Course (1-4)</label>
-            <input v-model.number="formData.course" type="number" min="1" max="4" placeholder="e.g. 1"
+            <label class="text-sm font-medium">{{ $t('groups.modal.course') }}</label>
+            <input v-model.number="formData.course" type="number" min="1" max="4"
+              :placeholder="$t('groups.modal.coursePlaceholder')"
               class="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
           </div>
 
           <!-- Meet ID with Autocomplete -->
           <div class="space-y-2 relative">
-            <label class="text-sm font-medium">Meet ID (Code) <span class="text-destructive">*</span></label>
+            <label class="text-sm font-medium">{{ $t('groups.modal.meetId') }} <span
+                class="text-destructive">*</span></label>
             <div class="relative">
-              <input v-model="formData.meetId" type="text" placeholder="e.g. abc-defg-hij"
+              <input v-model="formData.meetId" type="text" :placeholder="$t('groups.modal.meetIdPlaceholder')"
                 class="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                 @focus="showMeetIdSuggestions = true" @blur="handleBlur('meetId')" @paste="handlePaste" />
               <button v-if="allMeetIds.length > 0" @click="showMeetIdSuggestions = !showMeetIdSuggestions"
@@ -185,9 +188,9 @@ function handlePaste(event) {
 
           <!-- Teacher Name with Autocomplete -->
           <div class="space-y-2 relative">
-            <label class="text-sm font-medium">Teacher Name (Excluded)</label>
+            <label class="text-sm font-medium">{{ $t('groups.modal.teacher') }}</label>
             <div class="relative">
-              <input v-model="formData.teacher" type="text" placeholder="Optional teacher name"
+              <input v-model="formData.teacher" type="text" :placeholder="$t('groups.modal.teacherPlaceholder')"
                 class="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                 @focus="showTeacherSuggestions = true" @blur="handleBlur('teacher')" />
               <button v-if="allTeachers.length > 0" @click="showTeacherSuggestions = !showTeacherSuggestions"
@@ -211,12 +214,12 @@ function handlePaste(event) {
         <div class="flex justify-end gap-2 pt-4 border-t mt-6">
           <button @click="emit('close')"
             class="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors">
-            Cancel
+            {{ $t('groups.modal.cancel') }}
           </button>
           <button @click="handleSave"
             class="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors">
             <Save class="w-4 h-4" />
-            Save Group
+            {{ $t('groups.modal.save') }}
           </button>
         </div>
       </div>

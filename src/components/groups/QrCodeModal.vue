@@ -2,7 +2,11 @@
 import { ref, watch, nextTick } from 'vue';
 import { X, Download, Copy } from 'lucide-vue-next';
 import QRCode from 'qrcode';
+
 import { toast } from '../../services/toast';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
   isOpen: Boolean,
@@ -12,7 +16,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: 'Join Meet'
+    default: ''
   }
 });
 
@@ -42,7 +46,7 @@ watch(() => props.isOpen, async (isOpen) => {
 
 function copyLink() {
   navigator.clipboard.writeText(meetUrl.value);
-  toast.success('Link copied to clipboard');
+  toast.success(t('qrCode.toast.success'));
 }
 
 function downloadQr() {
@@ -61,7 +65,7 @@ function downloadQr() {
     <div
       class="bg-card w-full max-w-sm rounded-lg shadow-lg border p-6 space-y-4 animate-in zoom-in-95 duration-200 flex flex-col items-center">
       <div class="w-full flex items-center justify-between">
-        <h3 class="text-lg font-bold">{{ title }}</h3>
+        <h3 class="text-lg font-bold">{{ title || $t('qrCode.title') }}</h3>
         <button @click="emit('close')" class="p-1 hover:bg-muted rounded-md transition-colors">
           <X class="w-4 h-4" />
         </button>
@@ -70,7 +74,7 @@ function downloadQr() {
       <div class="bg-white p-2 rounded-lg border shadow-sm">
         <img v-if="qrDataUrl" :src="qrDataUrl" alt="QR Code" class="w-64 h-64" />
         <div v-else class="w-64 h-64 flex items-center justify-center text-muted-foreground">
-          Generating...
+          {{ $t('qrCode.generating') }}
         </div>
       </div>
 
@@ -83,12 +87,12 @@ function downloadQr() {
         <button @click="copyLink"
           class="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
           <Copy class="w-4 h-4" />
-          Copy Link
+          {{ $t('qrCode.copy') }}
         </button>
         <button @click="downloadQr"
           class="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors">
           <Download class="w-4 h-4" />
-          Save Image
+          {{ $t('qrCode.save') }}
         </button>
       </div>
     </div>

@@ -143,5 +143,222 @@
         "marksEraseFailed": "Failed to erase marks",
         "membersErased": "Members erased",
         "membersEraseFailed": "Failed to erase members"
+    },
+    "students": {
+        "title": "Students",
+        "subtitle": "{count} of {total} students",
+        "groupFilter": "Group filter:",
+        "delete": "Delete ({count})",
+        "searchPlaceholder": "Search students or groups...",
+        "table": {
+            "name": "Student Name",
+            "groups": "Groups",
+            "meetIds": "Meet IDs",
+            "sessions": "Sessions",
+            "avg": "Avg",
+            "total": "Total",
+            "actions": "Actions"
+        },
+        "noStudents": "No students found matching your search.",
+        "deleteModal": {
+            "title": "Delete Student",
+            "bulkTitle": "Delete Students",
+            "message": "Are you sure you want to delete this student?",
+            "bulkMessage": "Are you sure you want to delete {count} students?",
+            "confirm": "Delete"
+        },
+        "editModal": {
+            "title": "Edit Student",
+            "name": "Name",
+            "groups": "Groups",
+            "save": "Save",
+            "cancel": "Cancel"
+        }
+    },
+    "groups": {
+        "title": "Groups",
+        "subtitle": "{count} of {total} groups",
+        "searchPlaceholder": "Search groups...",
+        "add": "Add Group",
+        "table": {
+            "name": "Group Name",
+            "course": "Course",
+            "meetId": "Meet ID",
+            "members": "Members",
+            "teacher": "Teacher",
+            "actions": "Actions"
+        },
+        "noGroups": "No groups found. Click \"Add Group\" to create one.",
+        "noMatch": "No groups match your search.",
+        "deleteModal": {
+            "title": "Delete Group",
+            "message": "Are you sure you want to delete this group? This action cannot be undone.",
+            "confirm": "Delete"
+        },
+        "modal": {
+            "addTitle": "Add New Group",
+            "editTitle": "Edit Group",
+            "name": "Group Name",
+            "namePlaceholder": "e.g. CS-101",
+            "course": "Course (1-4)",
+            "coursePlaceholder": "e.g. 1",
+            "meetId": "Meet ID (Code)",
+            "meetIdPlaceholder": "e.g. abc-defg-hij",
+            "teacher": "Teacher Name",
+            "teacherPlaceholder": "Optional teacher name",
+            "save": "Save Group",
+            "cancel": "Cancel"
+        }
+    },
+    "marks": {
+        "title": "Marks",
+        "subtitle": "{count} of {total} marks",
+        "gradeScale": "Grade Scale:",
+        "scales": {
+            "default": "Default",
+            "5point": "5-Point",
+            "100point": "100-Point",
+            "ects": "ECTS"
+        },
+        "filters": "Filters",
+        "searchPlaceholder": "Search across fields...",
+        "searchTitle": "Supported fields: student, group, task",
+        "table": {
+            "added": "Added",
+            "student": "Student",
+            "group": "Group",
+            "task": "Task",
+            "mark": "Mark",
+            "actions": "Actions"
+        },
+        "noMarks": "No marks found. Upload a CSV to get started.",
+        "noMatch": "No marks match your search.",
+        "deleteModal": {
+            "title": "Delete Mark",
+            "message": "Are you sure you want to delete this mark?",
+            "bulkTitle": "Delete Marks",
+            "bulkMessage": "Are you sure you want to delete {count} marks?",
+            "confirm": "Delete"
+        },
+        "tooltips": {
+            "unSynced": "Unsynced",
+            "markAsUnsynced": "Mark as Unsynced",
+            "markAsSynced": "Mark as Synced",
+            "delete": "Delete Mark"
+        },
+        "filterModal": {
+            "title": "Filter Marks",
+            "group": "Group",
+            "allGroups": "All Groups",
+            "status": "Synced Status",
+            "all": "All",
+            "unsynced": "Unsynced Only",
+            "dateFrom": "Added From",
+            "reset": "Reset",
+            "cancel": "Cancel",
+            "apply": "Apply Filters"
+        }
+    },
+    "reports": {
+        "title": "Reports",
+        "subtitle": "{count} of {total} reports",
+        "searchPlaceholder": "Search by meet ID (link)",
+        "selected": "{count} selected",
+        "deleteSelected": "Delete Selected",
+        "activeFilters": "Active filters:",
+        "filterMeetId": "Meet ID: {id}",
+        "filterGroup": "Group: {group}",
+        "table": {
+            "group": "Group",
+            "meetId": "Meet ID",
+            "date": "Date",
+            "participants": "Participants",
+            "filename": "Filename",
+            "uploadedAt": "Uploaded at",
+            "actions": "Actions"
+        },
+        "noReports": "No reports uploaded yet.",
+        "noMatch": "No reports match your filter.",
+        "deleteModal": {
+            "title": "Delete Selected Reports",
+            "message": "Are you sure you want to delete {count} selected reports? This action cannot be undone.",
+            "confirm": "Delete Selected"
+        },
+        "tooltips": {
+            "view": "View Report Details",
+            "delete": "Delete"
+        },
+        "details": {
+            "title": "Report Detailed Analytics",
+            "teacher": "Teacher:",
+            "viewReport": "View Report Details",
+            "table": {
+                "participant": "Participant",
+                "firstSeen": "First Seen At",
+                "duration": "Duration",
+                "percentage": "Percentage",
+                "total": "Total %"
+            },
+            "calendar": {
+                "members": "members",
+                "end": "End:"
+            }
+        },
+        "session": {
+            "title": "Session Details",
+            "metadata": {
+                "date": "Session Date",
+                "filename": "Filename",
+                "uploaded": "Uploaded At",
+                "code": "Meeting Code",
+                "timeRange": "Time Range"
+            },
+            "timeline": {
+                "title": "PARTICIPANT TIMELINE",
+                "session": "Session: {start} - {end}"
+            },
+            "badge": "Session",
+            "participants": "{count} participants"
+        }
+    },
+    "dropZone": {
+        "processing": "Processing files...",
+        "prompt": "Drop CSV files here",
+        "reportsPrompt": "Drop Attendance Reports",
+        "marksPrompt": "Drop Marks Reports",
+        "hint": "Drag & drop CSV files here, or click to select"
+    },
+    "analytics": {
+        "title": "Analytics Dashboard",
+        "searchPlaceholder": "Search meets...",
+        "noData": "No analytics data available. Upload some files to get started.",
+        "sections": {
+            "course4": "4th Course",
+            "course3": "3rd Course",
+            "course2": "2nd Course",
+            "course1": "1st Course",
+            "other": "Other Meets"
+        },
+        "card": {
+            "totalSessions": "Total Sessions",
+            "avgDuration": "Avg Duration",
+            "participants": "Participants",
+            "tooltips": {
+                "groupName": "Group Name",
+                "teacher": "Teacher",
+                "meetId": "Meet ID",
+                "copyMeetId": "Copy Meet ID",
+                "showQr": "Show QR Code",
+                "attendance": "Attendance Percentage (Based on Total Possible Appearances)",
+                "totalSessions": "Total number of sessions held",
+                "avgDuration": "Average session duration in minutes",
+                "participants": "Active Participants / Total Students in Group",
+                "viewDetails": "Click to view detailed analytics"
+            }
+        },
+        "toast": {
+            "copySuccess": "Meet ID copied to clipboard",
+            "copyError": "Failed to copy Meet ID"
+        }
     }
 }

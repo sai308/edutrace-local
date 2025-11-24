@@ -50,10 +50,11 @@ function onFileSelect(event) {
 
       <div class="space-y-1">
         <h3 class="font-semibold text-lg">
-          {{ isProcessing ? 'Processing files...' : prompt }}
+          {{ isProcessing ? $t('dropZone.processing') : (prompt === 'Drop CSV files here' ? $t('dropZone.prompt') :
+          prompt) }}
         </h3>
         <p class="text-sm text-muted-foreground">
-          Drag & drop CSV files here, or click to select
+          {{ $t('dropZone.hint') }}
         </p>
       </div>
     </div>

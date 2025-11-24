@@ -114,22 +114,24 @@ function openQrModal(meetId) {
   <div class="space-y-6">
     <div class="flex items-center justify-between gap-4">
       <div class="flex items-center gap-4">
-        <h2 class="text-2xl font-bold tracking-tight">Groups</h2>
-        <span class="text-muted-foreground text-sm">{{ filteredGroups.length }} of {{ groups.length }} groups</span>
+        <h2 class="text-2xl font-bold tracking-tight">{{ $t('groups.title') }}</h2>
+        <span class="text-muted-foreground text-sm">{{ $t('groups.subtitle', {
+          count: filteredGroups.length, total:
+            groups.length }) }}</span>
       </div>
 
       <div class="flex items-center gap-4 w-full md:w-auto">
         <!-- Search -->
         <div class="relative w-full md:w-64">
           <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <input v-model="searchQuery" placeholder="Search groups..."
+          <input v-model="searchQuery" :placeholder="$t('groups.searchPlaceholder')"
             class="pl-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
         </div>
 
         <button @click="openCreateModal"
           class="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors whitespace-nowrap">
           <Plus class="w-4 h-4" />
-          Add Group
+          {{ $t('groups.add') }}
         </button>
       </div>
     </div>
@@ -144,7 +146,7 @@ function openQrModal(meetId) {
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
                 @click="handleSort('name')">
                 <div class="flex items-center gap-1">
-                  Group Name
+                  {{ $t('groups.table.name') }}
                   <ArrowUp v-if="sortField === 'name' && sortDirection === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortField === 'name' && sortDirection === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortField !== 'name'" class="w-3 h-3 opacity-50" />
@@ -154,7 +156,7 @@ function openQrModal(meetId) {
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
                 @click="handleSort('course')">
                 <div class="flex items-center gap-1">
-                  Course
+                  {{ $t('groups.table.course') }}
                   <ArrowUp v-if="sortField === 'course' && sortDirection === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortField === 'course' && sortDirection === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortField !== 'course'" class="w-3 h-3 opacity-50" />
@@ -164,7 +166,7 @@ function openQrModal(meetId) {
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
                 @click="handleSort('meetId')">
                 <div class="flex items-center gap-1">
-                  Meet ID
+                  {{ $t('groups.table.meetId') }}
                   <ArrowUp v-if="sortField === 'meetId' && sortDirection === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortField === 'meetId' && sortDirection === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortField !== 'meetId'" class="w-3 h-3 opacity-50" />
@@ -174,7 +176,7 @@ function openQrModal(meetId) {
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
                 @click="handleSort('members')">
                 <div class="flex items-center gap-1">
-                  Members
+                  {{ $t('groups.table.members') }}
                   <ArrowUp v-if="sortField === 'members' && sortDirection === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortField === 'members' && sortDirection === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortField !== 'members'" class="w-3 h-3 opacity-50" />
@@ -184,19 +186,20 @@ function openQrModal(meetId) {
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none"
                 @click="handleSort('teacher')">
                 <div class="flex items-center gap-1">
-                  Teacher (Excluded)
+                  {{ $t('groups.table.teacher') }}
                   <ArrowUp v-if="sortField === 'teacher' && sortDirection === 'asc'" class="w-3 h-3" />
                   <ArrowDown v-if="sortField === 'teacher' && sortDirection === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortField !== 'teacher'" class="w-3 h-3 opacity-50" />
                 </div>
               </th>
-              <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
+              <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">{{
+                $t('groups.table.actions') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="filteredGroups.length === 0">
               <td colspan="6" class="p-8 text-center text-muted-foreground">
-                {{ searchQuery ? 'No groups match your search.' : 'No groups found. Click "Add Group" to create one.' }}
+                {{ searchQuery ? $t('groups.noMatch') : $t('groups.noGroups') }}
               </td>
             </tr>
             <tr v-for="(group, index) in filteredGroups" :key="group.id"
@@ -236,8 +239,8 @@ function openQrModal(meetId) {
     <GroupModal :is-open="showGroupModal" :group="selectedGroup" :all-meet-ids="allMeetIds" :all-teachers="allTeachers"
       @close="showGroupModal = false" @save="handleSaveGroup" />
 
-    <ConfirmModal :is-open="showDeleteModal" title="Delete Group"
-      message="Are you sure you want to delete this group? This action cannot be undone." confirm-text="Delete"
+    <ConfirmModal :is-open="showDeleteModal" :title="$t('groups.deleteModal.title')"
+      :message="$t('groups.deleteModal.message')" :confirm-text="$t('groups.deleteModal.confirm')"
       @cancel="showDeleteModal = false" @confirm="handleDeleteConfirm" />
 
     <QrCodeModal :is-open="showQrModal" :meet-id="qrMeetId" @close="showQrModal = false" />
