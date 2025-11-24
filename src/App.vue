@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { Logs, LayoutDashboard, File, Settings, Users, UserRoundSearch, Star } from 'lucide-vue-next';
 import SettingsModal from './components/SettingsModal.vue';
 import ToastContainer from './components/ToastContainer.vue';
+import AppFooter from './components/AppFooter.vue';
 import { useMeets } from './composables/useMeets';
 
 // State
@@ -80,7 +81,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-background text-foreground transition-colors duration-300">
+  <div class="min-h-screen bg-background text-foreground transition-colors duration-300 flex flex-col">
     <!-- Header -->
     <header class="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div class="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -143,6 +144,9 @@ onUnmounted(() => {
         </Transition>
       </router-view>
     </main>
+
+    <!-- Footer -->
+    <AppFooter />
 
     <!-- Settings Modal -->
     <SettingsModal :is-open="showSettings" @close="showSettings = false" @refresh="handleSettingsRefresh" />

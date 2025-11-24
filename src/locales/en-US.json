@@ -360,5 +360,10 @@
             "copySuccess": "Meet ID copied to clipboard",
             "copyError": "Failed to copy Meet ID"
         }
+    },
+    "footer": {
+        "about": "About",
+        "guide": "Guide",
+        "repo": "GitHub"
     }
 }
