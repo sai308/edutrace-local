@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Trash2, Eye, Calendar, Clock, ArrowUp, ArrowDown, ArrowUpDown, Search, X } from 'lucide-vue-next';
 import ConfirmModal from '../ConfirmModal.vue';
+import { useQuerySync } from '../../composables/useQuerySync';
 
 const props = defineProps({
   meets: {
@@ -22,36 +23,20 @@ const emit = defineEmits(['view-details', 'delete-meet', 'bulk-delete']);
 const router = useRouter();
 const route = useRoute();
 
-const searchQuery = ref(route.query.search || '');
-const sortKey = ref(route.query.sort || 'date'); // 'meetId', 'date', 'filename', 'uploadedAt'
-const sortOrder = ref(route.query.order || 'desc'); // 'asc', 'desc'
+const searchQuery = ref('');
+const sortKey = ref('date'); // 'meetId', 'date', 'filename', 'uploadedAt'
+const sortOrder = ref('desc'); // 'asc', 'desc'
 const selectedIds = ref(new Set());
 const showBulkDeleteConfirm = ref(false);
 const selectedMeetId = ref(null); // For filtering by meetId
 const selectedGroup = ref(null); // For filtering by group
 
-// Sync with URL
-watch(() => route.query, (newQuery) => {
-  if (newQuery.search !== undefined && newQuery.search !== searchQuery.value) {
-    searchQuery.value = newQuery.search;
-  }
-  if (newQuery.sort && newQuery.sort !== sortKey.value) {
-    sortKey.value = newQuery.sort;
-  }
-  if (newQuery.order && newQuery.order !== sortOrder.value) {
-    sortOrder.value = newQuery.order;
-  }
-});
-
-watch([searchQuery, sortKey, sortOrder], () => {
-  router.replace({
-    query: {
-      ...route.query,
-      search: searchQuery.value || undefined,
-      sort: sortKey.value,
-      order: sortOrder.value
-    }
-  });
+useQuerySync({
+  search: searchQuery,
+  sort: sortKey,
+  order: sortOrder,
+  meetId: selectedMeetId,
+  group: selectedGroup
 });
 
 // Helpers

@@ -5,6 +5,7 @@ import DropZone from '../DropZone.vue';
 import GroupModal from '../groups/GroupModal.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import MarksFilterModal from './MarksFilterModal.vue';
+import { useQuerySync } from '../../composables/useQuerySync';
 import { Calendar, Search, Clock, Trash2, CircleCheckBig, Filter, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -23,11 +24,15 @@ const selectedFormat = ref('raw'); // 'raw', '5-scale', '100-scale', 'ects'
 
 // Advanced Filters
 const showFilterModal = ref(false);
-const activeFilters = ref({
-    synced: 'unsynced',
-    dateFrom: '',
-    group: null
-});
+const filterSynced = ref('unsynced');
+const filterDateFrom = ref('');
+const filterGroup = ref(null);
+
+const activeFilters = computed(() => ({
+    synced: filterSynced.value,
+    dateFrom: filterDateFrom.value,
+    group: filterGroup.value
+}));
 
 const activeFilterCount = computed(() => {
     let count = 0;
@@ -40,6 +45,16 @@ const activeFilterCount = computed(() => {
 // Sorting
 const sortField = ref('createdAt'); // Default sort by Added
 const sortDirection = ref('desc');
+
+useQuerySync({
+    search: searchQuery,
+    format: selectedFormat,
+    synced: filterSynced,
+    dateFrom: filterDateFrom,
+    group: filterGroup,
+    sort: sortField,
+    order: sortDirection
+});
 
 // Selection
 const selectedMarks = ref(new Set());
@@ -207,7 +222,9 @@ function handleDelete() {
 }
 
 function applyFilters(filters) {
-    activeFilters.value = filters;
+    filterSynced.value = filters.synced;
+    filterDateFrom.value = filters.dateFrom;
+    filterGroup.value = filters.group;
 }
 
 function formatDate(isoString) {
@@ -319,7 +336,7 @@ function getFormattedMark(mark) {
                 <!-- Format Selector with Label (Custom Dropdown) -->
                 <div class="relative flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card">
                     <span class="text-xs font-medium text-muted-foreground whitespace-nowrap">{{ $t('marks.gradeScale')
-                    }}</span>
+                        }}</span>
 
                     <div class="relative">
                         <button @click="showFormatDropdown = !showFormatDropdown"

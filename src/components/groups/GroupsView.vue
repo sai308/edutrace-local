@@ -4,6 +4,7 @@ import { Plus, Trash2, Edit2, QrCode, Search, ArrowUp, ArrowDown, ArrowUpDown } 
 import GroupModal from './GroupModal.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import QrCodeModal from './QrCodeModal.vue';
+import { useQuerySync } from '../../composables/useQuerySync';
 
 const props = defineProps({
   groups: { type: Array, default: () => [] },
@@ -26,6 +27,12 @@ const qrMeetId = ref('');
 const searchQuery = ref('');
 const sortField = ref('name');
 const sortDirection = ref('asc');
+
+useQuerySync({
+  search: searchQuery,
+  sort: sortField,
+  order: sortDirection
+});
 
 const filteredGroups = computed(() => {
   let result = [...props.groups];
@@ -117,7 +124,8 @@ function openQrModal(meetId) {
         <h2 class="text-2xl font-bold tracking-tight">{{ $t('groups.title') }}</h2>
         <span class="text-muted-foreground text-sm">{{ $t('groups.subtitle', {
           count: filteredGroups.length, total:
-            groups.length }) }}</span>
+            groups.length
+        }) }}</span>
       </div>
 
       <div class="flex items-center gap-4 w-full md:w-auto">

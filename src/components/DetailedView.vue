@@ -59,12 +59,12 @@ watch(viewMode, (newView) => {
   });
 });
 
-// Force table view for Report Context
-watch(isReportContext, (isReport) => {
-  if (isReport) {
-    viewMode.value = 'table';
-  }
-}, { immediate: true });
+// Force table view for Report Context - REMOVED to allow deep linking
+// watch(isReportContext, (isReport) => {
+//   if (isReport) {
+//     viewMode.value = 'table';
+//   }
+// }, { immediate: true });
 
 // ... (rest of script)
 

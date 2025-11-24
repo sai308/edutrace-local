@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { Search, ArrowUpDown, ArrowUp, ArrowDown, X, Timer, Edit2, Trash2 } from 'lucide-vue-next';
 import EditStudentModal from './EditStudentModal.vue';
 import ConfirmModal from '../ConfirmModal.vue';
+import { useQuerySync } from '../../composables/useQuerySync';
 
 const props = defineProps({
   students: { type: Array, default: () => [] },
@@ -18,6 +19,13 @@ const searchQuery = ref('');
 const selectedGroup = ref(null);
 const sortField = ref('name');
 const sortDirection = ref('asc');
+
+useQuerySync({
+  search: searchQuery,
+  group: selectedGroup,
+  sort: sortField,
+  order: sortDirection
+});
 
 const selectedStudents = ref(new Set()); // IDs of selected students
 

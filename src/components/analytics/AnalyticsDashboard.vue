@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { QrCode, Copy, Search, ChevronDown, ChevronRight } from 'lucide-vue-next';
 import QrCodeModal from '../groups/QrCodeModal.vue';
 import { toast } from '../../services/toast';
+import { useQuerySync } from '../../composables/useQuerySync';
 
 const { t } = useI18n();
 
@@ -18,6 +19,8 @@ const emit = defineEmits(['view-details', 'refresh']);
 const showQrModal = ref(false);
 const selectedMeetId = ref(null);
 const searchQuery = ref('');
+useQuerySync({ search: searchQuery });
+
 const collapsedSections = ref(new Set());
 
 // Load collapsed state from session storage
