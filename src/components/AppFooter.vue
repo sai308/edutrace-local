@@ -8,17 +8,20 @@ import { Github, Book, Info } from 'lucide-vue-next';
       <div class="text-sm text-muted-foreground">
         &copy; {{ new Date().getFullYear() }} {{ $t('app.title') }}. All rights reserved.
       </div>
-      
+
       <div class="flex items-center gap-6">
-        <a href="#" class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <router-link to="/about"
+          class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <Info class="w-4 h-4" />
           {{ $t('footer.about') }}
-        </a>
-        <a href="#" class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        </router-link>
+        <router-link to="/guide"
+          class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <Book class="w-4 h-4" />
           {{ $t('footer.guide') }}
-        </a>
-        <a href="https://github.com/sai308/edutrace-local" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        </router-link>
+        <a href="https://github.com/sai308/edutrace-local" target="_blank" rel="noopener noreferrer"
+          class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <Github class="w-4 h-4" />
           {{ $t('footer.repo') }}
         </a>

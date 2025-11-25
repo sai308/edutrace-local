@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { Logs, LayoutDashboard, File, Settings, Users, UserRoundSearch, Star } from 'lucide-vue-next';
+import { Logs, LayoutDashboard, File, Settings, Users, UserRoundSearch, Star, BookOpen } from 'lucide-vue-next';
 import SettingsModal from './components/SettingsModal.vue';
 import ToastContainer from './components/ToastContainer.vue';
 import AppFooter from './components/AppFooter.vue';
@@ -14,8 +14,28 @@ const dashboardRef = ref(null);
 
 const { meets, groupsMap, loadMeets } = useMeets();
 
+// First-visit redirect
+const VISITED_KEY = 'edutrace_has_visited';
+
+function checkFirstVisit() {
+  const hasVisited = localStorage.getItem(VISITED_KEY);
+
+  if (!hasVisited) {
+    // Mark as visited
+    localStorage.setItem(VISITED_KEY, 'true');
+
+    // Redirect to about page if not already there
+    if (route.path !== '/about') {
+      router.push('/about');
+    }
+  }
+}
+
 // Load initial data
-onMounted(loadMeets);
+onMounted(() => {
+  loadMeets();
+  checkFirstVisit();
+});
 
 function refreshDashboard() {
   if (dashboardRef.value && typeof dashboardRef.value.refresh === 'function') {
