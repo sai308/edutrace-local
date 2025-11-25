@@ -274,7 +274,7 @@ export function useStudents() {
 
     async function deleteStudent(id) {
         try {
-            await repository.deleteMember(id);
+            await repository.hideMember(id);
             await loadData();
             toast.success('Student deleted');
         } catch (e) {
@@ -286,7 +286,7 @@ export function useStudents() {
 
     async function bulkDeleteStudents(ids) {
         try {
-            await repository.deleteMembers(ids);
+            await repository.hideMembers(ids);
             await loadData();
             toast.success('Selected students deleted');
         } catch (e) {

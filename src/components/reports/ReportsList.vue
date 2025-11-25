@@ -1,10 +1,14 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { repository } from '../../services/repository';
 
+import { useI18n } from 'vue-i18n';
 import { Trash2, Eye, Calendar, Clock, ArrowUp, ArrowDown, ArrowUpDown, Search, X } from 'lucide-vue-next';
 import ConfirmModal from '../ConfirmModal.vue';
+import ColumnPicker from '../ColumnPicker.vue';
 import { useQuerySync } from '../../composables/useQuerySync';
+import { useColumnVisibility } from '../../composables/useColumnVisibility';
 
 import { useFormatters } from '../../composables/useFormatters';
 import { useSort } from '../../composables/useSort';
@@ -27,15 +31,34 @@ const emit = defineEmits(['view-details', 'delete-meet', 'bulk-delete']);
 
 const router = useRouter();
 const route = useRoute();
-const { formatDate, formatTime, formatCompactDate } = useFormatters();
+const { formatDate, formatTime, formatCompactDate, formatDuration } = useFormatters();
 const { sortField: sortKey, sortDirection: sortOrder, toggleSort } = useSort('date', 'desc');
 const { handleMeetIdPasteUtil } = useInputHandlers();
+const { t } = useI18n();
 
 const searchQuery = ref('');
 const selectedIds = ref(new Set());
 const showBulkDeleteConfirm = ref(false);
+const durationLimit = ref(0);
+
+onMounted(async () => {
+  durationLimit.value = await repository.getDurationLimit();
+});
 const selectedMeetId = ref(null); // For filtering by meetId
 const selectedGroup = ref(null); // For filtering by group
+
+// Column visibility setup
+const columns = computed(() => [
+  { id: 'group', label: t('reports.table.group'), defaultVisible: true },
+  { id: 'meetId', label: t('reports.table.meetId'), defaultVisible: true },
+  { id: 'date', label: t('reports.table.date'), defaultVisible: true },
+  { id: 'participants', label: t('reports.table.participants'), defaultVisible: true },
+  { id: 'duration', label: t('reports.table.duration'), defaultVisible: true },
+  { id: 'filename', label: t('reports.table.filename'), defaultVisible: false },
+  { id: 'uploadedAt', label: t('reports.table.uploadedAt'), defaultVisible: true }
+]);
+
+const { visibleColumns, toggleColumn, resetColumns, isColumnVisible } = useColumnVisibility('reports', columns.value);
 
 useQuerySync({
   search: searchQuery,
@@ -54,6 +77,50 @@ function getGroupName(meetId) {
 function getDisplayName(meetId) {
   const group = props.groupsMap[meetId];
   return group ? `${group.name} (${meetId})` : meetId;
+}
+
+function getMeetDuration(meet) {
+  if (meet.participants && meet.participants.length > 0) {
+    // Try to calculate from participants first
+    const times = meet.participants
+      .filter(p => p.joinTime)
+      .map(p => {
+        const joinDate = new Date(p.joinTime);
+        // Check if date is valid
+        if (isNaN(joinDate.getTime())) return null;
+        return {
+          start: joinDate.getTime(),
+          end: joinDate.getTime() + (p.duration * 1000)
+        };
+      })
+      .filter(t => t !== null);
+
+    if (times.length > 0) {
+      const minStart = Math.min(...times.map(t => t.start));
+      const maxEnd = Math.max(...times.map(t => t.end));
+      let duration = (maxEnd - minStart) / 1000;
+
+      // Apply duration limit if set
+      if (durationLimit.value > 0 && duration > durationLimit.value * 60) {
+        duration = durationLimit.value * 60;
+      }
+      return duration;
+    }
+  }
+
+  // Fallback to metadata
+  if (meet.startTime && meet.endTime) {
+    const start = new Date(meet.startTime).getTime();
+    const end = new Date(meet.endTime).getTime();
+    let duration = (end - start) / 1000;
+
+    // Apply duration limit if set
+    if (durationLimit.value > 0 && duration > durationLimit.value * 60) {
+      duration = durationLimit.value * 60;
+    }
+    return duration;
+  }
+  return 0;
 }
 
 // Sorting & Filtering
@@ -92,6 +159,9 @@ const filteredMeets = computed(() => {
     } else if (sortKey.value === 'date') {
       valA = new Date(a.date).getTime();
       valB = new Date(b.date).getTime();
+    } else if (sortKey.value === 'duration') {
+      valA = getMeetDuration(a);
+      valB = getMeetDuration(b);
     } else if (sortKey.value === 'filename') {
       valA = a.filename.toLowerCase();
       valB = b.filename.toLowerCase();
@@ -157,7 +227,7 @@ function handleSearchPaste(event) {
 <template>
   <div class="space-y-4">
     <!-- Main Header Row -->
-    <div class="flex items-center justify-between gap-4">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div class="flex items-center gap-4">
         <h2 class="text-2xl font-bold tracking-tight">{{ $t('reports.title') }}</h2>
         <span class="text-muted-foreground text-sm">{{ $t('reports.subtitle', {
@@ -166,24 +236,27 @@ function handleSearchPaste(event) {
         }) }}</span>
       </div>
 
-      <div class="flex items-center gap-2">
-        <!-- Search -->
-        <div class="relative w-full md:w-64">
-          <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <input v-model="searchQuery" :placeholder="$t('reports.searchPlaceholder')" @paste="handleSearchPaste"
-            class="pl-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
-        </div>
-
-        <!-- Bulk Delete -->
-        <div v-if="selectedIds.size > 0" class="flex items-center gap-2 animate-in fade-in slide-in-from-right-4">
-          <span class="text-sm text-muted-foreground">{{ $t('reports.selected', { count: selectedIds.size }) }}</span>
-          <button @click="handleBulkDelete"
-            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md transition-colors">
-            <Trash2 class="w-4 h-4" />
-            {{ $t('reports.deleteSelected') }}
-          </button>
-        </div>
+      <div v-if="selectedIds.size > 0"
+        class="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 w-full sm:w-auto">
+        <span class="text-sm text-muted-foreground">{{ $t('reports.selected', { count: selectedIds.size }) }}</span>
+        <button @click="handleBulkDelete"
+          class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md transition-colors w-full sm:w-auto">
+          <Trash2 class="w-4 h-4" />
+          {{ $t('reports.deleteSelected') }}
+        </button>
       </div>
+    </div>
+
+    <!-- Search Row -->
+    <div class="flex items-center gap-2">
+      <div class="relative flex-1">
+        <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+        <input v-model="searchQuery" :placeholder="$t('reports.searchPlaceholder')" @paste="handleSearchPaste"
+          class="pl-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+      </div>
+
+      <ColumnPicker :columns="columns" :visible-columns="visibleColumns" @toggle-column="toggleColumn"
+        @reset="resetColumns" />
     </div>
 
     <!-- Active Filters Row -->
@@ -214,7 +287,7 @@ function handleSearchPaste(event) {
                 <input type="checkbox" :checked="allSelected" @change="toggleSelectAll"
                   class="rounded border-gray-300 text-primary focus:ring-primary" />
               </th>
-              <th
+              <th v-if="isColumnVisible('group')"
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('group')">
                 <div class="flex items-center gap-1">
@@ -224,7 +297,7 @@ function handleSearchPaste(event) {
                   <ArrowUpDown v-if="sortKey !== 'group'" class="w-3 h-3 opacity-50" />
                 </div>
               </th>
-              <th
+              <th v-if="isColumnVisible('meetId')"
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('meetId')">
                 <div class="flex items-center gap-1">
@@ -234,7 +307,7 @@ function handleSearchPaste(event) {
                   <ArrowUpDown v-if="sortKey !== 'meetId'" class="w-3 h-3 opacity-50" />
                 </div>
               </th>
-              <th
+              <th v-if="isColumnVisible('date')"
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('date')">
                 <div class="flex items-center gap-1">
@@ -244,9 +317,20 @@ function handleSearchPaste(event) {
                   <ArrowUpDown v-if="sortKey !== 'date'" class="w-3 h-3 opacity-50" />
                 </div>
               </th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{{
-                $t('reports.table.participants') }}</th>
-              <th
+              <th v-if="isColumnVisible('participants')"
+                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{{
+                  $t('reports.table.participants') }}</th>
+              <th v-if="isColumnVisible('duration')"
+                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                @click="toggleSort('duration')">
+                <div class="flex items-center gap-1">
+                  {{ $t('reports.table.duration') }}
+                  <ArrowUp v-if="sortKey === 'duration' && sortOrder === 'asc'" class="w-3 h-3" />
+                  <ArrowDown v-if="sortKey === 'duration' && sortOrder === 'desc'" class="w-3 h-3" />
+                  <ArrowUpDown v-if="sortKey !== 'duration'" class="w-3 h-3 opacity-50" />
+                </div>
+              </th>
+              <th v-if="isColumnVisible('filename')"
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('filename')">
                 <div class="flex items-center gap-1">
@@ -256,7 +340,7 @@ function handleSearchPaste(event) {
                   <ArrowUpDown v-if="sortKey !== 'filename'" class="w-3 h-3 opacity-50" />
                 </div>
               </th>
-              <th
+              <th v-if="isColumnVisible('uploadedAt')"
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('uploadedAt')">
                 <div class="flex items-center gap-1">
@@ -283,7 +367,7 @@ function handleSearchPaste(event) {
                 <input type="checkbox" :checked="selectedIds.has(meet.id)" @change="toggleSelection(meet.id)"
                   class="rounded border-gray-300 text-primary focus:ring-primary" />
               </td>
-              <td class="p-4">
+              <td v-if="isColumnVisible('group')" class="p-4">
                 <button v-if="getGroupName(meet.meetId) !== '-'" @click="filterByGroup(getGroupName(meet.meetId))"
                   class="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors"
                   :class="{ 'ring-2 ring-primary': selectedGroup === getGroupName(meet.meetId) }">
@@ -291,24 +375,32 @@ function handleSearchPaste(event) {
                 </button>
                 <span v-else class="text-muted-foreground text-xs">-</span>
               </td>
-              <td class="p-4">
+              <td v-if="isColumnVisible('meetId')" class="p-4">
                 <button @click="filterByMeetId(meet.meetId)"
                   class="px-2 py-0.5 rounded-full bg-muted hover:bg-primary/10 hover:text-primary text-xs font-mono font-medium transition-colors border border-transparent hover:border-primary/20"
                   :class="{ 'ring-2 ring-primary bg-primary/10 text-primary': selectedMeetId === meet.meetId }">
                   {{ meet.meetId }}
                 </button>
               </td>
-              <td class="p-4">
+
+              <td v-if="isColumnVisible('date')" class="p-4">
                 <div class="flex items-center gap-2">
                   <Calendar class="w-4 h-4 text-muted-foreground" />
                   {{ formatDate(meet.date) }}
                 </div>
               </td>
-              <td class="p-4">{{ meet.participants.length }}</td>
-              <td class="p-4 text-muted-foreground truncate max-w-[200px]" :title="meet.filename">
+              <td v-if="isColumnVisible('participants')" class="p-4">{{ meet.participants.length }}</td>
+              <td v-if="isColumnVisible('duration')" class="p-4">
+                <div class="flex items-center gap-2">
+                  <Clock class="w-4 h-4 text-muted-foreground" />
+                  {{ formatDuration(getMeetDuration(meet)) }}
+                </div>
+              </td>
+              <td v-if="isColumnVisible('filename')" class="p-4 text-muted-foreground truncate max-w-[200px]"
+                :title="meet.filename">
                 {{ meet.filename }}
               </td>
-              <td class="p-4 text-xs text-muted-foreground">
+              <td v-if="isColumnVisible('uploadedAt')" class="p-4 text-xs text-muted-foreground">
                 <div class="flex flex-col gap-1">
                   <div class="flex items-center gap-1">
                     <Calendar class="w-3 h-3" />

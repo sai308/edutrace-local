@@ -235,7 +235,7 @@ async function handleViewReportForDate(date) {
           <LayoutGrid v-if="mode === 'overview'" class="w-4 h-4" />
           <List v-else-if="mode === 'table'" class="w-4 h-4" />
           <CalendarIcon v-else class="w-4 h-4" />
-          {{ mode }}
+          {{ $t(`views.${mode}`) }}
         </button>
       </div>
     </div>
@@ -262,8 +262,7 @@ async function handleViewReportForDate(date) {
             <div class="flex items-center justify-between border-b pb-2">
               <div class="font-medium">{{ formatDate(date) }}</div>
               <div class="flex items-center gap-2">
-                <Eye
-                  class="w-4 h-4 cursor-pointer text-muted-foreground hover:text-foreground hover:text-primary transition-colors"
+                <Eye class="w-4 h-4 cursor-pointer text-muted-foreground hover:text-primary transition-colors"
                   @click="handleViewReportForDate(date)" :title="$t('reports.details.viewReport')" />
                 <div class="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
                   {{ getSessionDuration(date) }}
@@ -406,4 +405,3 @@ async function handleViewReportForDate(date) {
       :participants="selectedDayDetails.participants" @close="showDayModal = false" />
   </div>
 </template>
-```

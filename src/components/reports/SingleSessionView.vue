@@ -1,10 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue';
-import { List, Calendar as CalendarIcon, Users, Clock, ChevronLeft, ChevronRight } from 'lucide-vue-next';
-import {
-    startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
-    format, addMonths, subMonths, isSameMonth, isSameDay, isToday, parseISO
-} from 'date-fns';
+import { computed, watch } from 'vue';
+import { List, Calendar as CalendarIcon, Users, Clock, ChevronLeft, ChevronRight, ChartBar } from 'lucide-vue-next';
+import { format, parseISO } from 'date-fns';
 import { useFormatters } from '../../composables/useFormatters';
 import { useCalendar } from '../../composables/useCalendar';
 
@@ -34,7 +31,11 @@ const sessionDate = computed(() => {
     return parseISO(props.stats.metadata.date);
 });
 
-// const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+watch(sessionDate, (newDate) => {
+    if (newDate) {
+        currentMonth.value = newDate;
+    }
+}, { immediate: true });
 
 const calendarDays = computed(() => {
     // We need to adapt generateCalendarDays to match the specific logic here (isSessionDay, participantCount)
@@ -62,45 +63,6 @@ const calendarDays = computed(() => {
         participantCount: day.isSessionDay ? props.stats.matrix.length : 0
     }));
 });
-
-// function formatDuration(seconds) {
-//     if (!seconds) return '-';
-//     const h = Math.floor(seconds / 3600);
-//     const m = Math.floor((seconds % 3600) / 60);
-//     if (h > 0) return `${h}h ${m}m`;
-//     return `${m}m`;
-// }
-
-// function formatTime(timeStr) {
-//     if (!timeStr) return '-';
-//     try {
-//         return new Date(timeStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-//     } catch (e) {
-//         return timeStr;
-//     }
-// }
-
-// function formatDate(dateStr) {
-//     if (!dateStr) return '-';
-//     try {
-//         return new Date(dateStr).toLocaleDateString(undefined, {
-//             weekday: 'long',
-//             year: 'numeric',
-//             month: 'long',
-//             day: 'numeric'
-//         });
-//     } catch (e) {
-//         return dateStr;
-//     }
-// }
-
-// function nextMonth() {
-//     currentMonth.value = addMonths(currentMonth.value, 1);
-// }
-
-// function prevMonth() {
-//     currentMonth.value = subMonths(currentMonth.value, 1);
-// }
 
 // Timeline calculations for Overview
 const timelineData = computed(() => {
@@ -184,20 +146,20 @@ function formatTimeHHMM(date) {
                 <button @click="localViewMode = 'overview'"
                     class="px-3 py-1.5 text-sm font-medium rounded-md transition-all capitalize flex items-center gap-2"
                     :class="localViewMode === 'overview' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'">
-                    <Clock class="w-4 h-4" />
-                    Overview
+                    <ChartBar class="w-4 h-4" />
+                    {{ $t('views.overview') }}
                 </button>
                 <button @click="localViewMode = 'table'"
                     class="px-3 py-1.5 text-sm font-medium rounded-md transition-all capitalize flex items-center gap-2"
                     :class="localViewMode === 'table' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'">
                     <List class="w-4 h-4" />
-                    Table
+                    {{ $t('views.table') }}
                 </button>
                 <button @click="localViewMode = 'calendar'"
                     class="px-3 py-1.5 text-sm font-medium rounded-md transition-all capitalize flex items-center gap-2"
                     :class="localViewMode === 'calendar' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'">
                     <CalendarIcon class="w-4 h-4" />
-                    Calendar
+                    {{ $t('views.calendar') }}
                 </button>
             </div>
         </div>
@@ -277,6 +239,8 @@ function formatTimeHHMM(date) {
                         <tr>
                             <th class="border-b h-12 px-4 font-medium text-left">{{
                                 $t('reports.details.table.participant') }}</th>
+                            <th class="border-b h-12 px-4 font-medium text-left">{{
+                                $t('reports.details.table.group') }}</th>
                             <th class="border-b h-12 px-4 font-medium text-center">{{
                                 $t('reports.details.table.firstSeen') }}</th>
                             <th class="border-b h-12 px-4 font-medium text-center">{{
@@ -290,6 +254,8 @@ function formatTimeHHMM(date) {
                             class="hover:bg-muted/50 transition-colors table-row-animate"
                             :style="{ animationDelay: `${index * 0.025}s` }">
                             <td class="p-4 font-medium">{{ participant.name }}</td>
+                            <td class="p-4 text-left text-sm text-muted-foreground">{{ participant.groupName || '-' }}
+                            </td>
                             <td class="p-4 text-center font-mono text-xs">{{ formatTime(participant.joinTime) }}</td>
                             <td class="p-4 text-center font-mono text-xs">{{ formatDuration(participant.totalDuration)
                             }}

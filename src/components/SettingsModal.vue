@@ -388,21 +388,23 @@ async function executeEraseMembers() {
                         <!-- Duration Limit -->
                         <div class="space-y-2">
                             <label class="text-sm font-medium">{{ $t('settings.general.durationLimit.label') }}</label>
-                            <div class="flex flex-wrap gap-2">
+                            <div class="flex flex-col gap-2">
                                 <input v-model.number="durationLimit" type="number" min="0"
                                     :placeholder="$t('settings.general.durationLimit.placeholder')"
-                                    class="flex-1 px-3 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
-                                <button @click="saveDurationLimit"
-                                    class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors">
-                                    {{ $t('settings.general.durationLimit.save') }}
-                                </button>
-                                <button @click="applyDurationLimit"
-                                    class="px-4 py-2 text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-md transition-colors">
-                                    {{ $t('settings.general.durationLimit.applyToAll') }}
-                                </button>
+                                    class="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <button @click="saveDurationLimit"
+                                        class="flex-1 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors">
+                                        {{ $t('settings.general.durationLimit.save') }}
+                                    </button>
+                                    <button @click="applyDurationLimit"
+                                        class="flex-1 px-4 py-2 text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-md transition-colors">
+                                        {{ $t('settings.general.durationLimit.applyToAll') }}
+                                    </button>
+                                </div>
                             </div>
                             <p class="text-xs text-muted-foreground">{{ $t('settings.general.durationLimit.description')
-                            }}</p>
+                                }}</p>
                         </div>
 
                         <!-- Teachers -->

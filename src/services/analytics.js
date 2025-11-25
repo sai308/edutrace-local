@@ -249,7 +249,19 @@ export const analytics = {
 
         const ignoredUsers = await repository.getIgnoredUsers();
         const teachers = await repository.getTeachers();
+        const allMembers = await repository.getAll('members');
         const ignoredSet = new Set([...ignoredUsers, ...teachers]);
+
+        // Create name -> group map
+        const memberGroupMap = new Map();
+        allMembers.forEach(m => {
+            if (m.groupName) {
+                memberGroupMap.set(m.name, m.groupName);
+                if (m.aliases) {
+                    m.aliases.forEach(a => memberGroupMap.set(a, m.groupName));
+                }
+            }
+        });
 
         const date = meet.date;
         const participants = meet.participants.filter(p => !ignoredSet.has(p.name));
@@ -265,6 +277,7 @@ export const analytics = {
             const percentage = Math.round((p.duration / maxDuration) * 100);
             return {
                 name: p.name,
+                groupName: memberGroupMap.get(p.name) || '',
                 joinTime: p.joinTime || null,
                 totalDuration: p.duration,
                 totalPossible: maxDuration,

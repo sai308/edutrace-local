@@ -136,13 +136,13 @@ defineExpose({ refresh: () => emit('refresh') });
 
 <template>
   <div class="space-y-8">
-    <div class="flex items-center justify-between">
-      <h2 class="text-2xl font-bold tracking-tight">{{ $t('analytics.title') }}</h2>
-      <div class="relative w-64">
-        <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-        <input v-model="searchQuery" :placeholder="$t('analytics.searchPlaceholder')"
-          class="pl-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" />
-      </div>
+    <h2 class="text-2xl font-bold tracking-tight">{{ $t('analytics.title') }}</h2>
+
+    <!-- Search Row -->
+    <div class="relative w-full">
+      <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+      <input v-model="searchQuery" :placeholder="$t('analytics.searchPlaceholder')"
+        class="pl-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" />
     </div>
 
     <div v-if="loading" class="flex items-center justify-center h-64">

@@ -1,16 +1,21 @@
 <script setup>
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { toast } from '../../services/toast';
 import DropZone from '../DropZone.vue';
 import GroupModal from '../groups/GroupModal.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import MarksFilterModal from './MarksFilterModal.vue';
+import ColumnPicker from '../ColumnPicker.vue';
 import { useQuerySync } from '../../composables/useQuerySync';
+import { useColumnVisibility } from '../../composables/useColumnVisibility';
 
 import { useFormatters } from '../../composables/useFormatters';
 import { useSort } from '../../composables/useSort';
 import { useMarkFormat } from '../../composables/useMarkFormat';
 import { Calendar, Search, Clock, Trash2, CircleCheckBig, Filter, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from 'lucide-vue-next';
+
+const { t } = useI18n();
 
 const props = defineProps({
     marks: { type: Array, default: () => [] },
@@ -48,6 +53,17 @@ const activeFilterCount = computed(() => {
     if (activeFilters.value.group) count++;
     return count;
 });
+
+// Column visibility setup
+const columns = computed(() => [
+    { id: 'added', label: t('marks.table.added'), defaultVisible: true },
+    { id: 'student', label: t('marks.table.student'), defaultVisible: true },
+    { id: 'group', label: t('marks.table.group'), defaultVisible: true },
+    { id: 'task', label: t('marks.table.task'), defaultVisible: true },
+    { id: 'mark', label: t('marks.table.mark'), defaultVisible: true }
+]);
+
+const { visibleColumns, toggleColumn, resetColumns, isColumnVisible } = useColumnVisibility('marks', columns.value);
 
 // Sorting
 useQuerySync({
@@ -259,8 +275,8 @@ function formatTaskName(taskName) {
         <DropZone :is-processing="isProcessing" @files-dropped="handleFilesDropped"
             :prompt="$t('dropZone.marksPrompt')" />
 
-        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="space-y-1">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="space-y-1 w-full md:w-auto">
                 <div class="flex items-center gap-4">
                     <h2 class="text-2xl font-bold tracking-tight">{{ $t('marks.title') }}</h2>
                     <span class="text-muted-foreground text-sm">{{ $t('marks.subtitle', {
@@ -270,11 +286,11 @@ function formatTaskName(taskName) {
                 </div>
             </div>
 
-            <div class="flex items-center gap-4 w-full md:w-auto">
+            <div class="flex flex-wrap items-center gap-2 md:gap-4 w-full md:w-auto">
                 <!-- Format Selector with Label (Custom Dropdown) -->
                 <div class="relative flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card">
                     <span class="text-xs font-medium text-muted-foreground whitespace-nowrap">{{ $t('marks.gradeScale')
-                    }}</span>
+                        }}</span>
 
                     <div class="relative">
                         <button @click="showFormatDropdown = !showFormatDropdown"
@@ -334,15 +350,20 @@ function formatTaskName(taskName) {
                         {{ activeFilterCount }}
                     </span>
                 </button>
-
-                <!-- Search -->
-                <div class="relative w-full md:w-64">
-                    <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <input v-model="searchQuery" :placeholder="$t('marks.searchPlaceholder')"
-                        :title="$t('marks.searchTitle')"
-                        class="pl-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
-                </div>
             </div>
+        </div>
+
+        <!-- Search Row -->
+        <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+                <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <input v-model="searchQuery" :placeholder="$t('marks.searchPlaceholder')"
+                    :title="$t('marks.searchTitle')"
+                    class="pl-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+            </div>
+
+            <ColumnPicker :columns="columns" :visible-columns="visibleColumns" @toggle-column="toggleColumn"
+                @reset="resetColumns" />
         </div>
 
         <!-- Data Table (Flat List) -->
@@ -357,7 +378,8 @@ function formatTaskName(taskName) {
                                     @change="toggleSelectAll"
                                     class="rounded border-gray-300 text-primary focus:ring-primary" />
                             </th>
-                            <th class="p-3 text-left w-32 cursor-pointer hover:text-foreground transition-colors select-none"
+                            <th v-if="isColumnVisible('added')"
+                                class="p-3 text-left w-32 cursor-pointer hover:text-foreground transition-colors select-none"
                                 @click="handleSort('createdAt')">
                                 <div class="flex items-center gap-1">
                                     {{ $t('marks.table.added') }}
@@ -368,7 +390,8 @@ function formatTaskName(taskName) {
                                     <ArrowUpDown v-if="sortField !== 'createdAt'" class="w-3 h-3 opacity-50" />
                                 </div>
                             </th>
-                            <th class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
+                            <th v-if="isColumnVisible('student')"
+                                class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
                                 @click="handleSort('studentName')">
                                 <div class="flex items-center gap-1">
                                     {{ $t('marks.table.student') }}
@@ -379,7 +402,8 @@ function formatTaskName(taskName) {
                                     <ArrowUpDown v-if="sortField !== 'studentName'" class="w-3 h-3 opacity-50" />
                                 </div>
                             </th>
-                            <th class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
+                            <th v-if="isColumnVisible('group')"
+                                class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
                                 @click="handleSort('groupName')">
                                 <div class="flex items-center gap-1">
                                     {{ $t('marks.table.group') }}
@@ -390,7 +414,8 @@ function formatTaskName(taskName) {
                                     <ArrowUpDown v-if="sortField !== 'groupName'" class="w-3 h-3 opacity-50" />
                                 </div>
                             </th>
-                            <th class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
+                            <th v-if="isColumnVisible('task')"
+                                class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
                                 @click="handleSort('taskName')">
                                 <div class="flex items-center gap-1">
                                     {{ $t('marks.table.task') }}
@@ -401,8 +426,8 @@ function formatTaskName(taskName) {
                                     <ArrowUpDown v-if="sortField !== 'taskName'" class="w-3 h-3 opacity-50" />
                                 </div>
                             </th>
-                            <th class="p-3 text-center">{{ $t('marks.table.mark') }}</th>
-                            <th class="p-3 text-right">{{ $t('marks.table.actions') }}</th>
+                            <th v-if="isColumnVisible('mark')" class="p-3 text-center">{{ $t('marks.table.mark') }}</th>
+                            <th class="p-3 text-center">{{ $t('marks.table.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
@@ -415,7 +440,7 @@ function formatTaskName(taskName) {
                                     @change="toggleSelection(mark.id)"
                                     class="rounded border-gray-300 text-primary focus:ring-primary" />
                             </td>
-                            <td class="p-3 text-xs text-muted-foreground">
+                            <td v-if="isColumnVisible('added')" class="p-3 text-xs text-muted-foreground">
                                 <div class="flex flex-col gap-1">
                                     <div class="flex items-center gap-1">
                                         <Calendar class="w-3 h-3" />
@@ -427,21 +452,21 @@ function formatTaskName(taskName) {
                                     </div>
                                 </div>
                             </td>
-                            <td class="p-3 font-medium">{{ mark.studentName }}</td>
-                            <td class="p-3">
+                            <td v-if="isColumnVisible('student')" class="p-3 font-medium">{{ mark.studentName }}</td>
+                            <td v-if="isColumnVisible('group')" class="p-3">
                                 <button @click="activeFilters.group = mark.groupName"
                                     class="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors"
                                     :class="{ 'ring-2 ring-primary': activeFilters.group === mark.groupName }">
                                     {{ mark.groupName }}
                                 </button>
                             </td>
-                            <td class="p-3" :title="mark.taskName">
+                            <td v-if="isColumnVisible('task')" class="p-3" :title="mark.taskName">
                                 <div class="flex flex-col">
                                     <span>{{ formatTaskName(mark.taskName) }}</span>
                                     <span class="text-xs text-muted-foreground">{{ mark.taskDate }}</span>
                                 </div>
                             </td>
-                            <td class="p-3 text-center relative">
+                            <td v-if="isColumnVisible('mark')" class="p-3 text-center relative">
                                 <div class="flex items-center justify-center gap-1">
                                     <span
                                         class="font-mono font-bold cursor-help border-b border-dotted border-muted-foreground/50 group"

@@ -183,7 +183,13 @@
                 "completion": "Sort by task completion percentage"
             }
         },
-        "noStudents": "No students found matching your search.",
+        "noStudents": "No students found",
+        "actions": {
+            "email": "Send Email",
+            "noEmail": "No email available",
+            "edit": "Edit",
+            "delete": "Delete"
+        },
         "deleteModal": {
             "title": "Delete Student",
             "bulkTitle": "Delete Students",
@@ -213,6 +219,14 @@
             "meetId": "Meet ID",
             "members": "Members",
             "teacher": "Teacher",
+            "avg": "Avg.",
+            "total": "Total",
+            "mode": "Mode",
+            "median": "Median",
+            "avgCompletion": "Avg. Completion",
+            "avgMark": "Avg. Mark",
+            "modeMark": "Mode Mark",
+            "medianMark": "Median Mark",
             "actions": "Actions"
         },
         "noGroups": "No groups found. Click \"Add Group\" to create one.",
@@ -299,6 +313,7 @@
             "group": "Group",
             "meetId": "Meet ID",
             "date": "Date",
+            "duration": "Duration",
             "participants": "Participants",
             "filename": "Filename",
             "uploadedAt": "Uploaded at",
@@ -321,6 +336,7 @@
             "viewReport": "View Report Details",
             "table": {
                 "participant": "Participant",
+                "group": "Group",
                 "firstSeen": "First Seen At",
                 "duration": "Duration",
                 "percentage": "Percentage",
@@ -365,6 +381,11 @@
         "reportsPrompt": "Drop Attendance Reports",
         "marksPrompt": "Drop Marks Reports",
         "hint": "Drag & drop CSV files here, or click to select"
+    },
+    "views": {
+        "overview": "Overview",
+        "table": "Table",
+        "calendar": "Calendar"
     },
     "analytics": {
         "title": "Analytics Dashboard",
@@ -640,6 +661,11 @@
             "button": "View on GitHub"
         },
         "footer": "Built with ❤️ for educators"
+    },
+    "columnPicker": {
+        "button": "Columns",
+        "title": "Show/Hide Columns",
+        "reset": "Reset"
     },
     "footer": {
         "about": "About",
