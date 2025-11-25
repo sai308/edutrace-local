@@ -7,6 +7,8 @@ const {
     students,
     groupsMap,
     teachers,
+    meets,
+    tasks,
     loadData,
     saveStudent,
     deleteStudent,
@@ -31,7 +33,7 @@ function handleBulkDeleteStudents(ids) {
 
 <template>
     <div class="animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <StudentsView :students="students" :groups-map="groupsMap" :teachers="teachers"
+        <StudentsView :students="students" :groups-map="groupsMap" :teachers="teachers" :meets="meets" :tasks="tasks"
             @save-student="handleSaveStudent" @delete-student="handleDeleteStudent"
             @bulk-delete-students="handleBulkDeleteStudents" @refresh="loadData" />
     </div>

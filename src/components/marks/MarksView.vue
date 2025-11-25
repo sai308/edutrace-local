@@ -290,7 +290,7 @@ function formatTaskName(taskName) {
                 <!-- Format Selector with Label (Custom Dropdown) -->
                 <div class="relative flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card">
                     <span class="text-xs font-medium text-muted-foreground whitespace-nowrap">{{ $t('marks.gradeScale')
-                        }}</span>
+                    }}</span>
 
                     <div class="relative">
                         <button @click="showFormatDropdown = !showFormatDropdown"
@@ -380,7 +380,7 @@ function formatTaskName(taskName) {
                             </th>
                             <th v-if="isColumnVisible('added')"
                                 class="p-3 text-left w-32 cursor-pointer hover:text-foreground transition-colors select-none"
-                                @click="handleSort('createdAt')">
+                                @click="handleSort('createdAt')" :title="$t('marks.table.tooltips.added')">
                                 <div class="flex items-center gap-1">
                                     {{ $t('marks.table.added') }}
                                     <ArrowUp v-if="sortField === 'createdAt' && sortDirection === 'asc'"
@@ -392,7 +392,7 @@ function formatTaskName(taskName) {
                             </th>
                             <th v-if="isColumnVisible('student')"
                                 class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
-                                @click="handleSort('studentName')">
+                                @click="handleSort('studentName')" :title="$t('marks.table.tooltips.student')">
                                 <div class="flex items-center gap-1">
                                     {{ $t('marks.table.student') }}
                                     <ArrowUp v-if="sortField === 'studentName' && sortDirection === 'asc'"
@@ -404,7 +404,7 @@ function formatTaskName(taskName) {
                             </th>
                             <th v-if="isColumnVisible('group')"
                                 class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
-                                @click="handleSort('groupName')">
+                                @click="handleSort('groupName')" :title="$t('marks.table.tooltips.group')">
                                 <div class="flex items-center gap-1">
                                     {{ $t('marks.table.group') }}
                                     <ArrowUp v-if="sortField === 'groupName' && sortDirection === 'asc'"
@@ -416,7 +416,7 @@ function formatTaskName(taskName) {
                             </th>
                             <th v-if="isColumnVisible('task')"
                                 class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
-                                @click="handleSort('taskName')">
+                                @click="handleSort('taskName')" :title="$t('marks.table.tooltips.task')">
                                 <div class="flex items-center gap-1">
                                     {{ $t('marks.table.task') }}
                                     <ArrowUp v-if="sortField === 'taskName' && sortDirection === 'asc'"
@@ -426,7 +426,8 @@ function formatTaskName(taskName) {
                                     <ArrowUpDown v-if="sortField !== 'taskName'" class="w-3 h-3 opacity-50" />
                                 </div>
                             </th>
-                            <th v-if="isColumnVisible('mark')" class="p-3 text-center">{{ $t('marks.table.mark') }}</th>
+                            <th v-if="isColumnVisible('mark')" class="p-3 text-center"
+                                :title="$t('marks.table.tooltips.mark')">{{ $t('marks.table.mark') }}</th>
                             <th class="p-3 text-center">{{ $t('marks.table.actions') }}</th>
                         </tr>
                     </thead>

@@ -10,6 +10,8 @@ export function useStudents() {
     const students = ref([]);
     const groupsMap = ref({});
     const teachers = ref(new Set());
+    const meets = ref([]);
+    const tasks = ref([]);
 
     async function loadData() {
         // Ensure all meet participants have member records
@@ -25,6 +27,8 @@ export function useStudents() {
         ]);
         groupsMap.value = allGroups;
         teachers.value = new Set(teacherList);
+        meets.value = allMeets;
+        tasks.value = allTasks;
         processData(allMeets, allMembers, allTasks, allMarks);
     }
 
@@ -300,6 +304,8 @@ export function useStudents() {
         students,
         groupsMap,
         teachers,
+        meets,
+        tasks,
         loadData,
         saveStudent,
         deleteStudent,

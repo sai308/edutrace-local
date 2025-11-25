@@ -187,6 +187,7 @@
         "actions": {
             "email": "Send Email",
             "noEmail": "No email available",
+            "profile": "View Profile",
             "edit": "Edit",
             "delete": "Delete"
         },
@@ -196,6 +197,29 @@
             "message": "Are you sure you want to delete this student?",
             "bulkMessage": "Are you sure you want to delete {count} students?",
             "confirm": "Delete"
+        },
+        "profile": {
+            "noEmail": "No email provided",
+            "views": {
+                "attendance": "Attendance",
+                "marks": "Marks"
+            },
+            "attendance": {
+                "duration": "Duration",
+                "hours": "Hours",
+                "attended": "Sessions Attended",
+                "avgPercent": "Average Attendance",
+                "totalTime": "Total Time"
+            },
+            "marks": {
+                "gradeDistribution": "Grade Distribution",
+                "taskCompletion": "Task Completion",
+                "completed": "Completed",
+                "pending": "Pending",
+                "avgGrade": "Average Grade",
+                "tasksCompleted": "Tasks Completed",
+                "completion": "Completion Rate"
+            }
         },
         "editModal": {
             "title": "Edit Student",
@@ -270,7 +294,14 @@
             "group": "Group",
             "task": "Task",
             "mark": "Mark",
-            "actions": "Actions"
+            "actions": "Actions",
+            "tooltips": {
+                "added": "Date and time when the mark was added",
+                "student": "Student name",
+                "group": "Group name",
+                "task": "Task name and date",
+                "mark": "Mark score with conversion tooltip"
+            }
         },
         "noMarks": "No marks found. Upload a CSV to get started.",
         "noMatch": "No marks match your search.",
@@ -317,7 +348,16 @@
             "participants": "Participants",
             "filename": "Filename",
             "uploadedAt": "Uploaded at",
-            "actions": "Actions"
+            "actions": "Actions",
+            "tooltips": {
+                "group": "Group name",
+                "meetId": "Google Meet session ID",
+                "date": "Meeting date",
+                "participants": "Number of participants in the meeting",
+                "duration": "Total meeting duration",
+                "filename": "Original CSV filename",
+                "uploadedAt": "Upload date and time"
+            }
         },
         "noReports": "No reports uploaded yet.",
         "noMatch": "No reports match your filter.",

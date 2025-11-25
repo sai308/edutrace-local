@@ -2,8 +2,9 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, X, Timer, Edit2, Trash2, Star, ChartPie, Mail } from 'lucide-vue-next';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, X, Timer, Edit2, Trash2, Star, ChartPie, Mail, User } from 'lucide-vue-next';
 import EditStudentModal from './EditStudentModal.vue';
+import StudentProfileModal from './StudentProfileModal.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import ColumnPicker from '../ColumnPicker.vue';
 import { useQuerySync } from '../../composables/useQuerySync';
@@ -16,9 +17,26 @@ import { useColors } from '../../composables/useColors';
 const { t } = useI18n();
 
 const props = defineProps({
-  students: { type: Array, default: () => [] },
-  groupsMap: { type: Object, default: () => ({}) },
-  teachers: { type: Set, default: () => new Set() }
+  students: {
+    type: Array,
+    default: () => []
+  },
+  groupsMap: {
+    type: Object,
+    default: () => ({})
+  },
+  teachers: {
+    type: Set,
+    default: () => new Set()
+  },
+  meets: {
+    type: Array,
+    default: () => []
+  },
+  tasks: {
+    type: Array,
+    default: () => []
+  }
 });
 
 const emit = defineEmits(['save-student', 'delete-student', 'bulk-delete-students', 'refresh']);
@@ -56,8 +74,10 @@ const selectedStudents = ref(new Set()); // IDs of selected students
 // Modal States
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
+const showProfileModal = ref(false);
 const studentToEdit = ref(null);
 const studentToDeleteId = ref(null);
+const studentToView = ref(null);
 const isBulkDelete = ref(false);
 
 const filteredStudents = computed(() => {
@@ -138,6 +158,12 @@ function toggleSelectAll() {
 function openEditModal(student) {
   studentToEdit.value = student;
   showEditModal.value = true;
+}
+
+// Profile Logic
+function openProfileModal(student) {
+  studentToView.value = student;
+  showProfileModal.value = true;
 }
 
 async function handleSaveStudent(formData) {
@@ -387,6 +413,11 @@ async function handleDeleteConfirm() {
                     :title="$t('students.actions.noEmail')">
                     <Mail class="w-4 h-4" />
                   </button>
+                  <button @click="openProfileModal(student)"
+                    class="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                    :title="$t('students.actions.profile')">
+                    <User class="w-4 h-4" />
+                  </button>
                   <button @click="openEditModal(student)"
                     class="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
                     :title="$t('students.actions.edit')">
@@ -413,6 +444,9 @@ async function handleDeleteConfirm() {
     <!-- Modals -->
     <EditStudentModal :is-open="showEditModal" :student="studentToEdit" :all-groups="allGroupsList"
       @close="showEditModal = false" @save="handleSaveStudent" />
+
+    <StudentProfileModal :is-open="showProfileModal" :student="studentToView" :meets="meets" :groups-map="groupsMap"
+      :tasks="tasks" @close="showProfileModal = false" />
 
     <ConfirmModal :is-open="showDeleteModal"
       :title="isBulkDelete ? $t('students.deleteModal.bulkTitle') : $t('students.deleteModal.title')"

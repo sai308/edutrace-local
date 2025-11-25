@@ -289,7 +289,7 @@ function handleSearchPaste(event) {
               </th>
               <th v-if="isColumnVisible('group')"
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('group')">
+                @click="toggleSort('group')" :title="$t('reports.table.tooltips.group')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.group') }}
                   <ArrowUp v-if="sortKey === 'group' && sortOrder === 'asc'" class="w-3 h-3" />
@@ -299,7 +299,7 @@ function handleSearchPaste(event) {
               </th>
               <th v-if="isColumnVisible('meetId')"
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('meetId')">
+                @click="toggleSort('meetId')" :title="$t('reports.table.tooltips.meetId')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.meetId') }}
                   <ArrowUp v-if="sortKey === 'meetId' && sortOrder === 'asc'" class="w-3 h-3" />
@@ -309,7 +309,7 @@ function handleSearchPaste(event) {
               </th>
               <th v-if="isColumnVisible('date')"
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('date')">
+                @click="toggleSort('date')" :title="$t('reports.table.tooltips.date')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.date') }}
                   <ArrowUp v-if="sortKey === 'date' && sortOrder === 'asc'" class="w-3 h-3" />
@@ -318,11 +318,12 @@ function handleSearchPaste(event) {
                 </div>
               </th>
               <th v-if="isColumnVisible('participants')"
-                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{{
+                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground"
+                :title="$t('reports.table.tooltips.participants')">{{
                   $t('reports.table.participants') }}</th>
               <th v-if="isColumnVisible('duration')"
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('duration')">
+                @click="toggleSort('duration')" :title="$t('reports.table.tooltips.duration')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.duration') }}
                   <ArrowUp v-if="sortKey === 'duration' && sortOrder === 'asc'" class="w-3 h-3" />
@@ -332,7 +333,7 @@ function handleSearchPaste(event) {
               </th>
               <th v-if="isColumnVisible('filename')"
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('filename')">
+                @click="toggleSort('filename')" :title="$t('reports.table.tooltips.filename')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.filename') }}
                   <ArrowUp v-if="sortKey === 'filename' && sortOrder === 'asc'" class="w-3 h-3" />
@@ -342,7 +343,7 @@ function handleSearchPaste(event) {
               </th>
               <th v-if="isColumnVisible('uploadedAt')"
                 class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('uploadedAt')">
+                @click="toggleSort('uploadedAt')" :title="$t('reports.table.tooltips.uploadedAt')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.uploadedAt') }}
                   <ArrowUp v-if="sortKey === 'uploadedAt' && sortOrder === 'asc'" class="w-3 h-3" />
