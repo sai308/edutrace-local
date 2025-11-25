@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, X, Timer, Edit2, Trash2 } from 'lucide-vue-next';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, X, Timer, Edit2, Trash2, Star, ChartPie } from 'lucide-vue-next';
 import EditStudentModal from './EditStudentModal.vue';
 import ConfirmModal from '../ConfirmModal.vue';
 import { useQuerySync } from '../../composables/useQuerySync';
@@ -93,28 +93,6 @@ const allGroupsList = computed(() => {
   return Array.from(set).sort();
 });
 
-
-// function formatDuration(seconds) {
-//   const h = Math.floor(seconds / 3600);
-//   const m = Math.floor((seconds % 3600) / 60);
-//   return `${h}h ${m}m`;
-// }
-
-// function toggleSort(field) {
-//   if (sortField.value === field) {
-//     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-//   } else {
-//     sortField.value = field;
-//     sortDirection.value = 'asc';
-//   }
-// }
-
-// function getScoreColor(score) {
-//   if (score >= 90) return 'text-green-600 font-bold';
-//   if (score >= 75) return 'text-green-500';
-//   if (score >= 50) return 'text-yellow-600';
-//   return 'text-red-500';
-// }
 
 function openAnalytics(meetId) {
   router.push({ name: 'AnalyticsDetails', params: { id: meetId } });
@@ -234,7 +212,8 @@ async function handleDeleteConfirm() {
                   @change="toggleSelectAll" class="rounded border-gray-300 text-primary focus:ring-primary" />
               </th>
               <th class="w-12 px-4 py-3 text-center">#</th>
-              <th class="px-4 py-3 cursor-pointer hover:text-foreground transition-colors" @click="toggleSort('name')">
+              <th class="px-4 py-3 cursor-pointer hover:text-foreground transition-colors" @click="toggleSort('name')"
+                :title="$t('students.table.tooltips.name')">
                 <div class="flex items-center gap-2">
                   {{ $t('students.table.name') }}
                   <ArrowUp v-if="sortField === 'name' && sortDirection === 'asc'" class="w-3 h-3" />
@@ -242,8 +221,8 @@ async function handleDeleteConfirm() {
                   <ArrowUpDown v-if="sortField !== 'name'" class="w-3 h-3 opacity-50" />
                 </div>
               </th>
-              <th class="px-4 py-3 cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('groups')">
+              <th class="px-4 py-3 cursor-pointer hover:text-foreground transition-colors" @click="toggleSort('groups')"
+                :title="$t('students.table.tooltips.groups')">
                 <div class="flex items-center gap-2">
                   {{ $t('students.table.groups') }}
                   <ArrowUp v-if="sortField === 'groups' && sortDirection === 'asc'" class="w-3 h-3" />
@@ -252,7 +231,7 @@ async function handleDeleteConfirm() {
                 </div>
               </th>
               <th class="px-4 py-3 cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('meetIds')">
+                @click="toggleSort('meetIds')" :title="$t('students.table.tooltips.meetIds')">
                 <div class="flex items-center gap-2">
                   {{ $t('students.table.meetIds') }}
                   <ArrowUp v-if="sortField === 'meetIds' && sortDirection === 'asc'" class="w-3 h-3" />
@@ -261,7 +240,7 @@ async function handleDeleteConfirm() {
                 </div>
               </th>
               <th class="px-4 py-3 text-right cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('sessionCount')">
+                @click="toggleSort('sessionCount')" :title="$t('students.table.tooltips.sessions')">
                 <div class="flex items-center justify-end gap-2">
                   {{ $t('students.table.sessions') }}
                   <ArrowUp v-if="sortField === 'sessionCount' && sortDirection === 'asc'" class="w-3 h-3" />
@@ -270,7 +249,7 @@ async function handleDeleteConfirm() {
                 </div>
               </th>
               <th class="px-4 py-3 text-right cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('averageAttendancePercent')">
+                @click="toggleSort('averageAttendancePercent')" :title="$t('students.table.tooltips.avgTime')">
                 <div class="flex items-center justify-end gap-2">
                   {{ $t('students.table.avg') }}
                   <Timer class="w-3 h-3" /> %
@@ -281,7 +260,7 @@ async function handleDeleteConfirm() {
                 </div>
               </th>
               <th class="px-4 py-3 text-right cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('totalAttendancePercent')">
+                @click="toggleSort('totalAttendancePercent')" :title="$t('students.table.tooltips.totalTime')">
                 <div class="flex items-center justify-end gap-2">
                   {{ $t('students.table.total') }}
                   <Timer class="w-3 h-3" /> %
@@ -289,6 +268,25 @@ async function handleDeleteConfirm() {
                   <ArrowDown v-if="sortField === 'totalAttendancePercent' && sortDirection === 'desc'"
                     class="w-3 h-3" />
                   <ArrowUpDown v-if="sortField !== 'totalAttendancePercent'" class="w-3 h-3 opacity-50" />
+                </div>
+              </th>
+              <th class="px-4 py-3 text-right cursor-pointer hover:text-foreground transition-colors"
+                @click="toggleSort('averageMark')" :title="$t('students.table.tooltips.avgMark')">
+                <div class="flex items-center justify-end gap-2">
+                  {{ $t('students.table.avg') }}
+                  <Star class="w-3 h-3" />
+                  <ArrowUp v-if="sortField === 'averageMark' && sortDirection === 'asc'" class="w-3 h-3" />
+                  <ArrowDown v-if="sortField === 'averageMark' && sortDirection === 'desc'" class="w-3 h-3" />
+                  <ArrowUpDown v-if="sortField !== 'averageMark'" class="w-3 h-3 opacity-50" />
+                </div>
+              </th>
+              <th class="px-4 py-3 text-right cursor-pointer hover:text-foreground transition-colors"
+                @click="toggleSort('completionPercent')" :title="$t('students.table.tooltips.completion')">
+                <div class="flex items-center justify-end gap-2">
+                  <ChartPie class="w-3 h-3" />%
+                  <ArrowUp v-if="sortField === 'completionPercent' && sortDirection === 'asc'" class="w-3 h-3" />
+                  <ArrowDown v-if="sortField === 'completionPercent' && sortDirection === 'desc'" class="w-3 h-3" />
+                  <ArrowUpDown v-if="sortField !== 'completionPercent'" class="w-3 h-3 opacity-50" />
                 </div>
               </th>
               <th class="px-4 py-3 text-right">{{ $t('students.table.actions') }}</th>
@@ -337,6 +335,14 @@ async function handleDeleteConfirm() {
                 :title="formatDuration(student.totalDuration)">
                 {{ student.totalAttendancePercent.toFixed(1) }}%
               </td>
+              <td class="px-4 py-3 text-right font-mono" :class="getScoreColor(student.averageMark * 20)"
+                :title="`Average grade: ${student.averageMark ? student.averageMark.toFixed(2) : 0}/5 (based on ${student.marks?.length || 0} marks)`">
+                {{ student.averageMark ? student.averageMark.toFixed(2) : '—' }}
+              </td>
+              <td class="px-4 py-3 text-right font-mono" :class="getScoreColor(student.completionPercent)"
+                :title="`${student.completedTasks} / ${student.totalTasks} tasks`">
+                {{ student.completionPercent ? student.completionPercent.toFixed(1) : '0' }}%
+              </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex justify-end gap-2">
                   <button @click="openEditModal(student)"
@@ -353,7 +359,7 @@ async function handleDeleteConfirm() {
               </td>
             </tr>
             <tr v-if="filteredStudents.length === 0">
-              <td colspan="8" class="px-4 py-8 text-center text-muted-foreground">
+              <td colspan="10" class="px-4 py-8 text-center text-muted-foreground">
                 {{ $t('students.noStudents') }}
               </td>
             </tr>

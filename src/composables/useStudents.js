@@ -2,6 +2,10 @@ import { ref } from 'vue';
 import { repository } from '../services/repository';
 import { toast } from '../services/toast';
 
+import { useMarkFormat } from '../composables/useMarkFormat';
+const { formatMarkToFiveScale } = useMarkFormat();
+
+
 export function useStudents() {
     const students = ref([]);
     const groupsMap = ref({});
@@ -11,18 +15,20 @@ export function useStudents() {
         // Ensure all meet participants have member records
         await repository.syncAllMembersFromMeets();
 
-        const [allMeets, allGroups, teacherList, allMembers] = await Promise.all([
+        const [allMeets, allGroups, teacherList, allMembers, allTasks, allMarks] = await Promise.all([
             repository.getAllMeets(),
             repository.getGroupMap(),
             repository.getTeachers(),
-            repository.getAllMembers()
+            repository.getAllMembers(),
+            repository.getAll('tasks'),
+            repository.getAll('marks')
         ]);
         groupsMap.value = allGroups;
         teachers.value = new Set(teacherList);
-        processData(allMeets, allMembers);
+        processData(allMeets, allMembers, allTasks, allMarks);
     }
 
-    async function processData(meets, members) {
+    async function processData(meets, members, tasks, marks) {
         const studentMap = new Map();
 
         // Get duration limit setting
@@ -47,7 +53,10 @@ export function useStudents() {
                 attendedDuration: 0,
                 possibleDuration: 0,
                 totalSessions: 0,
-                attendancePercentages: []
+                attendancePercentages: [],
+                marks: [], // Store marks for this student
+                totalTasks: 0, // Total tasks assigned to student's groups
+                completedTasks: 0 // Tasks completed by student
             });
         });
 
@@ -158,6 +167,62 @@ export function useStudents() {
 
             student.averageAttendancePercent = student.attendancePercentages.length > 0
                 ? student.attendancePercentages.reduce((a, b) => a + b, 0) / student.attendancePercentages.length
+                : 0;
+        });
+
+        // Create a task map for looking up maxPoints
+        const taskMap = new Map();
+        tasks.forEach(task => {
+            taskMap.set(task.id, task);
+        });
+
+        // Calculate marks statistics for each student
+        studentMap.forEach(student => {
+            // Find all marks for this student (by member ID)
+            const studentMarks = marks.filter(mark => mark.studentId === student.id);
+            student.marks = studentMarks;
+
+            // Calculate average mark in 5-grade scale
+            if (studentMarks.length > 0) {
+                let totalGrade = 0;
+                let validMarksCount = 0;
+
+                studentMarks.forEach(mark => {
+                    // Look up the task to get maxPoints
+                    const task = taskMap.get(mark.taskId);
+
+                    if (task && task.maxPoints && task.maxPoints > 0) {
+                        const grade = formatMarkToFiveScale({
+                            score: mark.score,
+                            maxPoints: task.maxPoints
+                        });
+
+                        totalGrade += grade;
+                        validMarksCount++;
+                    }
+                });
+
+                student.averageMark = validMarksCount > 0 ? totalGrade / validMarksCount : 0;
+            } else {
+                student.averageMark = 0;
+            }
+
+            // Calculate completion percentage
+            // Count total tasks assigned to student's groups
+            const groupTasksSet = new Set();
+            student.groups.forEach(groupName => {
+                const groupTasks = tasks.filter(task => task.groupName === groupName);
+                groupTasks.forEach(task => groupTasksSet.add(task.id));
+            });
+            student.totalTasks = groupTasksSet.size;
+
+            // Count completed tasks (tasks with marks for this student)
+            const completedTaskIds = new Set(studentMarks.map(mark => mark.taskId));
+            student.completedTasks = completedTaskIds.size;
+
+            // Calculate completion percentage
+            student.completionPercent = student.totalTasks > 0
+                ? (student.completedTasks / student.totalTasks) * 100
                 : 0;
         });
 

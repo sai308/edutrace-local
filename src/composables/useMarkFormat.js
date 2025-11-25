@@ -1,7 +1,7 @@
 export function useMarkFormat() {
     function formatMarkToFiveScale(mark) {
-        const max = mark.maxPoints || 100;
-        const percent = (mark.score / max) * 100;
+        const max = Number(mark.maxPoints) || 100;
+        const percent = (Number(mark.score) / max) * 100;
 
         if (percent >= 90) return 5;
         if (percent >= 75) return 4;
@@ -11,8 +11,8 @@ export function useMarkFormat() {
     }
 
     function formatMarkToECTS(mark) {
-        const max = mark.maxPoints || 100;
-        const percent = (mark.score / max) * 100;
+        const max = Number(mark.maxPoints) || 100;
+        const percent = (Number(mark.score) / max) * 100;
 
         if (percent >= 90) return 'A';
         if (percent >= 82) return 'B';
@@ -27,8 +27,8 @@ export function useMarkFormat() {
     function getFormattedMark(mark, format = 'raw') {
         if (format === 'raw') return mark.score;
 
-        const max = mark.maxPoints || 100;
-        const percent = (mark.score / max) * 100;
+        const max = Number(mark.maxPoints) || 100;
+        const percent = (Number(mark.score) / max) * 100;
 
         if (format === '100-scale') {
             return Math.round(percent);
@@ -46,8 +46,8 @@ export function useMarkFormat() {
     }
 
     function getMarkTooltip(score, maxPoints) {
-        const max = maxPoints || 100;
-        const percent = (score / max) * 100;
+        const max = Number(maxPoints) || 100;
+        const percent = (Number(score) / max) * 100;
 
         const scale100 = Math.round(percent);
 

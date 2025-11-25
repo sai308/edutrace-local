@@ -170,7 +170,17 @@
             "sessions": "Sessions",
             "avg": "Avg",
             "total": "Total",
-            "actions": "Actions"
+            "actions": "Actions",
+            "tooltips": {
+                "name": "Sort by student name",
+                "groups": "Sort by groups - Click group chips to filter",
+                "meetIds": "Sort by meet IDs - Click to view analytics",
+                "sessions": "Sort by number of sessions attended",
+                "avgTime": "Sort by average attendance time percentage across sessions",
+                "totalTime": "Sort by total attendance time percentage",
+                "avgMark": "Sort by average mark (5-point scale)",
+                "completion": "Sort by task completion percentage"
+            }
         },
         "noStudents": "No students found matching your search.",
         "deleteModal": {
