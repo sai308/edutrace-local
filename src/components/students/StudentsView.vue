@@ -404,15 +404,7 @@ async function handleDeleteConfirm() {
               </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex justify-end gap-2">
-                  <a v-if="student.email" :href="`mailto:${student.email}`" target="_blank"
-                    class="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                    :title="$t('students.actions.email')">
-                    <Mail class="w-4 h-4" />
-                  </a>
-                  <button v-else disabled class="p-2 rounded-md text-muted-foreground opacity-30 cursor-not-allowed"
-                    :title="$t('students.actions.noEmail')">
-                    <Mail class="w-4 h-4" />
-                  </button>
+
                   <button @click="openProfileModal(student)"
                     class="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
                     :title="$t('students.actions.profile')">

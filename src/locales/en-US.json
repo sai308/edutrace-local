@@ -156,7 +156,8 @@
         "marksErased": "Marks erased",
         "marksEraseFailed": "Failed to erase marks",
         "membersErased": "Members erased",
-        "membersEraseFailed": "Failed to erase members"
+        "membersEraseFailed": "Failed to erase members",
+        "emailCopied": "Email copied to clipboard"
     },
     "students": {
         "title": "Students",
@@ -186,6 +187,7 @@
         "noStudents": "No students found",
         "actions": {
             "email": "Send Email",
+            "copyEmail": "Copy Email",
             "noEmail": "No email available",
             "profile": "View Profile",
             "edit": "Edit",
@@ -209,7 +211,15 @@
                 "hours": "Hours",
                 "attended": "Sessions Attended",
                 "avgPercent": "Average Attendance",
-                "totalTime": "Total Time"
+                "totalTime": "Total Time",
+                "history": "Attendance History",
+                "table": {
+                    "date": "Date",
+                    "group": "Group",
+                    "meetId": "Meet ID",
+                    "duration": "Duration",
+                    "status": "Status"
+                }
             },
             "marks": {
                 "gradeDistribution": "Grade Distribution",
@@ -218,7 +228,14 @@
                 "pending": "Pending",
                 "avgGrade": "Average Grade",
                 "tasksCompleted": "Tasks Completed",
-                "completion": "Completion Rate"
+                "completion": "Completion Rate",
+                "history": "Marks History",
+                "table": {
+                    "date": "Date",
+                    "task": "Task",
+                    "score": "Score",
+                    "grade": "Grade"
+                }
             }
         },
         "editModal": {

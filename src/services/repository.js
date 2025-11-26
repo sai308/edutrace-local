@@ -492,12 +492,29 @@ export const repository = {
             }
         }
 
-        // Restore tasks
+        // Restore tasks with upsert logic (preserve IDs for existing tasks)
+        const taskIdMapping = new Map(); // Maps old task IDs to new task IDs
+
         if (jsonData.tasks && jsonData.tasks.length > 0) {
             const tx = db.transaction('tasks', 'readwrite');
             const store = tx.objectStore('tasks');
+
             for (const task of jsonData.tasks) {
-                await store.put(task);
+                const oldId = task.id;
+
+                // Find existing task by natural key (name + date + groupName)
+                const existing = await this.findTaskByNaturalKey(task.name, task.date, task.groupName);
+
+                if (existing) {
+                    // Task exists - preserve its ID and update other fields
+                    await store.put({ ...task, id: existing.id });
+                    taskIdMapping.set(oldId, existing.id);
+                } else {
+                    // New task - remove ID to let auto-increment assign one
+                    const { id, ...taskWithoutId } = task;
+                    const newId = await store.add(taskWithoutId);
+                    taskIdMapping.set(oldId, newId);
+                }
             }
             await tx.done;
         }
@@ -520,12 +537,14 @@ export const repository = {
             await tx.done;
         }
 
-        // Restore marks
+        // Restore marks with updated task IDs
         if (jsonData.marks && jsonData.marks.length > 0) {
             const tx = db.transaction('marks', 'readwrite');
             const store = tx.objectStore('marks');
             for (const mark of jsonData.marks) {
-                await store.put(mark);
+                // Update taskId to the new ID if mapping exists
+                const newTaskId = taskIdMapping.get(mark.taskId) || mark.taskId;
+                await store.put({ ...mark, taskId: newTaskId });
             }
             await tx.done;
         }
@@ -632,12 +651,30 @@ export const repository = {
         const marks = jsonData.marks || [];
         const members = jsonData.members || jsonData.students || [];
 
-        // Import tasks
+        // Import tasks with upsert logic (preserve IDs for existing tasks)
+        const taskIdMapping = new Map(); // Maps old task IDs to new task IDs
+
         if (tasks.length > 0) {
+            const db = await dbPromise;
             const tx = db.transaction('tasks', 'readwrite');
             const store = tx.objectStore('tasks');
+
             for (const task of tasks) {
-                await store.put(task);
+                const oldId = task.id;
+
+                // Find existing task by natural key (name + date + groupName)
+                const existing = await this.findTaskByNaturalKey(task.name, task.date, task.groupName);
+
+                if (existing) {
+                    // Task exists - preserve its ID and update other fields
+                    await store.put({ ...task, id: existing.id });
+                    taskIdMapping.set(oldId, existing.id);
+                } else {
+                    // New task - remove ID to let auto-increment assign one
+                    const { id, ...taskWithoutId } = task;
+                    const newId = await store.add(taskWithoutId);
+                    taskIdMapping.set(oldId, newId);
+                }
             }
             await tx.done;
         }
@@ -652,12 +689,14 @@ export const repository = {
             await tx.done;
         }
 
-        // Import marks
+        // Import marks with updated task IDs
         if (marks.length > 0) {
             const tx = db.transaction('marks', 'readwrite');
             const store = tx.objectStore('marks');
             for (const mark of marks) {
-                await store.put(mark);
+                // Update taskId to the new ID if mapping exists
+                const newTaskId = taskIdMapping.get(mark.taskId) || mark.taskId;
+                await store.put({ ...mark, taskId: newTaskId });
             }
             await tx.done;
         }
@@ -719,6 +758,12 @@ export const repository = {
     async getTasksByGroup(groupName) {
         const db = await dbPromise;
         return db.getAllFromIndex('tasks', 'groupName', groupName);
+    },
+
+    async findTaskByNaturalKey(name, date, groupName) {
+        const db = await dbPromise;
+        const tasks = await db.getAllFromIndex('tasks', 'groupName', groupName);
+        return tasks.find(t => t.name === name && t.date === date);
     },
 
     // Members (Unified Entity)
