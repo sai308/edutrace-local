@@ -33,47 +33,8 @@ export function useMarks() {
 
     async function loadAllData() {
         await loadGroups();
-        const allTasks = await repository.getAllTasks();
-
-        const list = [];
-        const tasksByGroup = {};
-        for (const task of allTasks) {
-            if (!tasksByGroup[task.groupName]) {
-                tasksByGroup[task.groupName] = [];
-            }
-            tasksByGroup[task.groupName].push(task);
-        }
-
-        for (const groupName of Object.keys(tasksByGroup)) {
-            const groupTasks = tasksByGroup[groupName];
-            const groupStudents = await repository.getStudentsByGroup(groupName);
-
-            if (groupStudents.length === 0) continue;
-
-            for (const task of groupTasks) {
-                const taskMarks = await repository.getMarksByTask(task.id);
-                const markMap = new Map(taskMarks.map(m => [m.studentId, m]));
-
-                for (const student of groupStudents) {
-                    const mark = markMap.get(student.id);
-                    if (mark) {
-                        list.push({
-                            id: mark.id,
-                            studentName: student.name,
-                            groupName: groupName,
-                            taskName: task.name,
-                            taskDate: task.date,
-                            maxPoints: task.maxPoints,
-                            score: mark.score,
-                            synced: mark.synced,
-                            createdAt: mark.createdAt
-                        });
-                    }
-                }
-            }
-        }
-
-        flatMarks.value = list;
+        // Use the new batch query method - single efficient database call
+        flatMarks.value = await repository.getAllMarksWithRelations();
     }
 
     async function createGroup(groupData) {
@@ -174,8 +135,9 @@ export function useMarks() {
     async function deleteMark(id) {
         try {
             await repository.deleteMark(id);
+            // Incremental update: remove from array instead of full reload
+            flatMarks.value = flatMarks.value.filter(m => m.id !== id);
             toast.success('Mark deleted');
-            await loadAllData();
         } catch (e) {
             console.error('Error deleting mark:', e);
             toast.error('Failed to delete mark');
@@ -186,8 +148,10 @@ export function useMarks() {
     async function deleteMarks(ids) {
         try {
             await repository.deleteMarks(ids);
+            // Incremental update: remove multiple marks from array
+            const idsSet = new Set(ids);
+            flatMarks.value = flatMarks.value.filter(m => !idsSet.has(m.id));
             toast.success(`${ids.length} marks deleted`);
-            await loadAllData();
         } catch (e) {
             console.error('Error deleting marks:', e);
             toast.error('Failed to delete marks');

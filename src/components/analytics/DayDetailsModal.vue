@@ -13,6 +13,15 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
+import { useModalClose } from '../../composables/useModalClose';
+
+useModalClose(() => {
+  if (props.isOpen) {
+    emit('close');
+  }
+});
+
+
 function formatDuration(seconds) {
   if (!seconds) return '-';
   const h = Math.floor(seconds / 3600);
@@ -59,7 +68,7 @@ function formatDuration(seconds) {
             </tr>
             <tr v-for="(p, index) in participants" :key="p.name"
               class="hover:bg-muted/5 transition-colors table-row-animate"
-              :style="{ animationDelay: `${index * 0.025}s` }">
+              :style="{ animationDelay: `${index * 0.0125}s` }">
               <td class="px-6 py-3 font-medium">{{ p.name }}</td>
               <td class="px-6 py-3 text-center font-mono text-xs">
                 {{ formatDuration(p.duration) }}

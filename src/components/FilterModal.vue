@@ -17,6 +17,15 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'update:items']);
 
+import { useModalClose } from '../composables/useModalClose';
+
+useModalClose(() => {
+  if (props.isOpen) {
+    emit('close');
+  }
+});
+
+
 const searchQuery = ref('');
 const manualInput = ref('');
 const selectedItems = ref(new Set());

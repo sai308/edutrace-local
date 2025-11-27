@@ -309,7 +309,7 @@ async function handleViewReportForDate(date) {
               <tbody class="divide-y">
                 <tr v-for="(student, index) in filteredStudents" :key="student.name"
                   class="hover:bg-muted/5 transition-colors table-row-animate"
-                  :style="{ animationDelay: `${index * 0.025}s` }">
+                  :style="{ animationDelay: `${index * 0.0125}s` }">
                   <td class="sticky left-0 z-10 bg-background border-r p-4 font-medium whitespace-nowrap">
                     {{ student.name }}
                   </td>

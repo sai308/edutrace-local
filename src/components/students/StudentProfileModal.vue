@@ -12,7 +12,7 @@ import { useColors } from '../../composables/useColors';
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement);
 
 const { t } = useI18n();
-const { formatDuration } = useFormatters();
+const { formatDuration, formatTime } = useFormatters();
 const { formatMarkToFiveScale } = useMarkFormat();
 const { toast } = useToast();
 const { getScoreColor } = useColors();
@@ -39,6 +39,15 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close']);
+
+import { useModalClose } from '../../composables/useModalClose';
+
+useModalClose(() => {
+    if (props.isOpen) {
+        emit('close');
+    }
+});
+
 
 const viewMode = ref('attendance');
 
@@ -139,13 +148,87 @@ const attendedMeets = computed(() => {
             const meetDuration = calculateMeetDuration(meet);
             const percentage = meetDuration > 0 ? (duration / meetDuration) * 100 : 0;
 
+            // Progress Bar Calculations
+            let offsetPercent = 0;
+            let durationPercent = 0;
+            let startTime = null;
+            let joinTime = null;
+
+            if (meet.startTime && meet.endTime && participant?.joinTime) {
+                let sessionStart = new Date(meet.startTime);
+                let sessionEnd = new Date(meet.endTime);
+
+                // Parse joinTime relative to session date
+                // participant.joinTime is likely just a time string (e.g. "09:40 AM")
+                // We need to combine it with the session date
+                const timeComponent = new Date(participant.joinTime); // This defaults to Today + Time
+
+                if (!isNaN(timeComponent.getTime())) {
+                    joinTime = new Date(sessionStart);
+                    joinTime.setHours(timeComponent.getHours());
+                    joinTime.setMinutes(timeComponent.getMinutes());
+                    joinTime.setSeconds(timeComponent.getSeconds());
+
+                    // Handle edge case: if joinTime is significantly after sessionEnd (e.g. > 12 hours), 
+                    // or significantly before sessionStart, it might be a date boundary issue.
+                    // But for now, assuming same day is safest for typical school hours.
+
+                    // If the resulting joinTime is drastically different from Today's time (which it won't be, we just took the time),
+                    // We are good.
+                } else {
+                    // Fallback if parsing fails
+                    joinTime = new Date(participant.joinTime);
+                }
+
+                // Adjust timeline to include participant if they are outside the metadata range
+                const leaveTime = new Date(joinTime.getTime() + (participant.duration * 1000));
+
+                if (joinTime < sessionStart) sessionStart = joinTime;
+
+                // Fix for "infinite" meetings (left open for days)
+                // If metadata duration is significantly larger than the calculated "safe" duration,
+                // clamp the end time to a reasonable value.
+                const safeDuration = calculateMeetDuration(meet); // seconds
+                const metadataDuration = (sessionEnd - sessionStart) / 1000;
+
+                // If metadata is > 5x safe duration (and safe duration is valid), clamp it
+                if (safeDuration > 0 && metadataDuration > safeDuration * 5) {
+                    const proposedEnd = new Date(sessionStart.getTime() + (safeDuration * 1000));
+                    // Ensure we at least cover the student's leave time
+                    sessionEnd = new Date(Math.max(proposedEnd.getTime(), leaveTime.getTime()));
+                    // Add a 10% buffer for visual comfort
+                    sessionEnd = new Date(sessionEnd.getTime() + (safeDuration * 0.1 * 1000));
+                }
+
+                if (leaveTime > sessionEnd) sessionEnd = leaveTime;
+
+                const totalSessionDuration = (sessionEnd - sessionStart) / 1000; // seconds
+
+                if (totalSessionDuration > 0) {
+                    const offsetSeconds = (joinTime - sessionStart) / 1000;
+
+                    offsetPercent = (offsetSeconds / totalSessionDuration) * 100;
+                    durationPercent = (participant.duration / totalSessionDuration) * 100;
+
+                    // Clamp values
+                    offsetPercent = Math.max(0, Math.min(100, offsetPercent));
+                    durationPercent = Math.max(0, Math.min(100 - offsetPercent, durationPercent));
+                }
+                startTime = sessionStart;
+            }
+
             return {
                 id: meet.meetId,
                 date: new Date(meet.date).toLocaleDateString(),
                 group: props.groupsMap[meet.meetId]?.name || 'Unknown',
                 meetId: meet.meetId,
                 duration: formatDuration(duration),
-                percentage: Math.min(percentage, 100).toFixed(1)
+                percentage: Math.min(percentage, 100).toFixed(1),
+                // Progress Bar Props
+                hasTimeline: !!startTime,
+                offsetPercent,
+                durationPercent,
+                joinTime
             };
         })
         .sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -320,7 +403,7 @@ const studentMarks = computed(() => {
                         <div class="grid grid-cols-3 gap-4">
                             <div class="bg-muted/30 rounded-lg p-4">
                                 <div class="text-sm text-muted-foreground">{{ t('students.profile.attendance.attended')
-                                    }}
+                                }}
                                 </div>
                                 <div class="text-2xl font-bold mt-1">{{ attendanceStats.totalSessions }}/{{
                                     attendanceStats.totalPossibleSessions }}</div>
@@ -333,7 +416,7 @@ const studentMarks = computed(() => {
                             </div>
                             <div class="bg-muted/30 rounded-lg p-4">
                                 <div class="text-sm text-muted-foreground">{{ t('students.profile.attendance.totalTime')
-                                    }}
+                                }}
                                 </div>
                                 <div class="text-2xl font-bold mt-1">{{ attendanceStats.totalTime }}</div>
                             </div>
@@ -354,6 +437,9 @@ const studentMarks = computed(() => {
                                             <th class="px-4 py-2 text-right">{{
                                                 t('students.profile.attendance.table.duration') }}
                                             </th>
+                                            <th class="px-4 py-2 text-center">{{
+                                                t('students.profile.attendance.table.progress') }}
+                                            </th>
                                             <th class="px-4 py-2 text-right">{{
                                                 t('students.profile.attendance.table.status') }}
                                             </th>
@@ -370,8 +456,35 @@ const studentMarks = computed(() => {
                                                 </span>
                                             </td>
                                             <td class="px-4 py-2 font-mono text-xs text-muted-foreground">{{ meet.meetId
-                                                }}</td>
+                                            }}</td>
                                             <td class="px-4 py-2 text-right font-mono">{{ meet.duration }}</td>
+                                            <td class="px-4 py-2 w-48">
+                                                <div v-if="meet.hasTimeline"
+                                                    class="relative h-6 bg-muted/30 rounded overflow-hidden w-full min-w-[120px]">
+                                                    <!-- Grid lines -->
+                                                    <div class="absolute inset-0 flex">
+                                                        <div v-for="i in 4" :key="i"
+                                                            class="flex-1 border-r border-muted/50 last:border-r-0">
+                                                        </div>
+                                                    </div>
+                                                    <!-- Progress Bar -->
+                                                    <div class="absolute h-full rounded transition-all cursor-help"
+                                                        :style="{
+                                                            left: `${meet.offsetPercent}%`,
+                                                            width: `${meet.durationPercent}%`,
+                                                            backgroundColor: parseFloat(meet.percentage) >= 75 ? '#22c55e' :
+                                                                parseFloat(meet.percentage) >= 50 ? '#eab308' : '#ef4444'
+                                                        }" :title="formatTime(meet.joinTime)">
+                                                        <div
+                                                            class="h-full flex items-center justify-center text-xs font-medium text-white px-2 overflow-hidden whitespace-nowrap">
+                                                            <span v-if="meet.durationPercent > 15 && meet.joinTime">
+                                                                {{ meet.durationPercent < 25 ? '~' :
+                                                                    formatTime(meet.joinTime) }} </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div v-else class="text-xs text-muted-foreground text-center">-</div>
+                                            </td>
                                             <td class="px-4 py-2 text-right font-mono"
                                                 :class="getScoreColor(parseFloat(meet.percentage))">
                                                 {{ meet.percentage }}%
@@ -393,7 +506,7 @@ const studentMarks = computed(() => {
                         <div class="grid grid-cols-2 gap-6">
                             <div>
                                 <h3 class="text-lg font-semibold mb-4">{{ t('students.profile.marks.gradeDistribution')
-                                    }}
+                                }}
                                 </h3>
                                 <div class="h-64">
                                     <Pie v-if="gradeDistributionData" :data="gradeDistributionData"
@@ -418,7 +531,7 @@ const studentMarks = computed(() => {
                             </div>
                             <div class="bg-muted/30 rounded-lg p-4">
                                 <div class="text-sm text-muted-foreground">{{ t('students.profile.marks.tasksCompleted')
-                                    }}
+                                }}
                                 </div>
                                 <div class="text-2xl font-bold mt-1">{{ marksStats.completedTasks }}/{{
                                     marksStats.totalTasks }}</div>
@@ -440,9 +553,9 @@ const studentMarks = computed(() => {
                                             <th class="px-4 py-2">{{ t('students.profile.marks.table.date') }}</th>
                                             <th class="px-4 py-2">{{ t('students.profile.marks.table.task') }}</th>
                                             <th class="px-4 py-2 text-center">{{ t('students.profile.marks.table.score')
-                                                }}</th>
+                                            }}</th>
                                             <th class="px-4 py-2 text-center">{{ t('students.profile.marks.table.grade')
-                                                }}</th>
+                                            }}</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y">
@@ -453,7 +566,7 @@ const studentMarks = computed(() => {
                                             <td class="px-4 py-2 text-center font-mono">
                                                 {{ mark.score }} <span class="text-muted-foreground text-xs">/ {{
                                                     mark.maxPoints
-                                                    }}</span>
+                                                }}</span>
                                             </td>
                                             <td class="px-4 py-2 text-center font-bold" :class="{
                                                 'text-green-600': mark.grade == 5,

@@ -21,6 +21,15 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save']);
 
+import { useModalClose } from '../../composables/useModalClose';
+
+useModalClose(() => {
+  if (props.isOpen) {
+    emit('close');
+  }
+});
+
+
 const formData = ref({
   name: '',
   meetId: '',

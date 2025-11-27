@@ -252,13 +252,13 @@ function formatTimeHHMM(date) {
                     <tbody class="divide-y">
                         <tr v-for="(participant, index) in stats.matrix" :key="participant.name"
                             class="hover:bg-muted/50 transition-colors table-row-animate"
-                            :style="{ animationDelay: `${index * 0.025}s` }">
+                            :style="{ animationDelay: `${index * 0.0125}s` }">
                             <td class="p-4 font-medium">{{ participant.name }}</td>
                             <td class="p-4 text-left text-sm text-muted-foreground">{{ participant.groupName || '-' }}
                             </td>
                             <td class="p-4 text-center font-mono text-xs">{{ formatTime(participant.joinTime) }}</td>
                             <td class="p-4 text-center font-mono text-xs">{{ formatDuration(participant.totalDuration)
-                            }}
+                                }}
                             </td>
                             <td class="p-4 text-center">
                                 <div class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium min-w-[3rem]"

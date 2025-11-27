@@ -214,8 +214,18 @@ async function handleDeleteConfirm() {
           <h2 class="text-2xl font-bold tracking-tight">{{ $t('students.title') }}</h2>
           <span class="text-muted-foreground text-sm">{{ $t('students.subtitle', {
             count: filteredStudents.length,
-            total: students.length - (teachers.size || 0)
+            total: students.length
           }) }}</span>
+
+          <!-- Bulk Delete -->
+          <button v-if="selectedStudents.size > 0" @click="openBulkDeleteModal"
+            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-md transition-colors">
+            <Trash2 class="w-4 h-4" />
+            Видалити
+            <span class="ml-1 text-destructive bg-destructive/10 text-[10px] px-2 py-0.25 rounded-full">
+              {{ selectedStudents.size }}
+            </span>
+          </button>
         </div>
 
         <div v-if="selectedGroup" class="flex items-center gap-2">
@@ -227,12 +237,6 @@ async function handleDeleteConfirm() {
           </button>
         </div>
       </div>
-
-      <button v-if="selectedStudents.size > 0" @click="openBulkDeleteModal"
-        class="px-4 py-2 text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md transition-colors flex items-center gap-2 w-full sm:w-auto">
-        <Trash2 class="w-4 h-4" />
-        {{ $t('students.delete', { count: selectedStudents.size }) }}
-      </button>
     </div>
 
     <!-- Search Row -->
@@ -350,7 +354,7 @@ async function handleDeleteConfirm() {
           <tbody class="divide-y">
             <tr v-for="(student, index) in filteredStudents" :key="student.id"
               class="hover:bg-muted/50 transition-colors table-row-animate"
-              :style="{ animationDelay: `${index * 0.025}s` }"
+              :style="{ animationDelay: `${index * 0.0125}s` }"
               :class="{ 'bg-muted/30': selectedStudents.has(student.id) }">
               <td class="px-4 py-3">
                 <input type="checkbox" :checked="student.id && selectedStudents.has(student.id)"

@@ -42,6 +42,7 @@ export function useStudents() {
         // Initialize with all known members
         members.forEach(m => {
             if (m.role === 'teacher') return; // Skip teachers
+            if (teachers.value.has(m.name)) return; // Skip members listed as teachers in settings
             if (m.hidden) return; // Skip hidden/deleted members
 
             studentMap.set(m.name, {

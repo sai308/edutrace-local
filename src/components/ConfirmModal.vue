@@ -26,6 +26,15 @@ defineProps({
 });
 
 const emit = defineEmits(['confirm', 'cancel']);
+
+import { useModalClose } from '../composables/useModalClose';
+
+useModalClose(() => {
+  if (props.isOpen) {
+    emit('cancel');
+  }
+});
+
 </script>
 
 <template>

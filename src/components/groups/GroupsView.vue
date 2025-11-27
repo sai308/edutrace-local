@@ -279,12 +279,12 @@ function openQrModal(meetId) {
             </tr>
             <tr v-for="(group, index) in filteredGroups" :key="group.id"
               class="border-b last:border-0 hover:bg-muted/50 transition-colors table-row-animate"
-              :style="{ animationDelay: `${index * 0.025}s` }">
+              :style="{ animationDelay: `${index * 0.0125}s` }">
               <td v-if="isColumnVisible('name')" class="p-4 font-medium">{{ group.name }}</td>
               <td v-if="isColumnVisible('course')" class="p-4 text-muted-foreground">{{ group.course || '-' }}</td>
               <td v-if="isColumnVisible('meetId')" class="p-4 font-mono text-xs">{{ group.meetId }}</td>
               <td v-if="isColumnVisible('members')" class="p-4 text-muted-foreground">{{ memberCounts[group.name] || 0
-                }}</td>
+              }}</td>
               <td v-if="isColumnVisible('teacher')" class="p-4 text-muted-foreground">{{ group.teacher || '-' }}</td>
               <td v-if="isColumnVisible('completion')" class="p-4 text-center text-muted-foreground">
                 <span :class="{

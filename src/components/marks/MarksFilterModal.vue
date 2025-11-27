@@ -20,6 +20,15 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'apply']);
 
+import { useModalClose } from '../../composables/useModalClose';
+
+useModalClose(() => {
+    if (props.isOpen) {
+        emit('close');
+    }
+});
+
+
 const localFilters = ref({ ...props.filters });
 
 watch(() => props.isOpen, (newVal) => {
@@ -94,7 +103,7 @@ function clear() {
                 <!-- Date From -->
                 <div class="space-y-2">
                     <label for="DateFromFilter" class="text-sm font-medium">{{ $t('marks.filterModal.dateFrom')
-                        }}</label>
+                    }}</label>
                     <div class="relative">
                         <Calendar class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input name="DateFromFilter" ref="dateInput" @click="handleDateClick"

@@ -949,6 +949,45 @@ export const repository = {
         await tx.done;
     },
 
+    async getAllMarksWithRelations() {
+        const db = await dbPromise;
+
+        // Fetch all data in parallel - single batch operation
+        const [allMarks, allTasks, allMembers] = await Promise.all([
+            db.getAll('marks'),
+            db.getAll('tasks'),
+            db.getAll('members')
+        ]);
+
+        // Build lookup maps for O(1) access
+        const taskMap = new Map(allTasks.map(t => [t.id, t]));
+        const memberMap = new Map(allMembers.map(m => [m.id, m]));
+
+        // Transform marks with related data in a single pass
+        const flatMarks = [];
+        for (const mark of allMarks) {
+            const task = taskMap.get(mark.taskId);
+            const student = memberMap.get(mark.studentId);
+
+            // Skip if related data is missing (orphaned records)
+            if (!task || !student) continue;
+
+            flatMarks.push({
+                id: mark.id,
+                studentName: student.name,
+                groupName: task.groupName,
+                taskName: task.name,
+                taskDate: task.date,
+                maxPoints: task.maxPoints,
+                score: mark.score,
+                synced: mark.synced,
+                createdAt: mark.createdAt
+            });
+        }
+
+        return flatMarks;
+    },
+
     // Entity Statistics
     async getEntityCounts() {
         const db = await dbPromise;

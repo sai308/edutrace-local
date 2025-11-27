@@ -18,6 +18,15 @@ const DEFAULT_DURATION_MINUTES_LIMIT = 75;
 
 const emit = defineEmits(['close', 'refresh']);
 
+import { useModalClose } from '../composables/useModalClose';
+
+useModalClose(() => {
+    if (props.isOpen) {
+        emit('close');
+    }
+});
+
+
 // Tabs
 const activeTab = ref('general');
 
@@ -404,7 +413,7 @@ async function executeEraseMembers() {
                                 </div>
                             </div>
                             <p class="text-xs text-muted-foreground">{{ $t('settings.general.durationLimit.description')
-                                }}</p>
+                            }}</p>
                         </div>
 
                         <!-- Teachers -->

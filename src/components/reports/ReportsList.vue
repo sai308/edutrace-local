@@ -234,15 +234,14 @@ function handleSearchPaste(event) {
           count: filteredMeets.length, total:
             meets.length
         }) }}</span>
-      </div>
-
-      <div v-if="selectedIds.size > 0"
-        class="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 w-full sm:w-auto">
-        <span class="text-sm text-muted-foreground">{{ $t('reports.selected', { count: selectedIds.size }) }}</span>
-        <button @click="handleBulkDelete"
-          class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md transition-colors w-full sm:w-auto">
+        <!-- Bulk Delete -->
+        <button v-if="selectedIds.size > 0" @click="handleBulkDelete"
+          class="flex items-selectedIds gap-2 px-3 py-1.5 text-sm font-medium text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-md transition-colors">
           <Trash2 class="w-4 h-4" />
-          {{ $t('reports.deleteSelected') }}
+          Видалити
+          <span class="ml-1 text-destructive bg-destructive/10 text-[10px] px-2 py-0.25 rounded-full">
+            {{ selectedIds.size }}
+          </span>
         </button>
       </div>
     </div>
@@ -363,7 +362,7 @@ function handleSearchPaste(event) {
             </tr>
             <tr v-for="(meet, index) in filteredMeets" :key="meet.id"
               class="border-b last:border-0 hover:bg-muted/50 transition-colors table-row-animate"
-              :style="{ animationDelay: `${index * 0.025}s` }" :class="{ 'bg-muted/20': selectedIds.has(meet.id) }">
+              :style="{ animationDelay: `${index * 0.0125}s` }" :class="{ 'bg-muted/20': selectedIds.has(meet.id) }">
               <td class="p-4">
                 <input type="checkbox" :checked="selectedIds.has(meet.id)" @change="toggleSelection(meet.id)"
                   class="rounded border-gray-300 text-primary focus:ring-primary" />

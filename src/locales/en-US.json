@@ -218,6 +218,7 @@
                     "group": "Group",
                     "meetId": "Meet ID",
                     "duration": "Duration",
+                    "progress": "Progress",
                     "status": "Status"
                 }
             },

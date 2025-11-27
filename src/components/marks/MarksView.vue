@@ -283,6 +283,16 @@ function formatTaskName(taskName) {
                         count: filteredMarks.length,
                         total: marks.length
                     }) }}</span>
+
+                    <!-- Bulk Delete -->
+                    <button v-if="selectedMarks.size > 0" @click="confirmBulkDelete"
+                        class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-md transition-colors">
+                        <Trash2 class="w-4 h-4" />
+                        Видалити
+                        <span class="ml-1 text-destructive bg-destructive/10 text-[10px] px-2 py-0.25 rounded-full">
+                            {{ selectedMarks.size }}
+                        </span>
+                    </button>
                 </div>
             </div>
 
@@ -333,12 +343,6 @@ function formatTaskName(taskName) {
                     </div>
                 </div>
 
-                <!-- Bulk Delete -->
-                <button v-if="selectedMarks.size > 0" @click="confirmBulkDelete"
-                    class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-md transition-colors">
-                    <Trash2 class="w-4 h-4" />
-                </button>
-
                 <!-- Filter Button -->
                 <button @click="showFilterModal = true"
                     class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors relative"
@@ -346,7 +350,7 @@ function formatTaskName(taskName) {
                     <Filter class="w-4 h-4" />
                     {{ $t('marks.filters') }}
                     <span v-if="activeFilterCount > 0"
-                        class="ml-1 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full">
+                        class="ml-1 bg-primary text-primary-foreground text-[10px] px-2 py-0.25 rounded-full">
                         {{ activeFilterCount }}
                     </span>
                 </button>
@@ -434,7 +438,7 @@ function formatTaskName(taskName) {
                     <tbody class="divide-y">
                         <tr v-for="(mark, index) in filteredMarks" :key="mark.id"
                             class="hover:bg-muted/50 transition-colors table-row-animate"
-                            :style="{ animationDelay: `${index * 0.025}s` }"
+                            :style="{ animationDelay: `${index * 0.0125}s` }"
                             :class="{ 'bg-muted/30': selectedMarks.has(mark.id) }">
                             <td class="p-3 text-center">
                                 <input type="checkbox" :checked="selectedMarks.has(mark.id)"

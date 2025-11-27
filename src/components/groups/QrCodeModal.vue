@@ -22,6 +22,15 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
+import { useModalClose } from '../../composables/useModalClose';
+
+useModalClose(() => {
+  if (props.isOpen) {
+    emit('close');
+  }
+});
+
+
 const qrDataUrl = ref('');
 const meetUrl = ref('');
 
