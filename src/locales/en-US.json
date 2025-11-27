@@ -1,4 +1,19 @@
 {
+    "workspace": {
+        "title": "Workspaces",
+        "create_new": "Create New Workspace",
+        "create_modal_title": "Create Workspace",
+        "name_label": "Workspace Name",
+        "icon_label": "Workspace Icon",
+        "copy_settings": "Copy Current Settings",
+        "copy_settings_desc": "Includes duration limit, default teacher, and ignored users list.",
+        "cancel": "Cancel",
+        "create_button": "Create Workspace",
+        "delete_modal_title": "Delete Workspace",
+        "delete_warning": "This action cannot be undone. This will permanently delete the {name} workspace and all associated data.",
+        "delete_confirm_label": "Type {name} to confirm:",
+        "delete_button": "Delete Workspace"
+    },
     "app": {
         "title": "Edutrace",
         "settings": "Settings"
@@ -642,6 +657,27 @@
                 "storageInsights": "<strong>Storage Insights:</strong> See exactly how many records you have and how much storage each entity type is using.",
                 "safeDataManagement": "<strong>Safe Data Management:</strong> All destructive operations (erase, import) require confirmation to prevent accidental data loss.",
                 "flexibleDuration": "<strong>Flexible Duration Control:</strong> Adjust attendance duration limits globally or per-session to match your specific needs (e.g., different class lengths)."
+            }
+        },
+        "workspaces": {
+            "title": "Workspaces",
+            "content": "Workspaces allow you to organize your data into separate, isolated environments. Each workspace has its own set of reports, groups, students, marks, and settings, making it perfect for managing different semesters, courses, or academic years.",
+            "howToUse": "How to use",
+            "whatYouGet": "What you get",
+            "details": {
+                "createWorkspace": "<strong>Create Workspace:</strong> Click the workspace switcher in the top-right corner (database icon), then click \"Create New Workspace\". Enter a name (e.g., \"Fall 2024\"), select an icon, and choose whether to copy your current settings.",
+                "switchWorkspace": "<strong>Switch Workspaces:</strong> Click the workspace switcher to see all your workspaces. Click on any workspace to switch to it. The currently active workspace is highlighted with a checkmark.",
+                "iconSelection": "<strong>Icon Selection:</strong> When creating a workspace, choose from 18 different icons to visually distinguish your workspaces. Icons appear in the switcher and help you quickly identify which workspace you're in.",
+                "copySettings": "<strong>Copy Settings:</strong> When creating a new workspace, you can optionally copy your current workspace's settings (duration limit, default teacher, ignored users). This saves time when setting up similar environments.",
+                "deleteWorkspace": "<strong>Delete Workspace:</strong> Hover over a workspace in the switcher and click the trash icon. You'll need to type the workspace name to confirm deletion. Note: The default workspace cannot be deleted.",
+                "dataIsolation": "<strong>Complete Data Isolation:</strong> Each workspace maintains completely separate data. Reports, groups, students, and marks in one workspace don't affect or appear in another workspace.",
+                "settingsIsolation": "<strong>Settings Isolation:</strong> Each workspace has its own settings for duration limits, default teacher, and ignored users. Changes in one workspace don't affect others.",
+                "multiSemester": "<strong>Multi-Semester Management:</strong> Create separate workspaces for different semesters or academic years (e.g., \"Fall 2024\", \"Spring 2025\") to keep historical data organized.",
+                "courseSegregation": "<strong>Course Segregation:</strong> Use workspaces to separate different types of courses or programs you teach, preventing data mixing.",
+                "cleanStart": "<strong>Clean Start:</strong> Start each new semester with a fresh workspace while preserving all historical data in previous workspaces.",
+                "visualIdentification": "<strong>Visual Identification:</strong> Custom icons make it easy to identify which workspace you're currently working in at a glance.",
+                "flexibleOrganization": "<strong>Flexible Organization:</strong> Organize your teaching data however makes sense for you - by semester, year, course type, or any other criteria.",
+                "easyAccess": "<strong>Easy Access:</strong> The workspace switcher is always accessible from the top navigation bar, making it quick to switch contexts."
             }
         }
     },

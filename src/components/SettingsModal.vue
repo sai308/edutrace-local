@@ -443,9 +443,6 @@ async function executeEraseMembers() {
                                     {{ entityCounts.reports }}
                                 </span>
                             </div>
-                            <p v-if="entitySizes.reports > 0" class="text-xs text-muted-foreground">
-                                {{ $t('settings.data.reports.memory') }}: {{ formatBytes(entitySizes.reports) }}
-                            </p>
                             <div class="flex flex-wrap gap-2">
                                 <button @click="exportReports"
                                     class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
@@ -457,11 +454,16 @@ async function executeEraseMembers() {
                                     <Upload class="w-4 h-4" />
                                     {{ $t('settings.data.actions.import') }}
                                 </button>
-                                <button @click="showEraseReportsConfirm = true"
-                                    class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
-                                    <Trash2 class="w-4 h-4" />
-                                    {{ $t('settings.data.actions.erase') }}
-                                </button>
+                                <div class="flex gap-4 items-center">
+                                    <button @click="showEraseReportsConfirm = true"
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
+                                        <Trash2 class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.erase') }}
+                                    </button>
+                                    <p v-if="entitySizes.reports > 0" class="text-xs text-muted-foreground">
+                                        {{ $t('settings.data.reports.memory') }}: {{ formatBytes(entitySizes.reports) }}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -474,9 +476,6 @@ async function executeEraseMembers() {
                                     {{ entityCounts.groups }}
                                 </span>
                             </div>
-                            <p v-if="entitySizes.groups > 0" class="text-xs text-muted-foreground">
-                                {{ $t('settings.data.groups.memory') }}: {{ formatBytes(entitySizes.groups) }}
-                            </p>
                             <div class="flex flex-wrap gap-2">
                                 <button @click="exportGroups"
                                     class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
@@ -488,12 +487,18 @@ async function executeEraseMembers() {
                                     <Upload class="w-4 h-4" />
                                     {{ $t('settings.data.actions.import') }}
                                 </button>
-                                <button @click="showEraseGroupsConfirm = true"
-                                    class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
-                                    <Trash2 class="w-4 h-4" />
-                                    {{ $t('settings.data.actions.erase') }}
-                                </button>
+                                <div class="flex gap-4 items-center">
+                                    <button @click="showEraseGroupsConfirm = true"
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
+                                        <Trash2 class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.erase') }}
+                                    </button>
+                                    <p v-if="entitySizes.groups > 0" class="text-xs text-muted-foreground">
+                                        {{ $t('settings.data.groups.memory') }}: {{ formatBytes(entitySizes.groups) }}
+                                    </p>
+                                </div>
                             </div>
+
                         </div>
 
                         <!-- Marks Card -->
@@ -505,9 +510,6 @@ async function executeEraseMembers() {
                                     {{ entityCounts.marks }}
                                 </span>
                             </div>
-                            <p v-if="entitySizes.marks > 0" class="text-xs text-muted-foreground">
-                                {{ $t('settings.data.marks.memory') }}: {{ formatBytes(entitySizes.marks) }}
-                            </p>
                             <div class="flex flex-wrap gap-2">
                                 <button @click="exportMarks"
                                     class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
@@ -519,11 +521,17 @@ async function executeEraseMembers() {
                                     <Upload class="w-4 h-4" />
                                     {{ $t('settings.data.actions.import') }}
                                 </button>
-                                <button @click="showEraseMarksConfirm = true"
-                                    class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
-                                    <Trash2 class="w-4 h-4" />
-                                    {{ $t('settings.data.actions.erase') }}
-                                </button>
+                                <div class="flex gap-4 items-center">
+
+                                    <button @click="showEraseMarksConfirm = true"
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
+                                        <Trash2 class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.erase') }}
+                                    </button>
+                                    <p v-if="entitySizes.marks > 0" class="text-xs text-muted-foreground">
+                                        {{ $t('settings.data.marks.memory') }}: {{ formatBytes(entitySizes.marks) }}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -536,15 +544,15 @@ async function executeEraseMembers() {
                                     {{ entityCounts.members }}
                                 </span>
                             </div>
-                            <p v-if="entitySizes.members > 0" class="text-xs text-muted-foreground">
-                                {{ $t('settings.data.members.memory') }}: {{ formatBytes(entitySizes.members) }}
-                            </p>
-                            <div class="flex gap-2">
+                            <div class="flex gap-4 items-center">
                                 <button @click="showEraseMembersConfirm = true"
                                     class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
                                     <Trash2 class="w-4 h-4" />
                                     {{ $t('settings.data.actions.erase') }}
                                 </button>
+                                <p v-if="entitySizes.members > 0" class="text-xs text-muted-foreground">
+                                    {{ $t('settings.data.members.memory') }}: {{ formatBytes(entitySizes.members) }}
+                                </p>
                             </div>
                         </div>
                     </div>

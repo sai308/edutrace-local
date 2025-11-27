@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Logs, LayoutDashboard, File, Settings, Users, UserRoundSearch, Star, BookOpen } from 'lucide-vue-next';
 import SettingsModal from './components/SettingsModal.vue';
+import WorkspaceSwitcher from './components/WorkspaceSwitcher.vue';
 import ToastContainer from './components/ToastContainer.vue';
 import AppFooter from './components/AppFooter.vue';
 import { useMeets } from './composables/useMeets';
@@ -113,6 +114,7 @@ onUnmounted(() => {
         </div>
 
         <div class="flex items-center gap-4">
+          <WorkspaceSwitcher />
           <button @click="openSettings" class="p-2 hover:bg-muted rounded-full transition-colors"
             :title="$t('app.settings')">
             <Settings class="w-5 h-5" />

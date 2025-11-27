@@ -1,165 +1,199 @@
 import { openDB } from 'idb';
 
-const DB_NAME = 'meet-attendance-db';
 const DB_VERSION = 8;
+const DEFAULT_DB_NAME = 'meet-attendance-db';
 
-export const dbPromise = openDB(DB_NAME, DB_VERSION, {
-    async upgrade(db, oldVersion, newVersion, transaction) {
-        // Store for meets
-        if (!db.objectStoreNames.contains('meets')) {
-            const meetStore = db.createObjectStore('meets', { keyPath: 'id' });
-            meetStore.createIndex('meetId', 'meetId', { unique: false });
-            meetStore.createIndex('date', 'date', { unique: false });
-        }
-        // Store for settings (ignored users)
-        if (!db.objectStoreNames.contains('settings')) {
-            db.createObjectStore('settings', { keyPath: 'key' });
-        }
-        // Store for groups
-        if (!db.objectStoreNames.contains('groups')) {
-            const store = db.createObjectStore('groups', { keyPath: 'id' });
-            store.createIndex('meetId', 'meetId', { unique: true }); // Unique by default for new DBs
-            store.createIndex('name', 'name', { unique: true });
-        } else {
-            // Upgrade existing groups store
-            const store = transaction.objectStore('groups');
+// Workspace Management
+const WORKSPACE_KEY = 'edutrace_workspaces';
+const CURRENT_WORKSPACE_KEY = 'edutrace_current_workspace';
 
-            // Ensure meetId is unique (recreate if needed)
-            if (store.indexNames.contains('meetId')) {
-                // We can't easily check if it's unique, so we assume we need to upgrade it if we are hitting this block in v7
-                if (oldVersion < 7) {
-                    store.deleteIndex('meetId');
+function getWorkspaces() {
+    try {
+        const stored = localStorage.getItem(WORKSPACE_KEY);
+        return stored ? JSON.parse(stored) : [{ id: 'default', name: 'Default', dbName: DEFAULT_DB_NAME, createdAt: new Date().toISOString() }];
+    } catch (e) {
+        return [{ id: 'default', name: 'Default', dbName: DEFAULT_DB_NAME, createdAt: new Date().toISOString() }];
+    }
+}
+
+function saveWorkspaces(workspaces) {
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify(workspaces));
+}
+
+function getCurrentWorkspaceId() {
+    return localStorage.getItem(CURRENT_WORKSPACE_KEY) || 'default';
+}
+
+function setCurrentWorkspaceId(id) {
+    localStorage.setItem(CURRENT_WORKSPACE_KEY, id);
+}
+
+function getCurrentDbName() {
+    const currentId = getCurrentWorkspaceId();
+    const workspaces = getWorkspaces();
+    const workspace = workspaces.find(w => w.id === currentId);
+    return workspace ? workspace.dbName : DEFAULT_DB_NAME;
+}
+
+// Dynamic DB Connection
+let _dbPromise = null;
+let _currentDbName = null;
+
+function getDb() {
+    const dbName = getCurrentDbName();
+
+    if (_dbPromise && _currentDbName === dbName) {
+        return _dbPromise;
+    }
+
+    _currentDbName = dbName;
+    _dbPromise = openDB(dbName, DB_VERSION, {
+        async upgrade(db, oldVersion, newVersion, transaction) {
+            // Store for meets
+            if (!db.objectStoreNames.contains('meets')) {
+                const meetStore = db.createObjectStore('meets', { keyPath: 'id' });
+                meetStore.createIndex('meetId', 'meetId', { unique: false });
+                meetStore.createIndex('date', 'date', { unique: false });
+            }
+            // Store for settings (ignored users)
+            if (!db.objectStoreNames.contains('settings')) {
+                db.createObjectStore('settings', { keyPath: 'key' });
+            }
+            // Store for groups
+            if (!db.objectStoreNames.contains('groups')) {
+                const store = db.createObjectStore('groups', { keyPath: 'id' });
+                store.createIndex('meetId', 'meetId', { unique: true }); // Unique by default for new DBs
+                store.createIndex('name', 'name', { unique: true });
+            } else {
+                // Upgrade existing groups store
+                const store = transaction.objectStore('groups');
+
+                // Ensure meetId is unique (recreate if needed)
+                if (store.indexNames.contains('meetId')) {
+                    // We can't easily check if it's unique, so we assume we need to upgrade it if we are hitting this block in v7
+                    if (oldVersion < 7) {
+                        store.deleteIndex('meetId');
+                        store.createIndex('meetId', 'meetId', { unique: true });
+                    }
+                } else {
                     store.createIndex('meetId', 'meetId', { unique: true });
                 }
-            } else {
-                store.createIndex('meetId', 'meetId', { unique: true });
-            }
 
-            // Ensure name index exists and is unique
-            if (!store.indexNames.contains('name')) {
-                store.createIndex('name', 'name', { unique: true });
-            }
+                // Ensure name index exists and is unique
+                if (!store.indexNames.contains('name')) {
+                    store.createIndex('name', 'name', { unique: true });
+                }
 
-            // Migration: Backfill course for groups (v8)
-            if (oldVersion < 8) {
-                let cursor = await store.openCursor();
-                while (cursor) {
-                    const group = cursor.value;
-                    if (!group.course && group.name) {
-                        // Try to extract course from name (e.g. KH-41 -> 4)
-                        const match = group.name.match(/\d/);
-                        if (match) {
-                            const course = parseInt(match[0], 10);
-                            if (course >= 1 && course <= 4) {
-                                group.course = course;
-                                cursor.update(group);
+                // Migration: Backfill course for groups (v8)
+                if (oldVersion < 8) {
+                    let cursor = await store.openCursor();
+                    while (cursor) {
+                        const group = cursor.value;
+                        if (!group.course && group.name) {
+                            // Try to extract course from name (e.g. KH-41 -> 4)
+                            const match = group.name.match(/\d/);
+                            if (match) {
+                                const course = parseInt(match[0], 10);
+                                if (course >= 1 && course <= 4) {
+                                    group.course = course;
+                                    cursor.update(group);
+                                }
                             }
                         }
+                        cursor = await cursor.continue();
                     }
-                    cursor = await cursor.continue();
                 }
             }
-        }
-        // Store for tasks
-        if (!db.objectStoreNames.contains('tasks')) {
-            const store = db.createObjectStore('tasks', { keyPath: 'id', autoIncrement: true });
-            store.createIndex('groupId', 'groupId', { unique: false });
-            store.createIndex('name_date_group', ['name', 'date', 'groupId'], { unique: true });
-            store.createIndex('groupName', 'groupName', { unique: false }); // Added in v6
-        } else {
-            const store = transaction.objectStore('tasks');
-            if (!store.indexNames.contains('groupName')) {
-                store.createIndex('groupName', 'groupName', { unique: false });
+            // Store for tasks
+            if (!db.objectStoreNames.contains('tasks')) {
+                const store = db.createObjectStore('tasks', { keyPath: 'id', autoIncrement: true });
+                store.createIndex('groupId', 'groupId', { unique: false });
+                store.createIndex('name_date_group', ['name', 'date', 'groupId'], { unique: true });
+                store.createIndex('groupName', 'groupName', { unique: false }); // Added in v6
+            } else {
+                const store = transaction.objectStore('tasks');
+                if (!store.indexNames.contains('groupName')) {
+                    store.createIndex('groupName', 'groupName', { unique: false });
+                }
             }
-        }
-        // Store for marks
-        if (!db.objectStoreNames.contains('marks')) {
-            const store = db.createObjectStore('marks', { keyPath: 'id', autoIncrement: true });
-            store.createIndex('taskId', 'taskId', { unique: false });
-            store.createIndex('studentId', 'studentId', { unique: false });
-            store.createIndex('task_student', ['taskId', 'studentId'], { unique: true });
-            store.createIndex('createdAt', 'createdAt', { unique: false });
-        } else {
-            // Upgrade existing store if needed (version 4)
-            const store = transaction.objectStore('marks');
-            if (!store.indexNames.contains('createdAt')) {
+            // Store for marks
+            if (!db.objectStoreNames.contains('marks')) {
+                const store = db.createObjectStore('marks', { keyPath: 'id', autoIncrement: true });
+                store.createIndex('taskId', 'taskId', { unique: false });
+                store.createIndex('studentId', 'studentId', { unique: false });
+                store.createIndex('task_student', ['taskId', 'studentId'], { unique: true });
                 store.createIndex('createdAt', 'createdAt', { unique: false });
+            } else {
+                // Upgrade existing store if needed (version 4)
+                const store = transaction.objectStore('marks');
+                if (!store.indexNames.contains('createdAt')) {
+                    store.createIndex('createdAt', 'createdAt', { unique: false });
+                }
             }
-        }
-        // Store for members (formerly students)
-        if (!db.objectStoreNames.contains('members')) {
-            const store = db.createObjectStore('members', { keyPath: 'id', autoIncrement: true });
-            store.createIndex('name', 'name', { unique: true }); // Name should be unique for merging
-            store.createIndex('groupName', 'groupName', { unique: false });
-            store.createIndex('role', 'role', { unique: false });
-        }
+            // Store for members (formerly students)
+            if (!db.objectStoreNames.contains('members')) {
+                const store = db.createObjectStore('members', { keyPath: 'id', autoIncrement: true });
+                store.createIndex('name', 'name', { unique: true }); // Name should be unique for merging
+                store.createIndex('groupName', 'groupName', { unique: false });
+                store.createIndex('role', 'role', { unique: false });
+            }
 
-        // Migration: Students -> Members
-        if (oldVersion < 5) {
-            // We can't easily migrate here because we need to read from 'students' which might not exist in this transaction context if we just created 'members'.
-            // But 'students' exists from previous versions.
-            // However, doing complex migration in upgrade can be tricky.
-            // Given the user is ok with "Erase", we might just leave it empty or try a best-effort copy if 'students' exists.
-            if (db.objectStoreNames.contains('students')) {
-                const studentStore = transaction.objectStore('students');
-                const memberStore = transaction.objectStore('members');
-                // Iterate and copy
-                // This is async inside upgrade, need to be careful.
-                // IDB upgrade transaction is special.
-                // Let's skip auto-migration for now to avoid locking issues, user can re-import.
-                // Or better, we can do it lazily or just assume fresh start for "Members".
-                // The user request implies a refactor, so data migration is expected but maybe not critical if they have CSVs.
-                // Let's just create the store.
+            // Migration: Students -> Members
+            if (oldVersion < 5) {
+                if (db.objectStoreNames.contains('students')) {
+                    // Skip auto-migration
+                }
             }
-        }
-    },
-});
+        },
+    });
+    return _dbPromise;
+}
 
 export const repository = {
     async saveMeet(meetData) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.put('meets', meetData);
     },
 
     async getAll(storeName) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.getAll(storeName);
     },
 
     async getAllMeets() {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.getAll('meets');
     },
 
     async getMeetsByMeetId(meetId) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.getAllFromIndex('meets', 'meetId', meetId);
     },
 
     async getMeetById(id) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.get('meets', id);
     },
 
     async checkMeetExists(meetId, date) {
-        const db = await dbPromise;
+        const db = await getDb();
         const meets = await db.getAllFromIndex('meets', 'meetId', meetId);
         return meets.some(m => m.date === date);
     },
 
     async isDuplicateFile(filename, meetId, date) {
-        const db = await dbPromise;
+        const db = await getDb();
         const meets = await db.getAllFromIndex('meets', 'meetId', meetId);
         return meets.some(m => m.date === date && m.filename === filename);
     },
 
     async deleteMeet(id) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.delete('meets', id);
     },
 
     async deleteMeets(ids) {
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('meets', 'readwrite');
         const store = tx.objectStore('meets');
         await Promise.all(ids.map(id => store.delete(id)));
@@ -168,12 +202,12 @@ export const repository = {
 
     // Groups
     async getGroups() {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.getAll('groups');
     },
 
     async saveGroup(group) {
-        const db = await dbPromise;
+        const db = await getDb();
         await db.put('groups', group);
 
         // Sync members from existing meets for this group
@@ -205,7 +239,7 @@ export const repository = {
             }
         });
 
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('members', 'readwrite');
         const store = tx.objectStore('members');
 
@@ -242,7 +276,7 @@ export const repository = {
             }
         });
 
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('members', 'readwrite');
         const store = tx.objectStore('members');
 
@@ -267,7 +301,7 @@ export const repository = {
     },
 
     async hideMember(id) {
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('members', 'readwrite');
         const store = tx.objectStore('members');
         const member = await store.get(id);
@@ -279,7 +313,7 @@ export const repository = {
     },
 
     async hideMembers(ids) {
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('members', 'readwrite');
         const store = tx.objectStore('members');
         await Promise.all(ids.map(async id => {
@@ -301,7 +335,7 @@ export const repository = {
             role = teachers.includes(member.name) ? 'teacher' : 'student';
         }
 
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('members', 'readwrite');
         const store = tx.objectStore('members');
 
@@ -336,7 +370,7 @@ export const repository = {
     },
 
     async deleteGroup(id) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.delete('groups', id);
     },
 
@@ -349,56 +383,13 @@ export const repository = {
         return map;
     },
 
-    async getIgnoredUsers() {
-        return [];
-    },
-
-    async saveIgnoredUsers(users) {
-    },
-
-    async getDurationLimit() {
-        try {
-            const stored = localStorage.getItem('durationLimit');
-            return stored ? parseInt(stored, 10) : 0;
-        } catch (e) {
-            console.error('Error reading duration limit from localStorage', e);
-            return 0;
-        }
-    },
-
-    async saveDurationLimit(limit) {
-        try {
-            localStorage.setItem('durationLimit', limit.toString());
-        } catch (e) {
-            console.error('Error saving duration limit to localStorage', e);
-        }
-    },
-
-    async getDefaultTeacher() {
-        try {
-            const stored = localStorage.getItem('defaultTeacher');
-            return stored || '';
-        } catch (e) {
-            console.error('Error reading default teacher from localStorage', e);
-            return '';
-        }
-    },
-
-    async saveDefaultTeacher(teacher) {
-        try {
-            localStorage.setItem('defaultTeacher', teacher);
-        } catch (e) {
-            console.error('Error saving default teacher to localStorage', e);
-        }
-    },
-
     async applyDurationLimitToAll(limitMinutes) {
         if (!limitMinutes || limitMinutes <= 0) return 0;
 
         const limitSeconds = limitMinutes * 60;
         const meets = await this.getAllMeets();
         let fixedCount = 0;
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('meets', 'readwrite');
         const store = tx.objectStore('meets');
 
@@ -460,7 +451,7 @@ export const repository = {
 
         await this.clearAll();
 
-        const db = await dbPromise;
+        const db = await getDb();
 
         // Restore meets
         if (jsonData.meets.length > 0) {
@@ -496,6 +487,7 @@ export const repository = {
         const taskIdMapping = new Map(); // Maps old task IDs to new task IDs
 
         if (jsonData.tasks && jsonData.tasks.length > 0) {
+            const db = await getDb();
             const tx = db.transaction('tasks', 'readwrite');
             const store = tx.objectStore('tasks');
 
@@ -551,7 +543,7 @@ export const repository = {
     },
 
     async clearAll() {
-        const db = await dbPromise;
+        const db = await getDb();
         await db.clear('meets');
         await db.clear('groups');
         await db.clear('tasks');
@@ -560,8 +552,14 @@ export const repository = {
         if (db.objectStoreNames.contains('students')) {
             await db.clear('students');
         }
-        localStorage.removeItem('ignoredUsers');
-        localStorage.removeItem('durationLimit');
+
+        const wsId = getCurrentWorkspaceId();
+        const suffix = wsId === 'default' ? '' : `_${wsId}`;
+
+        localStorage.removeItem(wsId === 'default' ? 'ignoredUsers' : `ignoredUsers${suffix}`);
+        localStorage.removeItem(wsId === 'default' ? 'durationLimit' : `durationLimit${suffix}`);
+        localStorage.removeItem(wsId === 'default' ? 'defaultTeacher' : `defaultTeacher${suffix}`);
+        localStorage.removeItem(wsId === 'default' ? 'teachers' : `teachers${suffix}`);
     },
 
     // Granular Export Methods
@@ -586,7 +584,7 @@ export const repository = {
     },
 
     async exportMarks() {
-        const db = await dbPromise;
+        const db = await getDb();
         const [tasks, marks, members] = await Promise.all([
             db.getAll('tasks'),
             db.getAll('marks'),
@@ -609,7 +607,7 @@ export const repository = {
         }
 
         await this.clearReports();
-        const db = await dbPromise;
+        const db = await getDb();
 
         if (jsonData.meets.length > 0) {
             const tx = db.transaction('meets', 'readwrite');
@@ -627,7 +625,7 @@ export const repository = {
         }
 
         await this.clearGroups();
-        const db = await dbPromise;
+        const db = await getDb();
 
         if (jsonData.groups.length > 0) {
             const tx = db.transaction('groups', 'readwrite');
@@ -645,7 +643,7 @@ export const repository = {
         }
 
         await this.clearMarks();
-        const db = await dbPromise;
+        const db = await getDb();
 
         const tasks = jsonData.tasks || [];
         const marks = jsonData.marks || [];
@@ -655,7 +653,7 @@ export const repository = {
         const taskIdMapping = new Map(); // Maps old task IDs to new task IDs
 
         if (tasks.length > 0) {
-            const db = await dbPromise;
+            const db = await getDb();
             const tx = db.transaction('tasks', 'readwrite');
             const store = tx.objectStore('tasks');
 
@@ -704,23 +702,23 @@ export const repository = {
 
     // Granular Clear Methods
     async clearReports() {
-        const db = await dbPromise;
+        const db = await getDb();
         await db.clear('meets');
     },
 
     async clearGroups() {
-        const db = await dbPromise;
+        const db = await getDb();
         await db.clear('groups');
     },
 
     async clearMarks() {
-        const db = await dbPromise;
+        const db = await getDb();
         await db.clear('tasks');
         await db.clear('marks');
     },
 
     async clearMembers() {
-        const db = await dbPromise;
+        const db = await getDb();
         await db.clear('members');
     },
 
@@ -731,7 +729,7 @@ export const repository = {
 
     // Tasks
     async saveTask(task) {
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('tasks', 'readwrite');
 
         // Use groupName index to find potential duplicates
@@ -751,17 +749,17 @@ export const repository = {
     },
 
     async getAllTasks() {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.getAll('tasks');
     },
 
     async getTasksByGroup(groupName) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.getAllFromIndex('tasks', 'groupName', groupName);
     },
 
     async findTaskByNaturalKey(name, date, groupName) {
-        const db = await dbPromise;
+        const db = await getDb();
         const tasks = await db.getAllFromIndex('tasks', 'groupName', groupName);
         return tasks.find(t => t.name === name && t.date === date);
     },
@@ -775,7 +773,7 @@ export const repository = {
             role = teachers.includes(member.name) ? 'teacher' : 'student';
         }
 
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('members', 'readwrite');
         const store = tx.objectStore('members');
 
@@ -810,22 +808,22 @@ export const repository = {
     },
 
     async getAllMembers() {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.getAll('members');
     },
 
     async getMembersByGroup(groupName) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.getAllFromIndex('members', 'groupName', groupName);
     },
 
     async deleteMember(id) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.delete('members', id);
     },
 
     async deleteMembers(ids) {
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('members', 'readwrite');
         const store = tx.objectStore('members');
         await Promise.all(ids.map(id => store.delete(id)));
@@ -841,6 +839,138 @@ export const repository = {
         return this.getAllMembers();
     },
 
+    // Workspaces
+    getWorkspaces() {
+        return getWorkspaces();
+    },
+
+    getCurrentWorkspaceId() {
+        return getCurrentWorkspaceId();
+    },
+
+    async createWorkspace(name, options = {}) {
+        const workspaces = getWorkspaces();
+        const id = crypto.randomUUID();
+        const newWorkspace = {
+            id,
+            name,
+            icon: options.icon || 'Database', // Default icon
+            dbName: `meet-attendance-db-${id}`,
+            createdAt: new Date().toISOString()
+        };
+        workspaces.push(newWorkspace);
+        saveWorkspaces(workspaces);
+
+        if (options.exportSettings) {
+            const durationLimit = await this.getDurationLimit();
+            const defaultTeacher = await this.getDefaultTeacher();
+            const ignoredUsers = await this.getIgnoredUsers();
+
+            // Switch to new workspace temporarily to save settings
+            const originalWorkspaceId = getCurrentWorkspaceId();
+            setCurrentWorkspaceId(id);
+            _dbPromise = null; // Reset DB connection
+
+            await this.saveDurationLimit(durationLimit);
+            await this.saveDefaultTeacher(defaultTeacher);
+            await this.saveIgnoredUsers(ignoredUsers);
+
+            // Restore original workspace
+            setCurrentWorkspaceId(originalWorkspaceId);
+            _dbPromise = null; // Reset DB connection
+        }
+
+        return id;
+    },
+
+    // Settings
+    async getDurationLimit() {
+        try {
+            const wsId = getCurrentWorkspaceId();
+            const key = wsId === 'default' ? 'durationLimit' : `durationLimit_${wsId}`;
+            const stored = localStorage.getItem(key);
+            return stored ? parseInt(stored, 10) : 0;
+        } catch (e) {
+            console.error('Error reading duration limit from localStorage', e);
+            return 0;
+        }
+    },
+
+    async saveDurationLimit(limit) {
+        const wsId = getCurrentWorkspaceId();
+        const key = wsId === 'default' ? 'durationLimit' : `durationLimit_${wsId}`;
+        localStorage.setItem(key, limit);
+    },
+
+    async getDefaultTeacher() {
+        try {
+            const wsId = getCurrentWorkspaceId();
+            const key = wsId === 'default' ? 'defaultTeacher' : `defaultTeacher_${wsId}`;
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) : null;
+        } catch (e) {
+            console.error('Error reading default teacher from localStorage', e);
+            return null;
+        }
+    },
+
+    async saveDefaultTeacher(teacher) {
+        const wsId = getCurrentWorkspaceId();
+        const key = wsId === 'default' ? 'defaultTeacher' : `defaultTeacher_${wsId}`;
+        localStorage.setItem(key, JSON.stringify(teacher));
+    },
+
+    async getIgnoredUsers() {
+        try {
+            const wsId = getCurrentWorkspaceId();
+            const key = wsId === 'default' ? 'ignoredUsers' : `ignoredUsers_${wsId}`;
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            console.error('Error reading ignored users from localStorage', e);
+            return [];
+        }
+    },
+
+    async saveIgnoredUsers(users) {
+        const wsId = getCurrentWorkspaceId();
+        const key = wsId === 'default' ? 'ignoredUsers' : `ignoredUsers_${wsId}`;
+        localStorage.setItem(key, JSON.stringify(users));
+    },
+
+    async switchWorkspace(id) {
+        const workspaces = getWorkspaces();
+        if (!workspaces.find(w => w.id === id)) {
+            throw new Error('Workspace not found');
+        }
+        setCurrentWorkspaceId(id);
+        _dbPromise = null; // Force reconnection
+        // Reload page to ensure all components refresh
+        window.location.reload();
+    },
+
+    async deleteWorkspace(id) {
+        if (id === 'default') {
+            throw new Error('Cannot delete default workspace');
+        }
+
+        const workspaces = getWorkspaces();
+        const workspace = workspaces.find(w => w.id === id);
+        if (!workspace) return;
+
+        // Delete DB
+        await indexedDB.deleteDatabase(workspace.dbName);
+
+        // Update list
+        const newWorkspaces = workspaces.filter(w => w.id !== id);
+        saveWorkspaces(newWorkspaces);
+
+        // If current was deleted, switch to default
+        if (getCurrentWorkspaceId() === id) {
+            await this.switchWorkspace('default');
+        }
+    },
+
     async getStudentsByGroup(groupName) {
         return this.getMembersByGroup(groupName);
     },
@@ -848,7 +978,9 @@ export const repository = {
     // Teachers (Settings)
     async getTeachers() {
         try {
-            const stored = localStorage.getItem('teachers');
+            const wsId = getCurrentWorkspaceId();
+            const key = wsId === 'default' ? 'teachers' : `teachers_${wsId}`;
+            const stored = localStorage.getItem(key);
             return stored ? JSON.parse(stored) : [];
         } catch (e) {
             console.error('Error reading teachers from localStorage', e);
@@ -858,10 +990,12 @@ export const repository = {
 
     async saveTeachers(teachers) {
         try {
-            localStorage.setItem('teachers', JSON.stringify(teachers));
+            const wsId = getCurrentWorkspaceId();
+            const key = wsId === 'default' ? 'teachers' : `teachers_${wsId}`;
+            localStorage.setItem(key, JSON.stringify(teachers));
 
             // Sync roles in DB
-            const db = await dbPromise;
+            const db = await getDb();
             const tx = db.transaction('members', 'readwrite');
             const allMembers = await tx.store.getAll();
 
@@ -887,7 +1021,7 @@ export const repository = {
 
     // Marks
     async saveMark(mark) {
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('marks', 'readwrite');
         const index = tx.store.index('task_student');
         const existing = await index.get([mark.taskId, mark.studentId]);
@@ -916,12 +1050,12 @@ export const repository = {
     },
 
     async getMarksByTask(taskId) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.getAllFromIndex('marks', 'taskId', taskId);
     },
 
     async updateMarkSynced(id, synced) {
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('marks', 'readwrite');
         const mark = await tx.store.get(id);
         if (mark) {
@@ -932,17 +1066,17 @@ export const repository = {
     },
 
     async getMarksByStudent(studentId) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.getAllFromIndex('marks', 'studentId', studentId);
     },
 
     async deleteMark(id) {
-        const db = await dbPromise;
+        const db = await getDb();
         return db.delete('marks', id);
     },
 
     async deleteMarks(ids) {
-        const db = await dbPromise;
+        const db = await getDb();
         const tx = db.transaction('marks', 'readwrite');
         const store = tx.objectStore('marks');
         await Promise.all(ids.map(id => store.delete(id)));
@@ -950,7 +1084,7 @@ export const repository = {
     },
 
     async getAllMarksWithRelations() {
-        const db = await dbPromise;
+        const db = await getDb();
 
         // Fetch all data in parallel - single batch operation
         const [allMarks, allTasks, allMembers] = await Promise.all([
@@ -990,7 +1124,7 @@ export const repository = {
 
     // Entity Statistics
     async getEntityCounts() {
-        const db = await dbPromise;
+        const db = await getDb();
         const [meets, groups, tasks, marks, members] = await Promise.all([
             db.count('meets'),
             db.count('groups'),

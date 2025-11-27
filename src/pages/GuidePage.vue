@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { File, LayoutDashboard, Users, UserRoundSearch, Star, Settings, BookOpen } from 'lucide-vue-next';
+import { File, LayoutDashboard, Users, UserRoundSearch, Star, Settings, BookOpen, Database } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
@@ -220,6 +220,38 @@ const sections = computed(() => [
                     t('guide.settings.details.storageInsights'),
                     t('guide.settings.details.safeDataManagement'),
                     t('guide.settings.details.flexibleDuration')
+                ]
+            }
+        ],
+        hasImage: true
+    },
+    {
+        id: 'workspaces',
+        title: t('guide.workspaces.title'),
+        icon: Database,
+        content: t('guide.workspaces.content'),
+        details: [
+            {
+                title: t('guide.workspaces.howToUse'),
+                items: [
+                    t('guide.workspaces.details.createWorkspace'),
+                    t('guide.workspaces.details.switchWorkspace'),
+                    t('guide.workspaces.details.iconSelection'),
+                    t('guide.workspaces.details.copySettings'),
+                    t('guide.workspaces.details.deleteWorkspace')
+                ]
+            },
+            {
+                title: t('guide.workspaces.whatYouGet'),
+                items: [
+                    t('guide.workspaces.details.dataIsolation'),
+                    t('guide.workspaces.details.settingsIsolation'),
+                    t('guide.workspaces.details.multiSemester'),
+                    t('guide.workspaces.details.courseSegregation'),
+                    t('guide.workspaces.details.cleanStart'),
+                    t('guide.workspaces.details.visualIdentification'),
+                    t('guide.workspaces.details.flexibleOrganization'),
+                    t('guide.workspaces.details.easyAccess')
                 ]
             }
         ],
