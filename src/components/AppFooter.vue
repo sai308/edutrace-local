@@ -4,7 +4,7 @@ import { Github, Book, Info } from 'lucide-vue-next';
 
 <template>
   <footer class="border-t bg-card/50 backdrop-blur-sm mt-auto">
-    <div class="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="container mx-auto px-4 pt-6 pb-24 md:pb-6 flex flex-col md:flex-row items-center justify-between gap-4">
       <div class="text-sm text-muted-foreground">
         &copy; {{ new Date().getFullYear() }} {{ $t('app.title') }}. All rights reserved.
       </div>

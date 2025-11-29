@@ -5,8 +5,10 @@ import { X, Download, Upload, Trash2, Settings2, Database, Zap, Cog } from 'luci
 import { repository } from '../services/repository';
 import { toast } from '../services/toast';
 import { localeService } from '../services/locale';
+import { fadeOutAndReload } from '../utils/transition';
 import FilterModal from './FilterModal.vue';
 import ConfirmModal from './ConfirmModal.vue';
+import WorkspaceSelectionModal from './WorkspaceSelectionModal.vue';
 
 const { t, locale } = useI18n();
 
@@ -55,6 +57,15 @@ const entityCounts = ref({
     marks: 0,
     members: 0
 });
+const globalStats = ref({
+    total: 0,
+    workspaces: []
+});
+const currentWorkspaceInfo = ref({
+    name: '',
+    size: 0
+});
+const showWorkspaceSizes = ref(false);
 const entitySizes = ref({
     reports: 0,
     groups: 0,
@@ -78,6 +89,14 @@ const showImportConfirm = ref(false);
 const pendingImportData = ref(null);
 const pendingImportType = ref(null);
 
+// Workspace Selection
+const showWorkspaceSelection = ref(false);
+const workspaceSelectionMode = ref('export'); // export, import, erase
+const availableWorkspaces = ref([]);
+const pendingWorkspaceAction = ref(null); // Function to call after selection
+const workspaceSelectionTitle = ref('');
+const workspaceSelectionConfirmText = ref('');
+
 // File inputs
 const importAllInput = ref(null);
 const importReportsInput = ref(null);
@@ -89,13 +108,14 @@ onMounted(async () => {
 });
 
 async function loadSettings() {
-    const [ignored, limit, defaultT, students, counts, sizes] = await Promise.all([
+    const [ignored, limit, defaultT, students, counts, sizes, globalStatsData] = await Promise.all([
         repository.getIgnoredUsers(),
         repository.getDurationLimit(),
         repository.getDefaultTeacher(),
         repository.getAllMembers(),
         repository.getEntityCounts(),
-        repository.getEntitySizes()
+        repository.getEntitySizes(),
+        repository.getAllWorkspacesSizes()
     ]);
     defaultTeacher.value = defaultT;
     durationLimit.value = limit;
@@ -103,6 +123,16 @@ async function loadSettings() {
     teacherCount.value = teachers.length;
     entityCounts.value = counts;
     entitySizes.value = sizes;
+    globalStats.value = globalStatsData;
+
+    // Calculate current workspace info
+    const currentId = repository.getCurrentWorkspaceId();
+    const workspaces = repository.getWorkspaces();
+    const currentWs = workspaces.find(w => w.id === currentId);
+    currentWorkspaceInfo.value = {
+        name: currentWs ? currentWs.name : 'Unknown',
+        size: sizes.reports + sizes.groups + sizes.marks + sizes.members
+    };
 }
 
 function formatBytes(bytes) {
@@ -132,9 +162,42 @@ async function applyDurationLimit() {
 // Export Functions
 async function exportAll() {
     try {
-        const data = await repository.exportData();
-        downloadJSON(data, `edutrace-backup-${getTimestamp()}.json`);
-        toast.success(t('toast.dataExported'));
+        const workspaces = repository.getWorkspaces();
+        if (workspaces.length > 1) {
+            availableWorkspaces.value = workspaces;
+            workspaceSelectionMode.value = 'export';
+            workspaceSelectionTitle.value = t('workspaceSelection.title.export');
+            workspaceSelectionConfirmText.value = t('common.confirm');
+            showWorkspaceSelection.value = true;
+            pendingWorkspaceAction.value = async (selectedIds) => {
+                try {
+                    const data = await repository.exportWorkspaces(selectedIds);
+                    downloadJSON(data, `edutrace-multi-workspace-backup-${getTimestamp()}.json`);
+                    toast.success(t('toast.workspacesExported'));
+                } catch (e) {
+                    console.error('Error exporting workspaces:', e);
+                    toast.error(t('toast.workspacesExportFailed'));
+                }
+            };
+        } else {
+            // Single workspace export (legacy behavior but using new structure if desired, or keep old)
+            // Keeping old behavior for single workspace for now to minimize disruption, 
+            // or we can just use the new exportWorkspaces for consistency?
+            // User asked to "allow the user, to import/export/delete the chosen workspace, some of them, or all of them"
+            // So if there is only 1 workspace, we can just export it directly or show modal.
+            // Let's just export directly if only 1, but maybe use the new format?
+            // Actually, the request implies extending the functionality.
+            // Let's stick to the plan: "Update exportAll to open the selection modal"
+            // But if there's only 1 workspace, maybe just export it directly using the legacy method 
+            // OR the new method. The legacy method `exportData` exports the *current* workspace data.
+            // The new method `exportWorkspaces` exports a wrapper with multiple workspaces.
+            // Let's use the new method if the user wants "multi-workspace support".
+            // But for backward compatibility or simplicity, if only 1 workspace exists, maybe just do what we did before?
+            // Let's show the modal if there are multiple workspaces. If only 1, just do the old export.
+            const data = await repository.exportData();
+            downloadJSON(data, `edutrace-backup-${getTimestamp()}.json`);
+            toast.success(t('toast.dataExported'));
+        }
     } catch (e) {
         console.error('Error exporting data:', e);
         toast.error(t('toast.dataExportFailed'));
@@ -214,6 +277,13 @@ async function handleImportFile(event, type) {
     try {
         const text = await file.text();
         const data = JSON.parse(text);
+
+        if (!validateImportData(data, type)) {
+            toast.error(t('toast.invalidImportFormat', { type: t(`settings.data.${type}.title`) }));
+            event.target.value = '';
+            return;
+        }
+
         pendingImportData.value = data;
         pendingImportType.value = type;
         showImportConfirm.value = true;
@@ -224,6 +294,50 @@ async function handleImportFile(event, type) {
     event.target.value = '';
 }
 
+function validateImportData(data, type) {
+    if (!data) return false;
+
+    // Helper to check if array contains items with specific keys
+    const hasKeys = (arr, keys) => {
+        if (!Array.isArray(arr) || arr.length === 0) return true; // Empty array is valid structure-wise
+        const item = arr[0];
+        return keys.every(k => k in item);
+    };
+
+    if (type === 'reports') {
+        const items = Array.isArray(data) ? data : data.meets;
+        return Array.isArray(items) && hasKeys(items, ['meetId', 'date']);
+    }
+
+    if (type === 'groups') {
+        const items = Array.isArray(data) ? data : data.groups;
+        return Array.isArray(items) && hasKeys(items, ['name']);
+    }
+
+    if (type === 'marks') {
+        const items = Array.isArray(data) ? data : data.marks;
+        return Array.isArray(items) && hasKeys(items, ['taskId', 'studentId', 'score']);
+    }
+
+    if (type === 'all') {
+        // Multi-workspace backup
+        if (data.type === 'multi-workspace-backup' && Array.isArray(data.workspaces)) return true;
+
+        // Legacy full backup
+        return 'meets' in data && 'groups' in data && 'marks' in data;
+    }
+
+    return false;
+}
+
+async function handleWorkspaceSelectionConfirm(selectedIds) {
+    showWorkspaceSelection.value = false;
+    if (pendingWorkspaceAction.value) {
+        await pendingWorkspaceAction.value(selectedIds);
+        pendingWorkspaceAction.value = null;
+    }
+}
+
 async function executeImport() {
     showImportConfirm.value = false;
     try {
@@ -231,7 +345,31 @@ async function executeImport() {
         const type = pendingImportType.value;
 
         if (type === 'all') {
-            await repository.importData(data);
+            if (data.type === 'multi-workspace-backup' && data.workspaces) {
+                // Multi-workspace import
+                availableWorkspaces.value = data.workspaces;
+                workspaceSelectionMode.value = 'import';
+                workspaceSelectionTitle.value = t('workspaceSelection.title.import');
+                workspaceSelectionConfirmText.value = t('common.confirm');
+                showWorkspaceSelection.value = true;
+                pendingWorkspaceAction.value = async (selectedIds) => {
+                    try {
+                        await repository.importWorkspaces(data, selectedIds);
+                        toast.success(t('toast.workspacesImported'));
+                        // Smooth transition before reload
+                        fadeOutAndReload(t('loader.loadingWorkspaces'));
+                    } catch (e) {
+                        console.error('Error importing workspaces:', e);
+                        toast.error(t('toast.workspacesImportFailed'));
+                    }
+                };
+            } else {
+                // Legacy single workspace import
+                await repository.importData(data);
+                toast.success(t('toast.dataImported'));
+                await loadSettings();
+                emit('refresh');
+            }
         } else if (type === 'reports') {
             await repository.importReports(data);
         } else if (type === 'groups') {
@@ -240,9 +378,11 @@ async function executeImport() {
             await repository.importMarks(data);
         }
 
-        toast.success(t('toast.dataImported'));
-        await loadSettings(); // Reload counts
-        emit('refresh');
+        if (type !== 'all') {
+            toast.success(t('toast.dataImported'));
+            await loadSettings(); // Reload counts
+            emit('refresh');
+        }
     } catch (e) {
         console.error('Error importing data:', e);
         toast.error(t('toast.dataImportFailed') + ': ' + e.message);
@@ -265,6 +405,30 @@ async function executeEraseAll() {
     } catch (e) {
         console.error('Error erasing data:', e);
         toast.error(t('toast.dataEraseFailed'));
+    }
+}
+
+function triggerEraseAll() {
+    const workspaces = repository.getWorkspaces();
+    if (workspaces.length > 1) {
+        availableWorkspaces.value = workspaces;
+        workspaceSelectionMode.value = 'erase';
+        workspaceSelectionTitle.value = t('workspaceSelection.title.erase');
+        workspaceSelectionConfirmText.value = t('common.delete');
+        showWorkspaceSelection.value = true;
+        pendingWorkspaceAction.value = async (selectedIds) => {
+            try {
+                await repository.deleteWorkspacesData(selectedIds);
+                toast.success(t('toast.workspacesErased'));
+                await loadSettings();
+                emit('refresh');
+            } catch (e) {
+                console.error('Error erasing workspaces:', e);
+                toast.error(t('toast.workspacesEraseFailed'));
+            }
+        };
+    } else {
+        showEraseConfirm.value = true;
     }
 }
 
@@ -336,23 +500,23 @@ async function executeEraseMembers() {
                 </button>
             </div>
 
-            <!-- Tabs -->
+            <!-- Desktop Tabs -->
             <div class="border-b flex-shrink-0">
-                <div class="flex gap-1 p-1 justify-center">
+                <div class="hidden md:flex gap-1 p-1 overflow-x-auto no-scrollbar sm:justify-center">
                     <button @click="activeTab = 'general'"
-                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors"
+                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors flex-shrink-0 whitespace-nowrap"
                         :class="activeTab === 'general' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'">
                         <Settings2 class="w-4 h-4" />
                         {{ $t('settings.tabs.general') }}
                     </button>
                     <button @click="activeTab = 'data'"
-                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors"
+                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors flex-shrink-0 whitespace-nowrap"
                         :class="activeTab === 'data' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'">
                         <Database class="w-4 h-4" />
                         {{ $t('settings.tabs.data') }}
                     </button>
                     <button @click="activeTab = 'advanced'"
-                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors"
+                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors flex-shrink-0 whitespace-nowrap"
                         :class="activeTab === 'advanced' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'">
                         <Zap class="w-4 h-4" />
                         {{ $t('settings.tabs.advanced') }}
@@ -381,7 +545,7 @@ async function executeEraseMembers() {
                         <!-- Default Teacher -->
                         <div class="space-y-2">
                             <label class="text-sm font-medium">{{ $t('settings.general.defaultTeacher.label') }}</label>
-                            <div class="flex gap-2">
+                            <div class="flex flex-col sm:flex-row gap-2">
                                 <input v-model="defaultTeacher" type="text"
                                     :placeholder="$t('settings.general.defaultTeacher.placeholder')"
                                     class="flex-1 px-3 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
@@ -413,7 +577,7 @@ async function executeEraseMembers() {
                                 </div>
                             </div>
                             <p class="text-xs text-muted-foreground">{{ $t('settings.general.durationLimit.description')
-                            }}</p>
+                                }}</p>
                         </div>
 
                         <!-- Teachers -->
@@ -433,126 +597,142 @@ async function executeEraseMembers() {
                     </div>
 
                     <!-- Data Management Tab -->
-                    <div v-else-if="activeTab === 'data'" key="data" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Reports Card -->
-                        <div class="border rounded-lg p-4 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <h4 class="font-medium">{{ $t('settings.data.reports.title') }}</h4>
-                                <span v-if="entityCounts.reports > 0"
-                                    class="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
-                                    {{ entityCounts.reports }}
-                                </span>
+                    <div v-else-if="activeTab === 'data'" key="data" class="space-y-4">
+                        <!-- Current Workspace Info -->
+                        <div class="bg-muted/20 border rounded-lg p-4 flex items-center justify-between">
+                            <div>
+                                <h4 class="font-medium text-sm">{{ $t('settings.data.currentWorkspace') }}</h4>
+                                <p class="text-lg font-bold">{{ currentWorkspaceInfo.name }}</p>
                             </div>
-                            <div class="flex flex-wrap gap-2">
-                                <button @click="exportReports"
-                                    class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
-                                    <Download class="w-4 h-4" />
-                                    {{ $t('settings.data.actions.export') }}
-                                </button>
-                                <button @click="triggerImportReports"
-                                    class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
-                                    <Upload class="w-4 h-4" />
-                                    {{ $t('settings.data.actions.import') }}
-                                </button>
+                            <div class="text-right">
+                                <h4 class="font-medium text-sm">{{ $t('settings.data.totalSize') }}</h4>
+                                <p class="text-lg font-mono">{{ formatBytes(currentWorkspaceInfo.size) }}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Reports Card -->
+                            <div class="border rounded-lg p-4 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">{{ $t('settings.data.reports.title') }}</h4>
+                                    <span v-if="entityCounts.reports > 0"
+                                        class="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {{ entityCounts.reports }}
+                                    </span>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button @click="exportReports"
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
+                                        <Download class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.export') }}
+                                    </button>
+                                    <button @click="triggerImportReports"
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
+                                        <Upload class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.import') }}
+                                    </button>
+                                    <div class="flex gap-4 items-center">
+                                        <button @click="showEraseReportsConfirm = true"
+                                            class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
+                                            <Trash2 class="w-4 h-4" />
+                                            {{ $t('settings.data.actions.erase') }}
+                                        </button>
+                                        <p v-if="entitySizes.reports > 0" class="text-xs text-muted-foreground">
+                                            {{ $t('settings.data.reports.memory') }}: {{
+                                                formatBytes(entitySizes.reports) }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Groups Card -->
+                            <div class="border rounded-lg p-4 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">{{ $t('settings.data.groups.title') }}</h4>
+                                    <span v-if="entityCounts.groups > 0"
+                                        class="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {{ entityCounts.groups }}
+                                    </span>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button @click="exportGroups"
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
+                                        <Download class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.export') }}
+                                    </button>
+                                    <button @click="triggerImportGroups"
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
+                                        <Upload class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.import') }}
+                                    </button>
+                                    <div class="flex gap-4 items-center">
+                                        <button @click="showEraseGroupsConfirm = true"
+                                            class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
+                                            <Trash2 class="w-4 h-4" />
+                                            {{ $t('settings.data.actions.erase') }}
+                                        </button>
+                                        <p v-if="entitySizes.groups > 0" class="text-xs text-muted-foreground">
+                                            {{ $t('settings.data.groups.memory') }}: {{ formatBytes(entitySizes.groups)
+                                            }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Marks Card -->
+                            <div class="border rounded-lg p-4 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">{{ $t('settings.data.marks.title') }}</h4>
+                                    <span v-if="entityCounts.marks > 0"
+                                        class="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {{ entityCounts.marks }}
+                                    </span>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button @click="exportMarks"
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
+                                        <Download class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.export') }}
+                                    </button>
+                                    <button @click="triggerImportMarks"
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
+                                        <Upload class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.import') }}
+                                    </button>
+                                    <div class="flex gap-4 items-center">
+
+                                        <button @click="showEraseMarksConfirm = true"
+                                            class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
+                                            <Trash2 class="w-4 h-4" />
+                                            {{ $t('settings.data.actions.erase') }}
+                                        </button>
+                                        <p v-if="entitySizes.marks > 0" class="text-xs text-muted-foreground">
+                                            {{ $t('settings.data.marks.memory') }}: {{ formatBytes(entitySizes.marks) }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Members Card -->
+                            <div class="border rounded-lg p-4 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">{{ $t('settings.data.members.title') }}</h4>
+                                    <span v-if="entityCounts.members > 0"
+                                        class="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {{ entityCounts.members }}
+                                    </span>
+                                </div>
                                 <div class="flex gap-4 items-center">
-                                    <button @click="showEraseReportsConfirm = true"
+                                    <button @click="showEraseMembersConfirm = true"
                                         class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
                                         <Trash2 class="w-4 h-4" />
                                         {{ $t('settings.data.actions.erase') }}
                                     </button>
-                                    <p v-if="entitySizes.reports > 0" class="text-xs text-muted-foreground">
-                                        {{ $t('settings.data.reports.memory') }}: {{ formatBytes(entitySizes.reports) }}
+                                    <p v-if="entitySizes.members > 0" class="text-xs text-muted-foreground">
+                                        {{ $t('settings.data.members.memory') }}: {{ formatBytes(entitySizes.members) }}
                                     </p>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Groups Card -->
-                        <div class="border rounded-lg p-4 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <h4 class="font-medium">{{ $t('settings.data.groups.title') }}</h4>
-                                <span v-if="entityCounts.groups > 0"
-                                    class="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
-                                    {{ entityCounts.groups }}
-                                </span>
-                            </div>
-                            <div class="flex flex-wrap gap-2">
-                                <button @click="exportGroups"
-                                    class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
-                                    <Download class="w-4 h-4" />
-                                    {{ $t('settings.data.actions.export') }}
-                                </button>
-                                <button @click="triggerImportGroups"
-                                    class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
-                                    <Upload class="w-4 h-4" />
-                                    {{ $t('settings.data.actions.import') }}
-                                </button>
-                                <div class="flex gap-4 items-center">
-                                    <button @click="showEraseGroupsConfirm = true"
-                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
-                                        <Trash2 class="w-4 h-4" />
-                                        {{ $t('settings.data.actions.erase') }}
-                                    </button>
-                                    <p v-if="entitySizes.groups > 0" class="text-xs text-muted-foreground">
-                                        {{ $t('settings.data.groups.memory') }}: {{ formatBytes(entitySizes.groups) }}
-                                    </p>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <!-- Marks Card -->
-                        <div class="border rounded-lg p-4 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <h4 class="font-medium">{{ $t('settings.data.marks.title') }}</h4>
-                                <span v-if="entityCounts.marks > 0"
-                                    class="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
-                                    {{ entityCounts.marks }}
-                                </span>
-                            </div>
-                            <div class="flex flex-wrap gap-2">
-                                <button @click="exportMarks"
-                                    class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
-                                    <Download class="w-4 h-4" />
-                                    {{ $t('settings.data.actions.export') }}
-                                </button>
-                                <button @click="triggerImportMarks"
-                                    class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
-                                    <Upload class="w-4 h-4" />
-                                    {{ $t('settings.data.actions.import') }}
-                                </button>
-                                <div class="flex gap-4 items-center">
-
-                                    <button @click="showEraseMarksConfirm = true"
-                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
-                                        <Trash2 class="w-4 h-4" />
-                                        {{ $t('settings.data.actions.erase') }}
-                                    </button>
-                                    <p v-if="entitySizes.marks > 0" class="text-xs text-muted-foreground">
-                                        {{ $t('settings.data.marks.memory') }}: {{ formatBytes(entitySizes.marks) }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Members Card -->
-                        <div class="border rounded-lg p-4 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <h4 class="font-medium">{{ $t('settings.data.members.title') }}</h4>
-                                <span v-if="entityCounts.members > 0"
-                                    class="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
-                                    {{ entityCounts.members }}
-                                </span>
-                            </div>
-                            <div class="flex gap-4 items-center">
-                                <button @click="showEraseMembersConfirm = true"
-                                    class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
-                                    <Trash2 class="w-4 h-4" />
-                                    {{ $t('settings.data.actions.erase') }}
-                                </button>
-                                <p v-if="entitySizes.members > 0" class="text-xs text-muted-foreground">
-                                    {{ $t('settings.data.members.memory') }}: {{ formatBytes(entitySizes.members) }}
-                                </p>
                             </div>
                         </div>
                     </div>
@@ -562,18 +742,40 @@ async function executeEraseMembers() {
                         <!-- Global Operations -->
                         <div class="border rounded-lg p-4 space-y-3">
                             <h4 class="font-medium">{{ $t('settings.advanced.global.title') }}</h4>
-                            <p class="text-sm text-muted-foreground">{{ $t('settings.advanced.global.description') }}
+                            <p class="text-sm text-muted-foreground">{{ $t('settings.advanced.global.description.title')
+                            }}<br>{{ $t('settings.advanced.global.description.list')
+                                }}
                             </p>
-                            <p v-if="entityCounts.reports + entityCounts.groups + entityCounts.marks + entityCounts.members > 0"
-                                class="text-xs text-muted-foreground">
-                                {{ $t('settings.advanced.global.totalRecords') }}: {{ entityCounts.reports +
-                                    entityCounts.groups + entityCounts.marks +
-                                    entityCounts.members }} |
-                                {{ $t('settings.advanced.global.totalMemory') }}: {{ formatBytes(entitySizes.reports +
-                                    entitySizes.groups +
-                                    entitySizes.marks + entitySizes.members) }}
-                            </p>
-                            <div class="flex flex-wrap gap-2">
+
+                            <div v-if="globalStats.total > 0"
+                                class="flex items-center gap-2 text-xs text-muted-foreground">
+                                <p v-if="entityCounts.reports + entityCounts.groups + entityCounts.marks + entityCounts.members > 0"
+                                    class="text-xs text-muted-foreground">
+                                    {{ $t('settings.advanced.global.totalRecords') }}: {{ entityCounts.reports +
+                                        entityCounts.groups + entityCounts.marks +
+                                        entityCounts.members }}
+                                    <template v-if="globalStats.total > 0">
+                                        <span>{{ $t('settings.advanced.global.totalSize') }}: {{
+                                            formatBytes(globalStats.total)
+                                        }}</span>
+                                        <button @click="showWorkspaceSizes = !showWorkspaceSizes"
+                                            class="ml-4 text-primary hover:underline">
+                                            {{ showWorkspaceSizes ? $t('settings.advanced.global.hideDetails') :
+                                                $t('settings.advanced.global.showDetails') }}
+                                        </button>
+                                    </template>
+                                </p>
+                            </div>
+                            <div v-if="showWorkspaceSizes"
+                                class="border rounded-md p-2 bg-muted/30 space-y-1 animate-in slide-in-from-top-2 duration-200">
+                                <div v-for="ws in globalStats.workspaces" :key="ws.id"
+                                    class="flex justify-between text-xs">
+                                    <span>{{ ws.name }}</span>
+                                    <span class="font-mono">{{ formatBytes(ws.size) }}</span>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap gap-2 pt-2">
                                 <button @click="exportAll"
                                     class="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors">
                                     <Download class="w-4 h-4" />
@@ -584,7 +786,7 @@ async function executeEraseMembers() {
                                     <Upload class="w-4 h-4" />
                                     {{ $t('settings.advanced.global.importAll') }}
                                 </button>
-                                <button @click="showEraseConfirm = true"
+                                <button @click="triggerEraseAll"
                                     class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-destructive border border-destructive rounded-md hover:bg-destructive/10 transition-colors">
                                     <Trash2 class="w-4 h-4" />
                                     {{ $t('settings.advanced.global.eraseAll') }}
@@ -614,13 +816,30 @@ async function executeEraseMembers() {
                 </Transition>
             </div>
 
-            <!-- Footer -->
-            <div class="p-4 border-t bg-muted/10 flex justify-end flex-shrink-0">
-                <button @click="$emit('close')"
-                    class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors">
-                    {{ $t('settings.close') }}
-                </button>
-            </div>
+
+            <!-- Footer with Navigation (Mobile only) -->
+            <nav class="md:hidden border-t bg-muted/10 flex-shrink-0">
+                <div class="flex items-center justify-around h-16">
+                    <button @click="activeTab = 'general'"
+                        class="flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-medium transition-colors"
+                        :class="activeTab === 'general' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'">
+                        <Settings2 class="w-5 h-5" />
+                        <span>{{ $t('settings.tabs.general') }}</span>
+                    </button>
+                    <button @click="activeTab = 'data'"
+                        class="flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-medium transition-colors"
+                        :class="activeTab === 'data' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'">
+                        <Database class="w-5 h-5" />
+                        <span>{{ $t('settings.tabs.data') }}</span>
+                    </button>
+                    <button @click="activeTab = 'advanced'"
+                        class="flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-medium transition-colors"
+                        :class="activeTab === 'advanced' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'">
+                        <Zap class="w-5 h-5" />
+                        <span>{{ $t('settings.tabs.advanced') }}</span>
+                    </button>
+                </div>
+            </nav>
         </div>
 
         <!-- Hidden File Inputs -->
@@ -661,6 +880,12 @@ async function executeEraseMembers() {
         <ConfirmModal :is-open="showEraseMembersConfirm" :title="$t('confirm.eraseMembers.title')"
             :message="$t('confirm.eraseMembers.message')" :confirm-text="$t('confirm.eraseMembers.confirm')"
             @cancel="showEraseMembersConfirm = false" @confirm="executeEraseMembers" />
+
+        <!-- Workspace Selection Modal -->
+        <WorkspaceSelectionModal :is-open="showWorkspaceSelection" :workspaces="availableWorkspaces"
+            :mode="workspaceSelectionMode" :title="workspaceSelectionTitle"
+            :confirm-text="workspaceSelectionConfirmText" @close="showWorkspaceSelection = false"
+            @confirm="handleWorkspaceSelectionConfirm" />
     </div>
 </template>
 

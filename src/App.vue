@@ -123,9 +123,9 @@ onUnmounted(() => {
       </div>
     </header>
 
-    <main class="container mx-auto px-4 py-8 space-y-8">
-      <!-- Navigation Tabs -->
-      <div v-if="route.name !== 'ReportDetails'" class="flex items-center gap-4 border-b pb-px overflow-x-auto">
+    <main class="container mx-auto px-4 py-4 md:py-8 space-y-0 md:space-y-8">
+      <!-- Desktop Navigation Tabs -->
+      <div v-if="route.name !== 'ReportDetails'" class="hidden md:flex items-center gap-4 border-b pb-px overflow-x-auto">
         <router-link to="/reports"
           class="flex items-center gap-2 px-4 py-2 border-b-2 transition-colors whitespace-nowrap"
           :class="route.path.startsWith('/reports') ? 'border-primary text-primary font-medium' : 'border-transparent text-muted-foreground hover:text-foreground'">
@@ -166,6 +166,43 @@ onUnmounted(() => {
         </Transition>
       </router-view>
     </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav v-if="route.name !== 'ReportDetails'"
+      class="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-40 pb-safe">
+      <div class="flex items-center justify-around h-16">
+        <router-link to="/reports"
+          class="flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-medium transition-colors"
+          :class="route.path.startsWith('/reports') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'">
+          <File class="w-5 h-5" />
+          <span>{{ $t('nav.reports') }}</span>
+        </router-link>
+        <router-link to="/analytics"
+          class="flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-medium transition-colors"
+          :class="route.path.startsWith('/analytics') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'">
+          <LayoutDashboard class="w-5 h-5" />
+          <span>{{ $t('nav.analytics') }}</span>
+        </router-link>
+        <router-link to="/groups"
+          class="flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-medium transition-colors"
+          :class="route.path === '/groups' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'">
+          <Users class="w-5 h-5" />
+          <span>{{ $t('nav.groups') }}</span>
+        </router-link>
+        <router-link to="/students"
+          class="flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-medium transition-colors"
+          :class="route.path === '/students' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'">
+          <UserRoundSearch class="w-5 h-5" />
+          <span>{{ $t('nav.students') }}</span>
+        </router-link>
+        <router-link to="/marks"
+          class="flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-medium transition-colors"
+          :class="route.path === '/marks' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'">
+          <Star class="w-5 h-5" />
+          <span>{{ $t('nav.marks') }}</span>
+        </router-link>
+      </div>
+    </nav>
 
     <!-- Footer -->
     <AppFooter />
