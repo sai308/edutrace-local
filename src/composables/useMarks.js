@@ -9,6 +9,7 @@ export function useMarks() {
     const isProcessing = ref(false);
     const allMeetIds = ref([]);
     const allTeachers = ref([]);
+    const isLoading = ref(false);
 
     async function loadGroups() {
         const allGroups = await repository.getGroups();
@@ -32,9 +33,14 @@ export function useMarks() {
     }
 
     async function loadAllData() {
-        await loadGroups();
-        // Use the new batch query method - single efficient database call
-        flatMarks.value = await repository.getAllMarksWithRelations();
+        isLoading.value = true;
+        try {
+            await loadGroups();
+            // Use the new batch query method - single efficient database call
+            flatMarks.value = await repository.getAllMarksWithRelations();
+        } finally {
+            isLoading.value = false;
+        }
     }
 
     async function createGroup(groupData) {
@@ -172,6 +178,7 @@ export function useMarks() {
         processFile,
         toggleSynced,
         deleteMark,
-        deleteMarks
+        deleteMarks,
+        isLoading
     };
 }

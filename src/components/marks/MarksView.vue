@@ -13,7 +13,8 @@ import { useColumnVisibility } from '../../composables/useColumnVisibility';
 import { useFormatters } from '../../composables/useFormatters';
 import { useSort } from '../../composables/useSort';
 import { useMarkFormat } from '../../composables/useMarkFormat';
-import { Calendar, Search, Clock, Trash2, CircleCheckBig, Filter, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from 'lucide-vue-next';
+import { validateMarksFile } from '../../services/marksParser';
+import { Calendar, Search, Clock, Trash2, CircleCheckBig, Filter, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, Loader2 } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
@@ -22,7 +23,8 @@ const props = defineProps({
     groups: { type: Array, default: () => [] },
     isProcessing: { type: Boolean, default: false },
     allMeetIds: { type: Array, default: () => [] },
-    allTeachers: { type: Array, default: () => [] }
+    allTeachers: { type: Array, default: () => [] },
+    isLoading: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['process-file', 'create-group', 'delete-mark', 'bulk-delete-marks', 'toggle-synced', 'refresh']);
@@ -163,6 +165,17 @@ async function processNextInQueue() {
 
     isQueueProcessing.value = true;
     const file = fileQueue.value[0];
+
+    // Validate file content first
+    try {
+        await validateMarksFile(file);
+    } catch (e) {
+        toast.error(e.message);
+        fileQueue.value.shift(); // Skip invalid file
+        processNextInQueue();
+        return;
+    }
+
     const filename = file.name;
     const match = filename.match(/^([^_]+)_/);
     const rawPrefix = match ? match[1] : null;
@@ -270,7 +283,11 @@ function formatTaskName(taskName) {
 </script>
 
 <template>
-    <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div v-if="isLoading" class="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground">
+        <Loader2 class="w-8 h-8 animate-spin mb-4 text-primary" />
+        <p>{{ $t('loader.loading') }}</p>
+    </div>
+    <div v-else class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <!-- Dropzone -->
         <DropZone :is-processing="isProcessing" @files-dropped="handleFilesDropped"
             :prompt="$t('dropZone.marksPrompt')" />
@@ -299,10 +316,12 @@ function formatTaskName(taskName) {
             <div class="flex flex-wrap items-center gap-2 md:gap-4 w-full md:w-auto">
                 <!-- Format Selector with Label (Custom Dropdown) -->
                 <div class="relative flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card">
-                    <span class="text-xs font-medium text-muted-foreground whitespace-nowrap">{{ $t('marks.gradeScale')
-                    }}</span>
+                    <span
+                        class="text-xs font-medium text-muted-foreground whitespace-nowrap pointer-events-none select-none">{{
+                            $t('marks.gradeScale')
+                        }}</span>
 
-                    <div class="relative">
+                    <div class="relative" v-click-outside="() => showFormatDropdown = false">
                         <button @click="showFormatDropdown = !showFormatDropdown"
                             class="flex items-center justify-between min-w-[100px] text-sm font-medium focus:outline-none cursor-pointer bg-transparent pr-6">
                             {{ selectedFormat === 'raw' ? $t('marks.scales.default') : selectedFormat === '5-scale' ?

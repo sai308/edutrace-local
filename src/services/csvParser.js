@@ -101,6 +101,27 @@ function parseTextContent(text, filename) {
         skipEmptyLines: true
     });
 
+    if (parsed.data.length === 0) {
+        throw new Error('Invalid Meet report: No participants found.');
+    }
+
+    // Validation: Check for required columns (Duration)
+    const firstRow = parsed.data[0];
+    const hasDuration = Object.keys(firstRow).some(k =>
+        k.toLowerCase().includes('time in call') ||
+        k.toLowerCase().includes('duration') ||
+        k.toLowerCase().includes('тривалість')
+    );
+
+    if (!hasDuration) {
+        // Check if it might be a Marks CSV
+        const hasMaxPoints = lines.some(l => l.includes('Max Points') || l.includes('Максимальна кількість балів'));
+        if (hasMaxPoints) {
+            throw new Error('Invalid Meet report: This looks like a Marks CSV. Please upload a Google Meet attendance report.');
+        }
+        throw new Error('Invalid Meet report: Missing "Duration" or "Time in call" column.');
+    }
+
     const participants = [];
     const uniqueParticipants = {};
 

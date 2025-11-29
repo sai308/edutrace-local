@@ -15,7 +15,8 @@ const {
     processFile,
     toggleSynced,
     deleteMark,
-    deleteMarks
+    deleteMarks,
+    isLoading
 } = useMarks();
 
 onMounted(async () => {
@@ -49,8 +50,8 @@ function handleBulkDeleteMarks(ids) {
 <template>
     <div class="animate-in fade-in slide-in-from-bottom-4 duration-500">
         <MarksView :marks="flatMarks" :groups="groups" :is-processing="isProcessing" :all-meet-ids="allMeetIds"
-            :all-teachers="allTeachers" @process-file="handleProcessFile" @create-group="handleCreateGroup"
-            @toggle-synced="handleToggleSynced" @delete-mark="handleDeleteMark"
+            :all-teachers="allTeachers" :is-loading="isLoading" @process-file="handleProcessFile"
+            @create-group="handleCreateGroup" @toggle-synced="handleToggleSynced" @delete-mark="handleDeleteMark"
             @bulk-delete-marks="handleBulkDeleteMarks" @refresh="loadAllData" />
     </div>
 </template>

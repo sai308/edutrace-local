@@ -1,11 +1,67 @@
 import { repository } from './repository';
 
-export async function parseMarksCSV(file) {
+export async function validateMarksFile(file) {
     const text = await file.text();
     const lines = text.split('\n').map(line => line.trim()).filter(line => line);
 
     if (lines.length < 4) {
         throw new Error('Invalid CSV format: Insufficient lines');
+    }
+
+    // Validation: Check if it's a Meet report (starts with metadata *)
+    if (lines[0].trim().startsWith('*')) {
+        throw new Error('Invalid Marks CSV: This looks like a Google Meet report. Please upload a Marks CSV.');
+    }
+
+    // Validation: Check for required columns
+    const headerLine = lines[0];
+    const headers = parseCSVLine(headerLine);
+    const hasNameColumn = headers.some(h =>
+        h.includes('Прізвище') ||
+        h.toLowerCase().includes('surname') ||
+        h.toLowerCase().includes('last name')
+    );
+
+    if (!hasNameColumn) {
+        throw new Error('Invalid Marks CSV: Missing "Surname" or "Прізвище" column.');
+    }
+
+    return true;
+}
+
+export async function parseMarksCSV(file) {
+    // Re-use validation (or just let it pass since we validate before calling this usually, 
+    // but keeping it here is safe too, though slightly inefficient to read file twice if we don't pass content.
+    // For now, let's just keep the logic here or call validate. 
+    // Since we read text here anyway, calling validate which reads text again is inefficient.
+    // Let's just duplicate the check or refactor to accept text.
+    // Given the file size is small, reading twice is negligible.
+    // But to be clean, let's just keep the checks here as they were, 
+    // and `validateMarksFile` will be used by UI.
+
+    const text = await file.text();
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+
+    if (lines.length < 4) {
+        throw new Error('Invalid CSV format: Insufficient lines');
+    }
+
+    // Validation: Check if it's a Meet report (starts with metadata *)
+    if (lines[0].trim().startsWith('*')) {
+        throw new Error('Invalid Marks CSV: This looks like a Google Meet report. Please upload a Marks CSV.');
+    }
+
+    // Validation: Check for required columns
+    const headerLine = lines[0];
+    const headers = parseCSVLine(headerLine);
+    const hasNameColumn = headers.some(h =>
+        h.includes('Прізвище') ||
+        h.toLowerCase().includes('surname') ||
+        h.toLowerCase().includes('last name')
+    );
+
+    if (!hasNameColumn) {
+        throw new Error('Invalid Marks CSV: Missing "Surname" or "Прізвище" column.');
     }
 
     // Parse Group Name from filename
@@ -17,8 +73,7 @@ export async function parseMarksCSV(file) {
 
     // Parse Header (Line 1) - Task Names
     // Skip first 3 columns: Прізвище, Ім’я, Електронна адреса
-    const headerLine = lines[0];
-    const headers = parseCSVLine(headerLine);
+    // headerLine and headers are already defined above for validation
     const taskNames = headers.slice(3);
 
     // Parse Dates (Line 2)

@@ -12,7 +12,8 @@ const {
     loadData,
     saveStudent,
     deleteStudent,
-    bulkDeleteStudents
+    bulkDeleteStudents,
+    isLoading
 } = useStudents();
 
 onMounted(loadData);
@@ -34,7 +35,7 @@ function handleBulkDeleteStudents(ids) {
 <template>
     <div class="animate-in fade-in slide-in-from-bottom-4 duration-500">
         <StudentsView :students="students" :groups-map="groupsMap" :teachers="teachers" :meets="meets" :tasks="tasks"
-            @save-student="handleSaveStudent" @delete-student="handleDeleteStudent"
+            :is-loading="isLoading" @save-student="handleSaveStudent" @delete-student="handleDeleteStudent"
             @bulk-delete-students="handleBulkDeleteStudents" @refresh="loadData" />
     </div>
 </template>

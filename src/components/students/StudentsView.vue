@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, X, Timer, Edit2, Trash2, Star, ChartPie, Mail, User } from 'lucide-vue-next';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, X, Timer, Edit2, Trash2, Star, ChartPie, Mail, User, Loader2 } from 'lucide-vue-next';
 import EditStudentModal from './EditStudentModal.vue';
 import StudentProfileModal from './StudentProfileModal.vue';
 import ConfirmModal from '../ConfirmModal.vue';
@@ -36,6 +36,10 @@ const props = defineProps({
   tasks: {
     type: Array,
     default: () => []
+  },
+  isLoading: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -206,7 +210,11 @@ async function handleDeleteConfirm() {
 </script>
 
 <template>
-  <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+  <div v-if="isLoading" class="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground">
+    <Loader2 class="w-8 h-8 animate-spin mb-4 text-primary" />
+    <p>{{ $t('loader.loading') }}</p>
+  </div>
+  <div v-else class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
     <!-- ... (Header remains same) ... -->
     <div class="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
       <div class="space-y-1 w-full sm:w-auto">

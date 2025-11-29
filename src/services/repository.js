@@ -1,4 +1,6 @@
 import { openDB } from 'idb';
+import { fadeOutAndReload } from '../utils/transition';
+import { localeService } from './locale';
 
 const DB_VERSION = 8;
 const DEFAULT_DB_NAME = 'meet-attendance-db';
@@ -883,6 +885,176 @@ export const repository = {
         return id;
     },
 
+    async updateWorkspace(id, updates) {
+        const workspaces = getWorkspaces();
+        const index = workspaces.findIndex(w => w.id === id);
+
+        if (index === -1) {
+            throw new Error('Workspace not found');
+        }
+
+        // Prevent updating default workspace ID or dbName
+        const { id: _, dbName: __, ...allowedUpdates } = updates;
+
+        // Update workspace properties
+        workspaces[index] = {
+            ...workspaces[index],
+            ...allowedUpdates,
+            updatedAt: new Date().toISOString()
+        };
+
+        saveWorkspaces(workspaces);
+        return workspaces[index];
+    },
+
+    async exportWorkspaces(workspaceIds) {
+        const allWorkspaces = getWorkspaces();
+        const workspacesToExport = allWorkspaces.filter(w => workspaceIds.includes(w.id));
+
+        const exportData = {
+            type: 'multi-workspace-backup',
+            version: 1,
+            timestamp: new Date().toISOString(),
+            workspaces: []
+        };
+
+        for (const ws of workspacesToExport) {
+            const db = await openDB(ws.dbName, DB_VERSION);
+            try {
+                const [meets, groups, tasks, marks, members] = await Promise.all([
+                    db.getAll('meets'),
+                    db.getAll('groups'),
+                    db.getAll('tasks'),
+                    db.getAll('marks'),
+                    db.getAll('members')
+                ]);
+
+                exportData.workspaces.push({
+                    id: ws.id,
+                    name: ws.name,
+                    icon: ws.icon,
+                    dbName: ws.dbName,
+                    data: { meets, groups, tasks, marks, members }
+                });
+            } finally {
+                db.close();
+            }
+        }
+
+        return exportData;
+    },
+
+    async importWorkspaces(data, selectedIds) {
+        if (!data.workspaces || !Array.isArray(data.workspaces)) {
+            throw new Error('Invalid workspace backup format');
+        }
+
+        const workspacesToImport = data.workspaces.filter(w => selectedIds.includes(w.id));
+        const currentWorkspaces = getWorkspaces();
+
+        for (const wsData of workspacesToImport) {
+            // Check if workspace exists
+            let targetWs = currentWorkspaces.find(w => w.id === wsData.id);
+
+            if (!targetWs) {
+                // Create new workspace entry if it doesn't exist
+                targetWs = {
+                    id: wsData.id,
+                    name: wsData.name,
+                    icon: wsData.icon || 'Database',
+                    dbName: wsData.dbName || `meet-attendance-db-${wsData.id}`,
+                    createdAt: new Date().toISOString()
+                };
+                currentWorkspaces.push(targetWs);
+                saveWorkspaces(currentWorkspaces);
+            }
+
+            // Import data into this workspace's DB - ensure schema is initialized
+            const db = await openDB(targetWs.dbName, DB_VERSION, {
+                async upgrade(db, oldVersion, newVersion, transaction) {
+                    // Create stores if they don't exist
+                    if (!db.objectStoreNames.contains('meets')) {
+                        const meetStore = db.createObjectStore('meets', { keyPath: 'id' });
+                        meetStore.createIndex('meetId', 'meetId', { unique: false });
+                        meetStore.createIndex('date', 'date', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('settings')) {
+                        db.createObjectStore('settings', { keyPath: 'key' });
+                    }
+                    if (!db.objectStoreNames.contains('groups')) {
+                        const store = db.createObjectStore('groups', { keyPath: 'id' });
+                        store.createIndex('meetId', 'meetId', { unique: true });
+                        store.createIndex('name', 'name', { unique: true });
+                    }
+                    if (!db.objectStoreNames.contains('tasks')) {
+                        const store = db.createObjectStore('tasks', { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('groupId', 'groupId', { unique: false });
+                        store.createIndex('name_date_group', ['name', 'date', 'groupId'], { unique: true });
+                        store.createIndex('groupName', 'groupName', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('marks')) {
+                        const store = db.createObjectStore('marks', { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('taskId', 'taskId', { unique: false });
+                        store.createIndex('studentId', 'studentId', { unique: false });
+                        store.createIndex('task_student', ['taskId', 'studentId'], { unique: true });
+                        store.createIndex('createdAt', 'createdAt', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('members')) {
+                        const store = db.createObjectStore('members', { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('name', 'name', { unique: true });
+                        store.createIndex('groupName', 'groupName', { unique: false });
+                        store.createIndex('role', 'role', { unique: false });
+                    }
+                }
+            });
+            try {
+                const tx = db.transaction(['meets', 'groups', 'tasks', 'marks', 'members'], 'readwrite');
+
+                // Clear existing data
+                await Promise.all([
+                    tx.objectStore('meets').clear(),
+                    tx.objectStore('groups').clear(),
+                    tx.objectStore('tasks').clear(),
+                    tx.objectStore('marks').clear(),
+                    tx.objectStore('members').clear()
+                ]);
+
+                // Import new data
+                const { meets, groups, tasks, marks, members } = wsData.data;
+
+                if (meets) {
+                    for (const m of meets) {
+                        await tx.objectStore('meets').put(m);
+                    }
+                }
+                if (groups) {
+                    for (const g of groups) {
+                        await tx.objectStore('groups').put(g);
+                    }
+                }
+                if (tasks) {
+                    for (const t of tasks) {
+                        await tx.objectStore('tasks').put(t);
+                    }
+                }
+                if (marks) {
+                    for (const m of marks) {
+                        await tx.objectStore('marks').put(m);
+                    }
+                }
+                if (members) {
+                    for (const m of members) {
+                        await tx.objectStore('members').put(m);
+                    }
+                }
+
+                await tx.done;
+            } finally {
+                db.close();
+            }
+        }
+    },
+
     // Settings
     async getDurationLimit() {
         try {
@@ -945,8 +1117,9 @@ export const repository = {
         }
         setCurrentWorkspaceId(id);
         _dbPromise = null; // Force reconnection
-        // Reload page to ensure all components refresh
-        window.location.reload();
+        // Smooth transition before reload
+        const message = localeService.getTranslation('loader.switchingWorkspace');
+        fadeOutAndReload(message);
     },
 
     async deleteWorkspace(id) {
@@ -968,6 +1141,71 @@ export const repository = {
         // If current was deleted, switch to default
         if (getCurrentWorkspaceId() === id) {
             await this.switchWorkspace('default');
+        }
+    },
+
+    async deleteWorkspacesData(workspaceIds) {
+        const workspaces = getWorkspaces();
+
+        for (const id of workspaceIds) {
+            const workspace = workspaces.find(w => w.id === id);
+            if (!workspace) continue;
+
+            // Open the workspace database with upgrade callback
+            const db = await openDB(workspace.dbName, DB_VERSION, {
+                async upgrade(db, oldVersion, newVersion, transaction) {
+                    // Create stores if they don't exist
+                    if (!db.objectStoreNames.contains('meets')) {
+                        const meetStore = db.createObjectStore('meets', { keyPath: 'id' });
+                        meetStore.createIndex('meetId', 'meetId', { unique: false });
+                        meetStore.createIndex('date', 'date', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('settings')) {
+                        db.createObjectStore('settings', { keyPath: 'key' });
+                    }
+                    if (!db.objectStoreNames.contains('groups')) {
+                        const store = db.createObjectStore('groups', { keyPath: 'id' });
+                        store.createIndex('meetId', 'meetId', { unique: true });
+                        store.createIndex('name', 'name', { unique: true });
+                    }
+                    if (!db.objectStoreNames.contains('tasks')) {
+                        const store = db.createObjectStore('tasks', { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('groupId', 'groupId', { unique: false });
+                        store.createIndex('name_date_group', ['name', 'date', 'groupId'], { unique: true });
+                        store.createIndex('groupName', 'groupName', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('marks')) {
+                        const store = db.createObjectStore('marks', { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('taskId', 'taskId', { unique: false });
+                        store.createIndex('studentId', 'studentId', { unique: false });
+                        store.createIndex('task_student', ['taskId', 'studentId'], { unique: true });
+                        store.createIndex('createdAt', 'createdAt', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('members')) {
+                        const store = db.createObjectStore('members', { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('name', 'name', { unique: true });
+                        store.createIndex('groupName', 'groupName', { unique: false });
+                        store.createIndex('role', 'role', { unique: false });
+                    }
+                }
+            });
+
+            try {
+                // Clear all data from the workspace
+                const tx = db.transaction(['meets', 'groups', 'tasks', 'marks', 'members'], 'readwrite');
+
+                await Promise.all([
+                    tx.objectStore('meets').clear(),
+                    tx.objectStore('groups').clear(),
+                    tx.objectStore('tasks').clear(),
+                    tx.objectStore('marks').clear(),
+                    tx.objectStore('members').clear()
+                ]);
+
+                await tx.done;
+            } finally {
+                db.close();
+            }
         }
     },
 
@@ -1166,6 +1404,109 @@ export const repository = {
             marks: getSize(marks) + getSize(tasks), // Marks includes tasks
             tasks: getSize(tasks),
             members: getSize(members)
+        };
+    },
+
+    async getAllWorkspacesSizes() {
+        const workspaces = getWorkspaces();
+        const results = [];
+        let total = 0;
+
+        for (const ws of workspaces) {
+            const db = await openDB(ws.dbName, DB_VERSION, {
+                async upgrade(db, oldVersion, newVersion, transaction) {
+                    // Minimal upgrade - just create stores if they don't exist
+                    if (!db.objectStoreNames.contains('meets')) {
+                        const meetStore = db.createObjectStore('meets', { keyPath: 'id' });
+                        meetStore.createIndex('meetId', 'meetId', { unique: false });
+                        meetStore.createIndex('date', 'date', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('settings')) {
+                        db.createObjectStore('settings', { keyPath: 'key' });
+                    }
+                    if (!db.objectStoreNames.contains('groups')) {
+                        const store = db.createObjectStore('groups', { keyPath: 'id' });
+                        store.createIndex('meetId', 'meetId', { unique: true });
+                        store.createIndex('name', 'name', { unique: true });
+                    }
+                    if (!db.objectStoreNames.contains('tasks')) {
+                        const store = db.createObjectStore('tasks', { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('groupId', 'groupId', { unique: false });
+                        store.createIndex('name_date_group', ['name', 'date', 'groupId'], { unique: true });
+                        store.createIndex('groupName', 'groupName', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('marks')) {
+                        const store = db.createObjectStore('marks', { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('taskId', 'taskId', { unique: false });
+                        store.createIndex('studentId', 'studentId', { unique: false });
+                        store.createIndex('task_student', ['taskId', 'studentId'], { unique: true });
+                        store.createIndex('createdAt', 'createdAt', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('members')) {
+                        const store = db.createObjectStore('members', { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('name', 'name', { unique: true });
+                        store.createIndex('groupName', 'groupName', { unique: false });
+                        store.createIndex('role', 'role', { unique: false });
+                    }
+                }
+            });
+
+            try {
+                // Check if all required stores exist before trying to access them
+                const storeNames = ['meets', 'groups', 'tasks', 'marks', 'members'];
+                const missingStores = storeNames.filter(name => !db.objectStoreNames.contains(name));
+
+                if (missingStores.length > 0) {
+                    console.warn(`Workspace ${ws.name} is missing stores: ${missingStores.join(', ')}. Skipping size calculation.`);
+                    db.close();
+                    results.push({
+                        id: ws.id,
+                        name: ws.name,
+                        size: 0,
+                        error: true
+                    });
+                    continue;
+                }
+
+                const [meets, groups, tasks, marks, members] = await Promise.all([
+                    db.getAll('meets'),
+                    db.getAll('groups'),
+                    db.getAll('tasks'),
+                    db.getAll('marks'),
+                    db.getAll('members')
+                ]);
+
+                const getSize = (data) => {
+                    try {
+                        return new Blob([JSON.stringify(data)]).size;
+                    } catch (e) {
+                        return 0;
+                    }
+                };
+
+                const size = getSize(meets) + getSize(groups) + getSize(tasks) + getSize(marks) + getSize(members);
+                total += size;
+                results.push({
+                    id: ws.id,
+                    name: ws.name,
+                    size: size
+                });
+            } catch (e) {
+                console.error(`Error calculating size for workspace ${ws.name}:`, e);
+                results.push({
+                    id: ws.id,
+                    name: ws.name,
+                    size: 0,
+                    error: true
+                });
+            } finally {
+                db.close();
+            }
+        }
+
+        return {
+            total,
+            workspaces: results
         };
     }
 };

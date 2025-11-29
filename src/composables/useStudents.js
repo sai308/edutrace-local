@@ -12,24 +12,30 @@ export function useStudents() {
     const teachers = ref(new Set());
     const meets = ref([]);
     const tasks = ref([]);
+    const isLoading = ref(false);
 
     async function loadData() {
-        // Ensure all meet participants have member records
-        await repository.syncAllMembersFromMeets();
+        isLoading.value = true;
+        try {
+            // Ensure all meet participants have member records
+            await repository.syncAllMembersFromMeets();
 
-        const [allMeets, allGroups, teacherList, allMembers, allTasks, allMarks] = await Promise.all([
-            repository.getAllMeets(),
-            repository.getGroupMap(),
-            repository.getTeachers(),
-            repository.getAllMembers(),
-            repository.getAll('tasks'),
-            repository.getAll('marks')
-        ]);
-        groupsMap.value = allGroups;
-        teachers.value = new Set(teacherList);
-        meets.value = allMeets;
-        tasks.value = allTasks;
-        processData(allMeets, allMembers, allTasks, allMarks);
+            const [allMeets, allGroups, teacherList, allMembers, allTasks, allMarks] = await Promise.all([
+                repository.getAllMeets(),
+                repository.getGroupMap(),
+                repository.getTeachers(),
+                repository.getAllMembers(),
+                repository.getAll('tasks'),
+                repository.getAll('marks')
+            ]);
+            groupsMap.value = allGroups;
+            teachers.value = new Set(teacherList);
+            meets.value = allMeets;
+            tasks.value = allTasks;
+            processData(allMeets, allMembers, allTasks, allMarks);
+        } finally {
+            isLoading.value = false;
+        }
     }
 
     async function processData(meets, members, tasks, marks) {
@@ -310,6 +316,7 @@ export function useStudents() {
         loadData,
         saveStudent,
         deleteStudent,
-        bulkDeleteStudents
+        bulkDeleteStudents,
+        isLoading
     };
 }

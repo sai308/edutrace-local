@@ -6,6 +6,7 @@ import StudentsPage from '../pages/StudentsPage.vue';
 import MarksPage from '../pages/MarksPage.vue';
 import GuidePage from '../pages/GuidePage.vue';
 import AboutPage from '../pages/AboutPage.vue';
+import NotFoundPage from '../pages/NotFoundPage.vue';
 import DetailedView from '../components/DetailedView.vue';
 
 const routes = [
@@ -59,6 +60,11 @@ const routes = [
         path: '/about',
         name: 'About',
         component: AboutPage
+    },
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'NotFound',
+        component: NotFoundPage
     }
 ];
 
