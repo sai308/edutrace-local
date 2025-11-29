@@ -9,14 +9,46 @@
         "copy_settings_desc": "Includes duration limit, default teacher, and ignored users list.",
         "cancel": "Cancel",
         "create_button": "Create Workspace",
+        "edit": "Edit",
+        "edit_modal_title": "Edit Workspace",
+        "update_button": "Update Workspace",
         "delete_modal_title": "Delete Workspace",
         "delete_warning": "This action cannot be undone. This will permanently delete the {name} workspace and all associated data.",
         "delete_confirm_label": "Type {name} to confirm:",
         "delete_button": "Delete Workspace"
     },
+    "loader": {
+        "switchingWorkspace": "Switching workspace...",
+        "loadingWorkspaces": "Loading imported workspaces...",
+        "loading": "Loading data..."
+    },
+    "notFound": {
+        "title": "Page Not Found",
+        "description": "The page you are looking for doesn't exist or has been moved.",
+        "goHome": "Go to Home"
+    },
     "app": {
         "title": "Edutrace",
         "settings": "Settings"
+    },
+    "common": {
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "save": "Save",
+        "delete": "Delete",
+        "edit": "Edit",
+        "close": "Close"
+    },
+    "workspaceSelection": {
+        "title": {
+            "export": "Select Workspaces to Export",
+            "import": "Select Workspaces to Import",
+            "erase": "Select Workspaces to Erase"
+        },
+        "selectAll": "Select All",
+        "deselectAll": "Deselect All",
+        "selected": "{count} of {total} selected",
+        "default": "Default Workspace"
     },
     "nav": {
         "reports": "Reports",
@@ -74,6 +106,11 @@
             }
         },
         "data": {
+            "currentWorkspace": "Current Workspace",
+            "totalSize": "Total Size",
+            "all": {
+                "title": "All Data"
+            },
             "reports": {
                 "title": "Reports (Meets)",
                 "memory": "Memory"
@@ -99,9 +136,15 @@
         "advanced": {
             "global": {
                 "title": "Global Operations",
-                "description": "Manage all data at once (Reports, Groups, Members, Marks and Settings)",
+                "description": {
+                    "title": "Manage all data at once",
+                    "list": "(Reports, Groups, Members, Marks and Settings)"
+                },
                 "totalRecords": "Total Records",
                 "totalMemory": "Total Memory",
+                "totalSize": "Total Database Size",
+                "showDetails": "Show Details",
+                "hideDetails": "Hide Details",
                 "exportAll": "Export All",
                 "importAll": "Import All",
                 "eraseAll": "Erase All"
@@ -153,6 +196,8 @@
         "durationLimitApplied": "Duration limit applied to {count} meets",
         "dataExported": "Data exported successfully",
         "dataExportFailed": "Failed to export data",
+        "workspacesExported": "Workspaces exported successfully",
+        "workspacesExportFailed": "Failed to export workspaces",
         "reportsExported": "Reports exported successfully",
         "reportsExportFailed": "Failed to export reports",
         "groupsExported": "Groups exported successfully",
@@ -160,11 +205,15 @@
         "marksExported": "Marks exported successfully",
         "marksExportFailed": "Failed to export marks",
         "invalidJson": "Invalid JSON file",
+        "invalidImportFormat": "Invalid data format for {type} import",
         "dataImported": "Data imported successfully",
         "dataImportFailed": "Failed to import data",
-        "allDataErased": "All data erased",
-        "dataEraseFailed": "Failed to erase data",
-        "reportsErased": "Reports erased",
+        "workspacesImported": "Workspaces imported successfully",
+        "workspacesImportFailed": "Failed to import workspaces",
+        "allDataErased": "All data erased successfully",
+        "workspacesErased": "Selected workspaces erased successfully",
+        "workspacesEraseFailed": "Failed to erase selected workspaces",
+        "reportsErased": "Reports erased successfully",
         "reportsEraseFailed": "Failed to erase reports",
         "groupsErased": "Groups erased",
         "groupsEraseFailed": "Failed to erase groups",
@@ -453,7 +502,8 @@
         "prompt": "Drop CSV files here",
         "reportsPrompt": "Drop Attendance Reports",
         "marksPrompt": "Drop Marks Reports",
-        "hint": "Drag & drop CSV files here, or click to select"
+        "hint": "Drag & drop CSV files here, or click to select",
+        "invalidType": "Invalid file type. Only CSV files are allowed."
     },
     "views": {
         "overview": "Overview",
@@ -524,16 +574,46 @@
             "whatMakesDifferent": "What makes Edutrace different",
             "importantToKnow": "Important things to know",
             "details": {
-                "dataStaysLocal": "<strong>Your Data Stays on Your Device:</strong> Edutrace is a \"local-first\" application, which means all your data (attendance reports, marks, groups, student information) is stored directly in your web browser on your device, not on external servers.",
-                "privacyByDesign": "<strong>Privacy by Design:</strong> Because your data never leaves your device, you have complete control and privacy. No one else can access your information unless you explicitly share it.",
-                "worksOffline": "<strong>Works Offline:</strong> Once loaded, Edutrace works without an internet connection. You can view reports, add marks, and manage groups even when offline.",
-                "noAccountRequired": "<strong>No Account Required:</strong> There's no need to create an account, remember passwords, or worry about subscription fees. Just open the app and start using it.",
-                "fastResponsive": "<strong>Fast and Responsive:</strong> Since everything runs locally on your device, the app is extremely fast with instant updates and no loading delays.",
-                "browserSpecific": "<strong>Browser-Specific Data:</strong> Your data is stored in your browser's local storage. This means if you use Edutrace in Chrome, your data won't automatically appear in Firefox or Safari. Each browser keeps its own separate data.",
-                "deviceSpecific": "<strong>Device-Specific Data:</strong> Similarly, data on your laptop won't automatically sync to your phone or tablet. Each device maintains its own independent copy.",
-                "backupRegularly": "<strong>Backup Regularly:</strong> Since data is stored locally, it's important to regularly export your data (via Settings → Advanced → Export All) to create backups. If you clear your browser data or uninstall the browser, your Edutrace data will be lost.",
-                "sharingBetweenDevices": "<strong>Sharing Between Devices:</strong> To use Edutrace on multiple devices, export your data from one device and import it on another using the Settings menu.",
-                "browserStorageLimits": "<strong>Browser Storage Limits:</strong> Browsers have storage limits (typically several hundred MB). While this is more than enough for most use cases, be aware that extremely large datasets might approach these limits."
+                "dataStaysLocal": {
+                    "title": "Your Data Stays on Your Device",
+                    "description": "Edutrace is a \"local-first\" application, which means all your data (attendance reports, marks, groups, student information) is stored directly in your web browser on your device, not on external servers."
+                },
+                "privacyByDesign": {
+                    "title": "Privacy by Design",
+                    "description": "Because your data never leaves your device, you have complete control and privacy. No one else can access your information unless you explicitly share it."
+                },
+                "worksOffline": {
+                    "title": "Works Offline",
+                    "description": "Once loaded, Edutrace works without an internet connection. You can view reports, add marks, and manage groups even when offline."
+                },
+                "noAccountRequired": {
+                    "title": "No Account Required",
+                    "description": "There's no need to create an account, remember passwords, or worry about subscription fees. Just open the app and start using it."
+                },
+                "fastResponsive": {
+                    "title": "Fast and Responsive",
+                    "description": "Since everything runs locally on your device, the app is extremely fast with instant updates and no loading delays."
+                },
+                "browserSpecific": {
+                    "title": "Browser-Specific Data",
+                    "description": "Your data is stored in your browser's local storage. This means if you use Edutrace in Chrome, your data won't automatically appear in Firefox or Safari. Each browser keeps its own separate data."
+                },
+                "deviceSpecific": {
+                    "title": "Device-Specific Data",
+                    "description": "Similarly, data on your laptop won't automatically sync to your phone or tablet. Each device maintains its own independent copy."
+                },
+                "backupRegularly": {
+                    "title": "Backup Regularly",
+                    "description": "Since data is stored locally, it's important to regularly export your data (via Settings → Advanced → Export All) to create backups. If you clear your browser data or uninstall the browser, your Edutrace data will be lost."
+                },
+                "sharingBetweenDevices": {
+                    "title": "Sharing Between Devices",
+                    "description": "To use Edutrace on multiple devices, export your data from one device and import it on another using the Settings menu."
+                },
+                "browserStorageLimits": {
+                    "title": "Browser Storage Limits",
+                    "description": "Browsers have storage limits (typically several hundred MB). While this is more than enough for most use cases, be aware that extremely large datasets might approach these limits."
+                }
             }
         },
         "reports": {
@@ -542,14 +622,38 @@
             "howToUse": "How to use",
             "whatYouGet": "What you get",
             "details": {
-                "uploadReports": "<strong>Upload Reports:</strong> Drag and drop your Google Meet attendance CSV files into the designated drop zone at the top of the page.",
-                "searchFilter": "<strong>Search & Filter:</strong> Use the search bar to find specific meets. Click on \"Group\" or \"Meet ID\" chips within the table to activate quick filters.",
-                "sortData": "<strong>Sort Data:</strong> Click on any column header (Group, Meet ID, Date, etc.) to sort the table accordingly.",
-                "manageReports": "<strong>Manage Reports:</strong> Use the checkboxes to select multiple reports for bulk deletion, or use the trash icon on each row to delete individually.",
-                "viewDetails": "<strong>View Details:</strong> Click the eye icon on any row to open the detailed view, where you can analyze participant duration and timelines.",
-                "centralizedHistory": "<strong>Centralized History:</strong> A complete history of all your uploaded attendance reports in one place.",
-                "quickInsights": "<strong>Quick Insights:</strong> Immediate visibility into participant counts and session dates.",
-                "organization": "<strong>Organization:</strong> Automatic mapping of Meet IDs to Groups (once groups are configured), helping you keep your records organized."
+                "uploadReports": {
+                    "title": "Upload Reports",
+                    "description": "Drag and drop your Google Meet attendance CSV files into the designated drop zone at the top of the page."
+                },
+                "searchFilter": {
+                    "title": "Search & Filter",
+                    "description": "Use the search bar to find specific meets. Click on \"Group\" or \"Meet ID\" chips within the table to activate quick filters."
+                },
+                "sortData": {
+                    "title": "Sort Data",
+                    "description": "Click on any column header (Group, Meet ID, Date, etc.) to sort the table accordingly."
+                },
+                "manageReports": {
+                    "title": "Manage Reports",
+                    "description": "Use the checkboxes to select multiple reports for bulk deletion, or use the trash icon on each row to delete individually."
+                },
+                "viewDetails": {
+                    "title": "View Details",
+                    "description": "Click the eye icon on any row to open the detailed view, where you can analyze participant duration and timelines."
+                },
+                "centralizedHistory": {
+                    "title": "Centralized History",
+                    "description": "A complete history of all your uploaded attendance reports in one place."
+                },
+                "quickInsights": {
+                    "title": "Quick Insights",
+                    "description": "Immediate visibility into participant counts and session dates."
+                },
+                "organization": {
+                    "title": "Organization",
+                    "description": "Automatic mapping of Meet IDs to Groups (once groups are configured), helping you keep your records organized."
+                }
             }
         },
         "analytics": {
@@ -558,15 +662,42 @@
             "howToUse": "How to use",
             "whatYouGet": "What you get",
             "details": {
-                "dashboardOverview": "<strong>Dashboard Overview:</strong> The dashboard groups your meets by course (1st, 2nd, 3rd, 4th) and \"Other Meets\". Click on a course section to expand or collapse it.",
-                "search": "<strong>Search:</strong> Use the search bar to quickly find specific meets by name, teacher, or ID.",
-                "quickStats": "<strong>Quick Stats:</strong> Each card displays key metrics: Total Sessions, Average Duration, and Participant Count (Active/Total).",
-                "attendanceHealth": "<strong>Attendance Health:</strong> Color-coded badges (Green > 75%, Yellow > 50%, Red < 50%) give you an instant visual indicator of attendance performance.",
-                "qrCode": "<strong>QR Code:</strong> Click the QR code icon on any card to generate a shareable link for that specific meet.",
-                "detailedView": "<strong>Detailed View:</strong> Click on any card to dive deeper into the analytics for that specific meet, including attendance graphs and student-specific data.",
-                "trendAnalysis": "<strong>Trend Analysis:</strong> Spot attendance trends across different courses and groups.",
-                "performanceMetrics": "<strong>Performance Metrics:</strong> Easily identify high-performing groups and those that may need attention.",
-                "efficientNavigation": "<strong>Efficient Navigation:</strong> Quickly jump to detailed reports for specific meets directly from the dashboard."
+                "dashboardOverview": {
+                    "title": "Dashboard Overview",
+                    "description": "The dashboard groups your meets by course (1st, 2nd, 3rd, 4th) and \"Other Meets\". Click on a course section to expand or collapse it."
+                },
+                "search": {
+                    "title": "Search",
+                    "description": "Use the search bar to quickly find specific meets by name, teacher, or ID."
+                },
+                "quickStats": {
+                    "title": "Quick Stats",
+                    "description": "Each card displays key metrics: Total Sessions, Average Duration, and Participant Count (Active/Total)."
+                },
+                "attendanceHealth": {
+                    "title": "Attendance Health",
+                    "description": "Color-coded badges (Green > 75%, Yellow > 50%, Red < 50%) give you an instant visual indicator of attendance performance."
+                },
+                "qrCode": {
+                    "title": "QR Code",
+                    "description": "Click the QR code icon on any card to generate a shareable link for that specific meet."
+                },
+                "detailedView": {
+                    "title": "Detailed View",
+                    "description": "Click on any card to dive deeper into the analytics for that specific meet, including attendance graphs and student-specific data."
+                },
+                "trendAnalysis": {
+                    "title": "Trend Analysis",
+                    "description": "Spot attendance trends across different courses and groups."
+                },
+                "performanceMetrics": {
+                    "title": "Performance Metrics",
+                    "description": "Easily identify high-performing groups and those that may need attention."
+                },
+                "efficientNavigation": {
+                    "title": "Efficient Navigation",
+                    "description": "Quickly jump to detailed reports for specific meets directly from the dashboard."
+                }
             }
         },
         "groups": {
@@ -575,17 +706,50 @@
             "howToUse": "How to use",
             "whatYouGet": "What you get",
             "details": {
-                "createGroups": "<strong>Create Groups:</strong> Click the \"Add Group\" button to create a new group. Enter the group name, course number (1-4), Meet ID (the unique code from Google Meet), and optionally assign a teacher.",
-                "searchFilter": "<strong>Search & Filter:</strong> Use the search bar to quickly find groups by name or Meet ID.",
-                "sortData": "<strong>Sort Data:</strong> Click on any column header (Name, Course, Meet ID, Members, Teacher) to sort the table. Click again to reverse the sort order.",
-                "editGroups": "<strong>Edit Groups:</strong> Click the edit icon (pencil) on any row to modify group details such as name, course, Meet ID, or teacher assignment.",
-                "generateQR": "<strong>Generate QR Codes:</strong> Click the QR code icon to generate a shareable QR code for the group's Meet ID, making it easy for students to join sessions.",
-                "deleteGroups": "<strong>Delete Groups:</strong> Use the trash icon to remove groups that are no longer needed. You'll be asked to confirm before deletion.",
-                "organizedStructure": "<strong>Organized Structure:</strong> Map Google Meet IDs to meaningful group names and course numbers for better organization.",
-                "memberTracking": "<strong>Member Tracking:</strong> See at a glance how many students are assigned to each group.",
-                "teacherAssignment": "<strong>Teacher Assignment:</strong> Associate teachers with groups for better record-keeping and filtering.",
-                "automaticIntegration": "<strong>Automatic Integration:</strong> Once groups are configured, uploaded attendance reports are automatically linked to the correct groups, making analytics more meaningful.",
-                "easySharing": "<strong>Easy Sharing:</strong> Generate QR codes for quick access to meeting links, perfect for sharing with students."
+                "createGroups": {
+                    "title": "Create Groups",
+                    "description": "Click the \"Add Group\" button to create a new group. Enter the group name, course number (1-4), Meet ID (the unique code from Google Meet), and optionally assign a teacher."
+                },
+                "searchFilter": {
+                    "title": "Search & Filter",
+                    "description": "Use the search bar to quickly find groups by name or Meet ID."
+                },
+                "sortData": {
+                    "title": "Sort Data",
+                    "description": "Click on any column header (Name, Course, Meet ID, Members, Teacher) to sort the table. Click again to reverse the sort order."
+                },
+                "editGroups": {
+                    "title": "Edit Groups",
+                    "description": "Click the edit icon (pencil) on any row to modify group details such as name, course, Meet ID, or teacher assignment."
+                },
+                "generateQR": {
+                    "title": "Generate QR Codes",
+                    "description": "Click the QR code icon to generate a shareable QR code for the group's Meet ID, making it easy for students to join sessions."
+                },
+                "deleteGroups": {
+                    "title": "Delete Groups",
+                    "description": "Use the trash icon to remove groups that are no longer needed. You'll be asked to confirm before deletion."
+                },
+                "organizedStructure": {
+                    "title": "Organized Structure",
+                    "description": "Map Google Meet IDs to meaningful group names and course numbers for better organization."
+                },
+                "memberTracking": {
+                    "title": "Member Tracking",
+                    "description": "See at a glance how many students are assigned to each group."
+                },
+                "teacherAssignment": {
+                    "title": "Teacher Assignment",
+                    "description": "Associate teachers with groups for better record-keeping and filtering."
+                },
+                "automaticIntegration": {
+                    "title": "Automatic Integration",
+                    "description": "Once groups are configured, uploaded attendance reports are automatically linked to the correct groups, making analytics more meaningful."
+                },
+                "easySharing": {
+                    "title": "Easy Sharing",
+                    "description": "Generate QR codes for quick access to meeting links, perfect for sharing with students."
+                }
             }
         },
         "students": {
@@ -594,21 +758,66 @@
             "howToUse": "How to use",
             "whatYouGet": "What you get",
             "details": {
-                "searchStudents": "<strong>Search Students:</strong> Use the search bar to find students by name, group, or Meet ID. The search is instant and filters results as you type.",
-                "filterByGroup": "<strong>Filter by Group:</strong> Click on any group chip in the \"Groups\" column to filter the table to show only students from that group. Click the X button to clear the filter.",
-                "sortData": "<strong>Sort Data:</strong> Click on any column header to sort the table. Available sort options include name, groups, sessions, attendance percentages, average marks, and task completion.",
-                "viewAnalytics": "<strong>View Analytics:</strong> Click on any Meet ID chip to navigate directly to the detailed analytics view for that specific meet.",
-                "bulkSelection": "<strong>Bulk Selection:</strong> Use the checkboxes to select multiple students. Select all by clicking the header checkbox. Bulk delete selected students using the \"Delete\" button that appears.",
-                "editStudents": "<strong>Edit Students:</strong> Click the edit icon (pencil) to modify student information such as name, email, or group assignments.",
-                "trackAttendance": "<strong>Track Attendance:</strong> View attendance statistics including sessions attended (e.g., 7/8), average attendance percentage per session, and total attendance percentage.",
-                "monitorPerformance": "<strong>Monitor Performance:</strong> See average marks (5-point scale) and task completion percentages at a glance, with color-coded indicators (green > 75%, yellow > 50%, red < 50%).",
-                "comprehensiveOverview": "<strong>Comprehensive Overview:</strong> All student data in one place, including attendance, marks, and task completion statistics.",
-                "multiDimensionalTracking": "<strong>Multi-Dimensional Tracking:</strong> Track students across multiple groups and Meet IDs simultaneously.",
-                "performanceInsights": "<strong>Performance Insights:</strong> Color-coded visual indicators help you quickly identify students who may need additional support.",
-                "attendanceAnalytics": "<strong>Attendance Analytics:</strong> Detailed attendance metrics showing both average per-session attendance and total attendance across all sessions.",
-                "academicProgress": "<strong>Academic Progress:</strong> View average marks and task completion rates to monitor academic performance alongside attendance.",
-                "flexibleManagement": "<strong>Flexible Management:</strong> Edit student details, manage group assignments, and perform bulk operations efficiently.",
-                "teacherExclusion": "<strong>Teacher Exclusion:</strong> Teachers are automatically filtered out from the student list based on your settings, keeping the view focused on students only."
+                "searchStudents": {
+                    "title": "Search Students",
+                    "description": "Use the search bar to find students by name, group, or Meet ID. The search is instant and filters results as you type."
+                },
+                "filterByGroup": {
+                    "title": "Filter by Group",
+                    "description": "Click on any group chip in the \"Groups\" column to filter the table to show only students from that group. Click the X button to clear the filter."
+                },
+                "sortData": {
+                    "title": "Sort Data",
+                    "description": "Click on any column header to sort the table. Available sort options include name, groups, sessions, attendance percentages, average marks, and task completion."
+                },
+                "viewAnalytics": {
+                    "title": "View Analytics",
+                    "description": "Click on any Meet ID chip to navigate directly to the detailed analytics view for that specific meet."
+                },
+                "bulkSelection": {
+                    "title": "Bulk Selection",
+                    "description": "Use the checkboxes to select multiple students. Select all by clicking the header checkbox. Bulk delete selected students using the \"Delete\" button that appears."
+                },
+                "editStudents": {
+                    "title": "Edit Students",
+                    "description": "Click the edit icon (pencil) to modify student information such as name, email, or group assignments."
+                },
+                "trackAttendance": {
+                    "title": "Track Attendance",
+                    "description": "View attendance statistics including sessions attended (e.g., 7/8), average attendance percentage per session, and total attendance percentage."
+                },
+                "monitorPerformance": {
+                    "title": "Monitor Performance",
+                    "description": "See average marks (5-point scale) and task completion percentages at a glance, with color-coded indicators (green > 75%, yellow > 50%, red < 50%)."
+                },
+                "comprehensiveOverview": {
+                    "title": "Comprehensive Overview",
+                    "description": "All student data in one place, including attendance, marks, and task completion statistics."
+                },
+                "multiDimensionalTracking": {
+                    "title": "Multi-Dimensional Tracking",
+                    "description": "Track students across multiple groups and Meet IDs simultaneously."
+                },
+                "performanceInsights": {
+                    "title": "Performance Insights",
+                    "description": "Color-coded visual indicators help you quickly identify students who may need additional support."
+                },
+                "attendanceAnalytics": {
+                    "title": "Attendance Analytics",
+                    "description": "Detailed attendance metrics showing both average per-session attendance and total attendance across all sessions."
+                },
+                "academicProgress": {
+                    "title": "Academic Progress",
+                    "description": "View average marks and task completion rates to monitor academic performance alongside attendance."
+                },
+                "flexibleManagement": {
+                    "title": "Flexible Management",
+                    "description": "Edit student details, manage group assignments, and perform bulk operations efficiently."
+                },
+                "teacherExclusion": {
+                    "title": "Teacher Exclusion",
+                    "description": "Teachers are automatically filtered out from the student list based on your settings, keeping the view focused on students only."
+                }
             }
         },
         "marks": {
@@ -617,22 +826,70 @@
             "howToUse": "How to use",
             "whatYouGet": "What you get",
             "details": {
-                "uploadMarks": "<strong>Upload Marks:</strong> Drag and drop CSV files containing marks data. Files should be named with the group prefix (e.g., \"CS-101_marks.csv\"). If the group doesn't exist, you'll be prompted to create it.",
-                "gradeScaleSelector": "<strong>Grade Scale Selector:</strong> Choose how to display marks using the dropdown: Default (raw scores), 5-Point scale, 100-Point scale, or ECTS grades. The conversion is automatic.",
-                "searchFilter": "<strong>Search & Filter:</strong> Use the search bar to find marks by student name, group, or task name. Click the \"Filters\" button for advanced filtering by sync status, date range, or specific group.",
-                "sortData": "<strong>Sort Data:</strong> Click on column headers (Added, Student, Group, Task) to sort the table. Marks are sorted by creation date (newest first) by default.",
-                "syncStatus": "<strong>Sync Status:</strong> Mark entries as \"synced\" (checkmark icon) once you've recorded them in your official gradebook. Unsynced marks show an orange pulsing dot and are filtered by default.",
-                "bulkOperations": "<strong>Bulk Operations:</strong> Select multiple marks using checkboxes and delete them in bulk. Use the select-all checkbox in the header for quick selection.",
-                "groupFiltering": "<strong>Group Filtering:</strong> Click on any group chip to instantly filter marks to show only that group. The active filter is highlighted with a ring.",
-                "viewDetails": "<strong>View Details:</strong> Hover over any mark to see a tooltip with the full breakdown: raw score, percentage, 5-point scale, 100-point scale, and ECTS grade.",
-                "flexibleGrading": "<strong>Flexible Grading:</strong> Support for multiple grading systems (5-point, 100-point, ECTS) with automatic conversion from raw scores.",
-                "taskManagement": "<strong>Task Management:</strong> Track marks for different tasks and assignments, with task names and dates clearly displayed.",
-                "syncTracking": "<strong>Sync Tracking:</strong> Keep track of which marks have been officially recorded with the sync status feature, preventing duplicate entries.",
-                "comprehensiveSearch": "<strong>Comprehensive Search:</strong> Find specific marks quickly by searching across students, groups, and task names simultaneously.",
-                "advancedFiltering": "<strong>Advanced Filtering:</strong> Filter by sync status (unsynced/all), date range, or specific groups to focus on what matters.",
-                "automaticIntegration": "<strong>Automatic Integration:</strong> Marks are automatically linked to students and groups, appearing in student profiles and analytics.",
-                "visualClarity": "<strong>Visual Clarity:</strong> Color-coded marks and clear visual indicators (sync dots, tooltips) make it easy to understand the data at a glance.",
-                "bulkManagement": "<strong>Bulk Management:</strong> Efficiently manage large numbers of marks with bulk selection and deletion capabilities."
+                "uploadMarks": {
+                    "title": "Upload Marks",
+                    "description": "Drag and drop CSV files containing marks data. Files should be named with the group prefix (e.g., \"CS-101_marks.csv\"). If the group doesn't exist, you'll be prompted to create it."
+                },
+                "gradeScaleSelector": {
+                    "title": "Grade Scale Selector",
+                    "description": "Choose how to display marks using the dropdown: Default (raw scores), 5-Point scale, 100-Point scale, or ECTS grades. The conversion is automatic."
+                },
+                "searchFilter": {
+                    "title": "Search & Filter",
+                    "description": "Use the search bar to find marks by student name, group, or task name. Click the \"Filters\" button for advanced filtering by sync status, date range, or specific group."
+                },
+                "sortData": {
+                    "title": "Sort Data",
+                    "description": "Click on column headers (Added, Student, Group, Task) to sort the table. Marks are sorted by creation date (newest first) by default."
+                },
+                "syncStatus": {
+                    "title": "Sync Status",
+                    "description": "Mark entries as \"synced\" (checkmark icon) once you've recorded them in your official gradebook. Unsynced marks show an orange pulsing dot and are filtered by default."
+                },
+                "bulkOperations": {
+                    "title": "Bulk Operations",
+                    "description": "Select multiple marks using checkboxes and delete them in bulk. Use the select-all checkbox in the header for quick selection."
+                },
+                "groupFiltering": {
+                    "title": "Group Filtering",
+                    "description": "Click on any group chip to instantly filter marks to show only that group. The active filter is highlighted with a ring."
+                },
+                "viewDetails": {
+                    "title": "View Details",
+                    "description": "Hover over any mark to see a tooltip with the full breakdown: raw score, percentage, 5-point scale, 100-point scale, and ECTS grade."
+                },
+                "flexibleGrading": {
+                    "title": "Flexible Grading",
+                    "description": "Support for multiple grading systems (5-point, 100-point, ECTS) with automatic conversion from raw scores."
+                },
+                "taskManagement": {
+                    "title": "Task Management",
+                    "description": "Track marks for different tasks and assignments, with task names and dates clearly displayed."
+                },
+                "syncTracking": {
+                    "title": "Sync Tracking",
+                    "description": "Keep track of which marks have been officially recorded with the sync status feature, preventing duplicate entries."
+                },
+                "comprehensiveSearch": {
+                    "title": "Comprehensive Search",
+                    "description": "Find specific marks quickly by searching across students, groups, and task names simultaneously."
+                },
+                "advancedFiltering": {
+                    "title": "Advanced Filtering",
+                    "description": "Filter by sync status (unsynced/all), date range, or specific groups to focus on what matters."
+                },
+                "automaticIntegration": {
+                    "title": "Automatic Integration",
+                    "description": "Marks are automatically linked to students and groups, appearing in student profiles and analytics."
+                },
+                "visualClarity": {
+                    "title": "Visual Clarity",
+                    "description": "Color-coded marks and clear visual indicators (sync dots, tooltips) make it easy to understand the data at a glance."
+                },
+                "bulkManagement": {
+                    "title": "Bulk Management",
+                    "description": "Efficiently manage large numbers of marks with bulk selection and deletion capabilities."
+                }
             }
         },
         "settings": {
@@ -641,22 +898,70 @@
             "howToUse": "How to use",
             "whatYouGet": "What you get",
             "details": {
-                "generalLanguage": "<strong>General Tab - Language:</strong> Select your preferred language (English or Ukrainian). The entire interface will update immediately to reflect your choice.",
-                "generalTeacher": "<strong>General Tab - Default Teacher:</strong> Set a default teacher name that will be pre-filled when creating new groups, saving you time on repetitive data entry.",
-                "generalDuration": "<strong>General Tab - Duration Limit:</strong> Set the maximum session duration (in minutes) for attendance tracking. Default is 75 minutes. Use \"Apply to All\" to update all existing meets with this limit.",
-                "generalTeachers": "<strong>General Tab - Teachers:</strong> Click \"Manage Teachers\" to open a modal where you can select which participants should be excluded from student lists and statistics. Add teachers manually or select from existing participants.",
-                "dataManagement": "<strong>Data Management Tab:</strong> Manage your data by entity type (Reports, Groups, Marks, Members). Each card shows the record count and memory usage, with options to Export (download as JSON), Import (restore from JSON), or Erase (permanently delete).",
-                "advancedGlobal": "<strong>Advanced Tab - Global Operations:</strong> Perform operations on all data at once. Export All creates a complete backup, Import All restores from backup, and Erase All permanently deletes everything (use with caution!).",
-                "dataBackup": "<strong>Data Backup Strategy:</strong> Regularly export your data to create backups. Use entity-specific exports for targeted backups or \"Export All\" for complete system backups.",
-                "importData": "<strong>Import Data:</strong> When importing, you'll be asked to confirm as it will replace existing data. Make sure you have a backup before importing.",
-                "multiLanguage": "<strong>Multi-Language Support:</strong> Switch between English and Ukrainian with instant UI updates, making the app accessible to diverse users.",
-                "customizableDefaults": "<strong>Customizable Defaults:</strong> Set default values for teacher names and session durations to streamline your workflow.",
-                "teacherFiltering": "<strong>Teacher Filtering:</strong> Automatically exclude teachers from student lists and statistics, keeping your data focused on actual students.",
-                "dataPortability": "<strong>Data Portability:</strong> Export and import data in JSON format, enabling easy backups, data migration, and sharing between devices.",
-                "granularControl": "<strong>Granular Control:</strong> Manage each data type (Reports, Groups, Marks, Members) independently or perform global operations on everything at once.",
-                "storageInsights": "<strong>Storage Insights:</strong> See exactly how many records you have and how much storage each entity type is using.",
-                "safeDataManagement": "<strong>Safe Data Management:</strong> All destructive operations (erase, import) require confirmation to prevent accidental data loss.",
-                "flexibleDuration": "<strong>Flexible Duration Control:</strong> Adjust attendance duration limits globally or per-session to match your specific needs (e.g., different class lengths)."
+                "generalLanguage": {
+                    "title": "General Tab - Language",
+                    "description": "Select your preferred language (English or Ukrainian). The entire interface will update immediately to reflect your choice."
+                },
+                "generalTeacher": {
+                    "title": "General Tab - Default Teacher",
+                    "description": "Set a default teacher name that will be pre-filled when creating new groups, saving you time on repetitive data entry."
+                },
+                "generalDuration": {
+                    "title": "General Tab - Duration Limit",
+                    "description": "Set the maximum session duration (in minutes) for attendance tracking. Default is 75 minutes. Use \"Apply to All\" to update all existing meets with this limit."
+                },
+                "generalTeachers": {
+                    "title": "General Tab - Teachers",
+                    "description": "Click \"Manage Teachers\" to open a modal where you can select which participants should be excluded from student lists and statistics. Add teachers manually or select from existing participants."
+                },
+                "dataManagement": {
+                    "title": "Data Management Tab",
+                    "description": "Manage your data by entity type (Reports, Groups, Marks, Members). Each card shows the record count and memory usage, with options to Export (download as JSON), Import (restore from JSON), or Erase (permanently delete)."
+                },
+                "advancedGlobal": {
+                    "title": "Advanced Tab - Global Operations",
+                    "description": "Perform operations on all data at once. Export All creates a complete backup, Import All restores from backup, and Erase All permanently deletes everything (use with caution!)."
+                },
+                "dataBackup": {
+                    "title": "Data Backup Strategy",
+                    "description": "Regularly export your data to create backups. Use entity-specific exports for targeted backups or \"Export All\" for complete system backups."
+                },
+                "importData": {
+                    "title": "Import Data",
+                    "description": "When importing, you'll be asked to confirm as it will replace existing data. Make sure you have a backup before importing."
+                },
+                "multiLanguage": {
+                    "title": "Multi-Language Support",
+                    "description": "Switch between English and Ukrainian with instant UI updates, making the app accessible to diverse users."
+                },
+                "customizableDefaults": {
+                    "title": "Customizable Defaults",
+                    "description": "Set default values for teacher names and session durations to streamline your workflow."
+                },
+                "teacherFiltering": {
+                    "title": "Teacher Filtering",
+                    "description": "Automatically exclude teachers from student lists and statistics, keeping your data focused on actual students."
+                },
+                "dataPortability": {
+                    "title": "Data Portability",
+                    "description": "Export and import data in JSON format, enabling easy backups, data migration, and sharing between devices."
+                },
+                "granularControl": {
+                    "title": "Granular Control",
+                    "description": "Manage each data type (Reports, Groups, Marks, Members) independently or perform global operations on everything at once."
+                },
+                "storageInsights": {
+                    "title": "Storage Insights",
+                    "description": "See exactly how many records you have and how much storage each entity type is using."
+                },
+                "safeDataManagement": {
+                    "title": "Safe Data Management",
+                    "description": "All destructive operations (erase, import) require confirmation to prevent accidental data loss."
+                },
+                "flexibleDuration": {
+                    "title": "Flexible Duration Control",
+                    "description": "Adjust attendance duration limits globally or per-session to match your specific needs (e.g., different class lengths)."
+                }
             }
         },
         "workspaces": {
@@ -665,19 +970,58 @@
             "howToUse": "How to use",
             "whatYouGet": "What you get",
             "details": {
-                "createWorkspace": "<strong>Create Workspace:</strong> Click the workspace switcher in the top-right corner (database icon), then click \"Create New Workspace\". Enter a name (e.g., \"Fall 2024\"), select an icon, and choose whether to copy your current settings.",
-                "switchWorkspace": "<strong>Switch Workspaces:</strong> Click the workspace switcher to see all your workspaces. Click on any workspace to switch to it. The currently active workspace is highlighted with a checkmark.",
-                "iconSelection": "<strong>Icon Selection:</strong> When creating a workspace, choose from 18 different icons to visually distinguish your workspaces. Icons appear in the switcher and help you quickly identify which workspace you're in.",
-                "copySettings": "<strong>Copy Settings:</strong> When creating a new workspace, you can optionally copy your current workspace's settings (duration limit, default teacher, ignored users). This saves time when setting up similar environments.",
-                "deleteWorkspace": "<strong>Delete Workspace:</strong> Hover over a workspace in the switcher and click the trash icon. You'll need to type the workspace name to confirm deletion. Note: The default workspace cannot be deleted.",
-                "dataIsolation": "<strong>Complete Data Isolation:</strong> Each workspace maintains completely separate data. Reports, groups, students, and marks in one workspace don't affect or appear in another workspace.",
-                "settingsIsolation": "<strong>Settings Isolation:</strong> Each workspace has its own settings for duration limits, default teacher, and ignored users. Changes in one workspace don't affect others.",
-                "multiSemester": "<strong>Multi-Semester Management:</strong> Create separate workspaces for different semesters or academic years (e.g., \"Fall 2024\", \"Spring 2025\") to keep historical data organized.",
-                "courseSegregation": "<strong>Course Segregation:</strong> Use workspaces to separate different types of courses or programs you teach, preventing data mixing.",
-                "cleanStart": "<strong>Clean Start:</strong> Start each new semester with a fresh workspace while preserving all historical data in previous workspaces.",
-                "visualIdentification": "<strong>Visual Identification:</strong> Custom icons make it easy to identify which workspace you're currently working in at a glance.",
-                "flexibleOrganization": "<strong>Flexible Organization:</strong> Organize your teaching data however makes sense for you - by semester, year, course type, or any other criteria.",
-                "easyAccess": "<strong>Easy Access:</strong> The workspace switcher is always accessible from the top navigation bar, making it quick to switch contexts."
+                "createWorkspace": {
+                    "title": "Create Workspace",
+                    "description": "Click the workspace switcher in the top-right corner (database icon), then click \"Create New Workspace\". Enter a name (e.g., \"Fall 2024\"), select an icon, and choose whether to copy your current settings."
+                },
+                "switchWorkspace": {
+                    "title": "Switch Workspaces",
+                    "description": "Click the workspace switcher to see all your workspaces. Click on any workspace to switch to it. The currently active workspace is highlighted with a checkmark."
+                },
+                "iconSelection": {
+                    "title": "Icon Selection",
+                    "description": "When creating a workspace, choose from 24 different icons to visually distinguish your workspaces. Icons appear in the switcher and help you quickly identify which workspace you're in."
+                },
+                "copySettings": {
+                    "title": "Copy Settings",
+                    "description": "When creating a new workspace, you can optionally copy your current workspace's settings (duration limit, default teacher, ignored users). This saves time when setting up similar environments."
+                },
+                "deleteWorkspace": {
+                    "title": "Delete Workspace",
+                    "description": "Hover over a workspace in the switcher and click the trash icon. You'll need to type the workspace name to confirm deletion. Note: The default workspace cannot be deleted."
+                },
+                "dataIsolation": {
+                    "title": "Complete Data Isolation",
+                    "description": "Each workspace maintains completely separate data. Reports, groups, students, and marks in one workspace don't affect or appear in another workspace."
+                },
+                "settingsIsolation": {
+                    "title": "Settings Isolation",
+                    "description": "Each workspace has its own settings for duration limits, default teacher, and ignored users. Changes in one workspace don't affect others."
+                },
+                "multiSemester": {
+                    "title": "Multi-Semester Management",
+                    "description": "Create separate workspaces for different semesters or academic years (e.g., \"Fall 2024\", \"Spring 2025\") to keep historical data organized."
+                },
+                "courseSegregation": {
+                    "title": "Course Segregation",
+                    "description": "Use workspaces to separate different types of courses or programs you teach, preventing data mixing."
+                },
+                "cleanStart": {
+                    "title": "Clean Start",
+                    "description": "Start each new semester with a fresh workspace while preserving all historical data in previous workspaces."
+                },
+                "visualIdentification": {
+                    "title": "Visual Identification",
+                    "description": "Custom icons make it easy to identify which workspace you're currently working in at a glance."
+                },
+                "flexibleOrganization": {
+                    "title": "Flexible Organization",
+                    "description": "Organize your teaching data however makes sense for you - by semester, year, course type, or any other criteria."
+                },
+                "easyAccess": {
+                    "title": "Easy Access",
+                    "description": "The workspace switcher is always accessible from the top navigation bar, making it quick to switch contexts."
+                }
             }
         }
     },

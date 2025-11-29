@@ -3,7 +3,13 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { File, LayoutDashboard, Users, UserRoundSearch, Star, Settings, BookOpen, Database } from 'lucide-vue-next';
 
-const { t } = useI18n();
+const { t, tm } = useI18n();
+
+// Helper function to get detail items
+const getDetailItems = (basePath) => {
+    const details = tm(basePath);
+    return Object.keys(details).map(key => details[key]);
+};
 
 // Create sections from translations
 const sections = computed(() => [
@@ -15,23 +21,11 @@ const sections = computed(() => [
         details: [
             {
                 title: t('guide.intro.whatMakesDifferent'),
-                items: [
-                    t('guide.intro.details.dataStaysLocal'),
-                    t('guide.intro.details.privacyByDesign'),
-                    t('guide.intro.details.worksOffline'),
-                    t('guide.intro.details.noAccountRequired'),
-                    t('guide.intro.details.fastResponsive')
-                ]
+                items: getDetailItems('guide.intro.details').slice(0, 5)
             },
             {
                 title: t('guide.intro.importantToKnow'),
-                items: [
-                    t('guide.intro.details.browserSpecific'),
-                    t('guide.intro.details.deviceSpecific'),
-                    t('guide.intro.details.backupRegularly'),
-                    t('guide.intro.details.sharingBetweenDevices'),
-                    t('guide.intro.details.browserStorageLimits')
-                ]
+                items: getDetailItems('guide.intro.details').slice(5, 10)
             }
         ],
         hasImage: false
@@ -44,21 +38,11 @@ const sections = computed(() => [
         details: [
             {
                 title: t('guide.reports.howToUse'),
-                items: [
-                    t('guide.reports.details.uploadReports'),
-                    t('guide.reports.details.searchFilter'),
-                    t('guide.reports.details.sortData'),
-                    t('guide.reports.details.manageReports'),
-                    t('guide.reports.details.viewDetails')
-                ]
+                items: getDetailItems('guide.reports.details').slice(0, 5)
             },
             {
                 title: t('guide.reports.whatYouGet'),
-                items: [
-                    t('guide.reports.details.centralizedHistory'),
-                    t('guide.reports.details.quickInsights'),
-                    t('guide.reports.details.organization')
-                ]
+                items: getDetailItems('guide.reports.details').slice(5, 8)
             }
         ],
         hasImage: true
@@ -71,22 +55,11 @@ const sections = computed(() => [
         details: [
             {
                 title: t('guide.analytics.howToUse'),
-                items: [
-                    t('guide.analytics.details.dashboardOverview'),
-                    t('guide.analytics.details.search'),
-                    t('guide.analytics.details.quickStats'),
-                    t('guide.analytics.details.attendanceHealth'),
-                    t('guide.analytics.details.qrCode'),
-                    t('guide.analytics.details.detailedView')
-                ]
+                items: getDetailItems('guide.analytics.details').slice(0, 6)
             },
             {
                 title: t('guide.analytics.whatYouGet'),
-                items: [
-                    t('guide.analytics.details.trendAnalysis'),
-                    t('guide.analytics.details.performanceMetrics'),
-                    t('guide.analytics.details.efficientNavigation')
-                ]
+                items: getDetailItems('guide.analytics.details').slice(6, 9)
             }
         ],
         hasImage: true
@@ -99,24 +72,11 @@ const sections = computed(() => [
         details: [
             {
                 title: t('guide.groups.howToUse'),
-                items: [
-                    t('guide.groups.details.createGroups'),
-                    t('guide.groups.details.searchFilter'),
-                    t('guide.groups.details.sortData'),
-                    t('guide.groups.details.editGroups'),
-                    t('guide.groups.details.generateQR'),
-                    t('guide.groups.details.deleteGroups')
-                ]
+                items: getDetailItems('guide.groups.details').slice(0, 6)
             },
             {
                 title: t('guide.groups.whatYouGet'),
-                items: [
-                    t('guide.groups.details.organizedStructure'),
-                    t('guide.groups.details.memberTracking'),
-                    t('guide.groups.details.teacherAssignment'),
-                    t('guide.groups.details.automaticIntegration'),
-                    t('guide.groups.details.easySharing')
-                ]
+                items: getDetailItems('guide.groups.details').slice(6, 11)
             }
         ],
         hasImage: true
@@ -129,28 +89,11 @@ const sections = computed(() => [
         details: [
             {
                 title: t('guide.students.howToUse'),
-                items: [
-                    t('guide.students.details.searchStudents'),
-                    t('guide.students.details.filterByGroup'),
-                    t('guide.students.details.sortData'),
-                    t('guide.students.details.viewAnalytics'),
-                    t('guide.students.details.bulkSelection'),
-                    t('guide.students.details.editStudents'),
-                    t('guide.students.details.trackAttendance'),
-                    t('guide.students.details.monitorPerformance')
-                ]
+                items: getDetailItems('guide.students.details').slice(0, 8)
             },
             {
                 title: t('guide.students.whatYouGet'),
-                items: [
-                    t('guide.students.details.comprehensiveOverview'),
-                    t('guide.students.details.multiDimensionalTracking'),
-                    t('guide.students.details.performanceInsights'),
-                    t('guide.students.details.attendanceAnalytics'),
-                    t('guide.students.details.academicProgress'),
-                    t('guide.students.details.flexibleManagement'),
-                    t('guide.students.details.teacherExclusion')
-                ]
+                items: getDetailItems('guide.students.details').slice(8, 15)
             }
         ],
         hasImage: true
@@ -163,29 +106,11 @@ const sections = computed(() => [
         details: [
             {
                 title: t('guide.marks.howToUse'),
-                items: [
-                    t('guide.marks.details.uploadMarks'),
-                    t('guide.marks.details.gradeScaleSelector'),
-                    t('guide.marks.details.searchFilter'),
-                    t('guide.marks.details.sortData'),
-                    t('guide.marks.details.syncStatus'),
-                    t('guide.marks.details.bulkOperations'),
-                    t('guide.marks.details.groupFiltering'),
-                    t('guide.marks.details.viewDetails')
-                ]
+                items: getDetailItems('guide.marks.details').slice(0, 8)
             },
             {
                 title: t('guide.marks.whatYouGet'),
-                items: [
-                    t('guide.marks.details.flexibleGrading'),
-                    t('guide.marks.details.taskManagement'),
-                    t('guide.marks.details.syncTracking'),
-                    t('guide.marks.details.comprehensiveSearch'),
-                    t('guide.marks.details.advancedFiltering'),
-                    t('guide.marks.details.automaticIntegration'),
-                    t('guide.marks.details.visualClarity'),
-                    t('guide.marks.details.bulkManagement')
-                ]
+                items: getDetailItems('guide.marks.details').slice(8, 16)
             }
         ],
         hasImage: true
@@ -198,29 +123,11 @@ const sections = computed(() => [
         details: [
             {
                 title: t('guide.settings.howToUse'),
-                items: [
-                    t('guide.settings.details.generalLanguage'),
-                    t('guide.settings.details.generalTeacher'),
-                    t('guide.settings.details.generalDuration'),
-                    t('guide.settings.details.generalTeachers'),
-                    t('guide.settings.details.dataManagement'),
-                    t('guide.settings.details.advancedGlobal'),
-                    t('guide.settings.details.dataBackup'),
-                    t('guide.settings.details.importData')
-                ]
+                items: getDetailItems('guide.settings.details').slice(0, 8)
             },
             {
                 title: t('guide.settings.whatYouGet'),
-                items: [
-                    t('guide.settings.details.multiLanguage'),
-                    t('guide.settings.details.customizableDefaults'),
-                    t('guide.settings.details.teacherFiltering'),
-                    t('guide.settings.details.dataPortability'),
-                    t('guide.settings.details.granularControl'),
-                    t('guide.settings.details.storageInsights'),
-                    t('guide.settings.details.safeDataManagement'),
-                    t('guide.settings.details.flexibleDuration')
-                ]
+                items: getDetailItems('guide.settings.details').slice(8, 16)
             }
         ],
         hasImage: true
@@ -233,26 +140,11 @@ const sections = computed(() => [
         details: [
             {
                 title: t('guide.workspaces.howToUse'),
-                items: [
-                    t('guide.workspaces.details.createWorkspace'),
-                    t('guide.workspaces.details.switchWorkspace'),
-                    t('guide.workspaces.details.iconSelection'),
-                    t('guide.workspaces.details.copySettings'),
-                    t('guide.workspaces.details.deleteWorkspace')
-                ]
+                items: getDetailItems('guide.workspaces.details').slice(0, 5)
             },
             {
                 title: t('guide.workspaces.whatYouGet'),
-                items: [
-                    t('guide.workspaces.details.dataIsolation'),
-                    t('guide.workspaces.details.settingsIsolation'),
-                    t('guide.workspaces.details.multiSemester'),
-                    t('guide.workspaces.details.courseSegregation'),
-                    t('guide.workspaces.details.cleanStart'),
-                    t('guide.workspaces.details.visualIdentification'),
-                    t('guide.workspaces.details.flexibleOrganization'),
-                    t('guide.workspaces.details.easyAccess')
-                ]
+                items: getDetailItems('guide.workspaces.details').slice(5, 13)
             }
         ],
         hasImage: true
@@ -349,7 +241,10 @@ onUnmounted(() => {
                             <ul class="space-y-3 list-none pl-0">
                                 <li v-for="(item, i) in detail.items" :key="i" class="flex gap-3 items-start">
                                     <div class="w-1.5 h-1.5 rounded-full bg-primary mt-2.5 flex-shrink-0"></div>
-                                    <span v-html="item" class="leading-relaxed"></span>
+                                    <div class="leading-relaxed">
+                                        <h4 class="font-medium text-primary">{{ item.title }}</h4>
+                                        <p>{{ item.description }}</p>
+                                    </div>
                                 </li>
                             </ul>
                         </div>
