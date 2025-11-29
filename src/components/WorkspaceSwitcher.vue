@@ -4,23 +4,28 @@ import { useRouter } from 'vue-router';
 import { repository } from '../services/repository';
 import { useModalClose } from '../composables/useModalClose';
 import {
-    Database, Plus, Check, Trash2, X, Download, AlertTriangle, HelpCircle,
+    Database, Plus, Check, Trash2, X, Download, AlertTriangle, HelpCircle, Pencil,
     GraduationCap, BookOpen, NotebookPen, NotebookText, BriefcaseBusiness,
     Atom, Code, Binary, BugOff, ScrollText, SquareTerminal, FlaskConical,
-    UsersRound, Scale, Calendar, Globe, PencilRuler, PenTool
+    UsersRound, Scale, Calendar, Globe, PencilRuler, PenTool,
+    BrainCircuit, Server, ChartNoAxesGantt, BrickWall, ShieldEllipsis, Box
 } from 'lucide-vue-next';
 
 const router = useRouter();
 
 const icons = {
-    Database, GraduationCap, BookOpen, NotebookPen, NotebookText, BriefcaseBusiness,
-    Atom, Code, Binary, BugOff, ScrollText, SquareTerminal, FlaskConical,
-    UsersRound, Scale, Calendar, Globe, PencilRuler, PenTool
+    Atom, Binary, BookOpen, Box, BrickWall, BriefcaseBusiness,
+    BrainCircuit, BugOff, Calendar, ChartNoAxesGantt, Code, Database,
+    FlaskConical, Globe, GraduationCap, NotebookPen, NotebookText, PencilRuler,
+    PenTool, Scale, ScrollText, Server, ShieldEllipsis, SquareTerminal, UsersRound
 };
 
-const iconList = Object.keys(icons).filter(k => k !== 'Database'); // Database is default/fallback, not in picker? Or maybe in picker too? User said "add 6x3 icons grid with the next Lucide icons", list didn't include Database.
-// User list: graduation-cap, book-open, ... (18 icons). 6x3 = 18.
-// So Database is NOT in the grid. It's the fallback.
+const iconList = Object.keys(icons).filter(k => k !== 'Database').sort();
+
+// Convert icon name to readable title (e.g., "BrainCircuit" -> "Brain Circuit")
+function getIconTitle(iconName) {
+    return iconName.replace(/([A-Z])/g, ' $1').trim();
+}
 
 const isOpen = ref(false);
 const workspaces = ref([]);
@@ -36,6 +41,12 @@ const selectedIcon = ref('Database'); // Default to Database if none selected? O
 // "In the create modal add 6x3 icons grid"
 // I'll default to the first one in the list or just keep 'Database' as internal default but let user pick from grid.
 
+
+// Edit Modal State
+const showEditModal = ref(false);
+const workspaceToEdit = ref(null);
+const editWorkspaceName = ref('');
+const editSelectedIcon = ref('Database');
 
 // Delete Modal State
 const showDeleteModal = ref(false);
@@ -79,6 +90,31 @@ async function handleCreate() {
 
     // Auto-switch to new workspace for better UX
     await handleSwitch(id);
+}
+
+function openEditModal(ws) {
+    workspaceToEdit.value = ws;
+    editWorkspaceName.value = ws.name;
+    editSelectedIcon.value = ws.icon || 'Database';
+    showEditModal.value = true;
+    isOpen.value = false; // Close dropdown
+}
+
+async function handleUpdate() {
+    if (!editWorkspaceName.value.trim()) return;
+
+    try {
+        await repository.updateWorkspace(workspaceToEdit.value.id, {
+            name: editWorkspaceName.value.trim(),
+            icon: editSelectedIcon.value
+        });
+
+        showEditModal.value = false;
+        workspaceToEdit.value = null;
+        loadWorkspaces();
+    } catch (error) {
+        console.error('Error updating workspace:', error);
+    }
 }
 
 function openDeleteModal(ws) {
@@ -125,6 +161,10 @@ useModalClose(() => {
         showCreateModal.value = false;
         return;
     }
+    if (showEditModal.value) {
+        showEditModal.value = false;
+        return;
+    }
     if (showDeleteModal.value) {
         showDeleteModal.value = false;
         return;
@@ -136,7 +176,7 @@ useModalClose(() => {
 </script>
 
 <template>
-    <div class="relative">
+    <div class="relative" v-click-outside="() => isOpen = false">
         <button @click="isOpen = !isOpen"
             class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm font-medium border border-transparent hover:border-border"
             :class="{ 'bg-muted border-border': isOpen }">
@@ -171,6 +211,11 @@ useModalClose(() => {
 
                     <div class="flex items-center gap-1">
                         <Check v-if="ws.id === currentWorkspaceId" class="w-3 h-3" />
+                        <button v-if="ws.id !== 'default'" @click.stop="openEditModal(ws)"
+                            class="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
+                            :title="$t('workspace.edit')">
+                            <Pencil class="w-3 h-3" />
+                        </button>
                         <button v-if="ws.id !== 'default' && ws.id !== currentWorkspaceId"
                             @click.stop="openDeleteModal(ws)"
                             class="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
@@ -190,8 +235,7 @@ useModalClose(() => {
             </div>
         </div>
 
-        <!-- Backdrop for dropdown -->
-        <div v-if="isOpen" @click="isOpen = false" class="fixed inset-0 z-40"></div>
+
 
         <!-- Create Modal -->
         <Teleport to="body">
@@ -217,6 +261,7 @@ useModalClose(() => {
                             <label class="text-sm font-medium">{{ $t('workspace.icon_label') }}</label>
                             <div class="grid grid-cols-6 gap-2 p-2 border rounded-md bg-muted/20">
                                 <button v-for="iconName in iconList" :key="iconName" @click="selectedIcon = iconName"
+                                    :title="getIconTitle(iconName)"
                                     class="p-2 rounded-md flex items-center justify-center transition-all hover:bg-muted hover:scale-110"
                                     :class="selectedIcon === iconName ? 'bg-primary text-primary-foreground shadow-sm ring-2 ring-primary ring-offset-2' : 'text-muted-foreground'">
                                     <component :is="icons[iconName]" class="w-4 h-4" />
@@ -249,6 +294,54 @@ useModalClose(() => {
                                 class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors disabled:opacity-50"
                                 :disabled="!newWorkspaceName.trim()">
                                 {{ $t('workspace.create_button') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Teleport>
+
+        <!-- Edit Modal -->
+        <Teleport to="body">
+            <div v-if="showEditModal"
+                class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div class="bg-card w-full max-w-md rounded-lg shadow-lg border p-6 animate-in zoom-in-95 duration-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">{{ $t('workspace.edit_modal_title') }}</h3>
+                        <button @click="showEditModal = false" class="p-1 hover:bg-muted rounded-full">
+                            <X class="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">{{ $t('workspace.name_label') }}</label>
+                            <input v-model="editWorkspaceName" type="text" placeholder="e.g. 2nd Semester 2024"
+                                class="w-full px-3 py-2 rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                @keyup.enter="handleUpdate" autoFocus />
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">{{ $t('workspace.icon_label') }}</label>
+                            <div class="grid grid-cols-6 gap-2 p-2 border rounded-md bg-muted/20">
+                                <button v-for="iconName in iconList" :key="iconName"
+                                    @click="editSelectedIcon = iconName" :title="getIconTitle(iconName)"
+                                    class="p-2 rounded-md flex items-center justify-center transition-all hover:bg-muted hover:scale-110"
+                                    :class="editSelectedIcon === iconName ? 'bg-primary text-primary-foreground shadow-sm ring-2 ring-primary ring-offset-2' : 'text-muted-foreground'">
+                                    <component :is="icons[iconName]" class="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-2">
+                            <button @click="showEditModal = false"
+                                class="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors">
+                                {{ $t('workspace.cancel') }}
+                            </button>
+                            <button @click="handleUpdate"
+                                class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors disabled:opacity-50"
+                                :disabled="!editWorkspaceName.trim()">
+                                {{ $t('workspace.update_button') }}
                             </button>
                         </div>
                     </div>
