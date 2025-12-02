@@ -13,7 +13,8 @@ const props = defineProps({
         default: () => ({
             synced: 'all', // 'all', 'unsynced'
             dateFrom: '',
-            group: null
+            group: null,
+            hideFailed: false
         })
     }
 });
@@ -55,7 +56,8 @@ function clear() {
     localFilters.value = {
         synced: 'all',
         dateFrom: '',
-        group: null
+        group: null,
+        hideFailed: false
     };
 }
 </script>
@@ -98,6 +100,15 @@ function clear() {
                             <span class="text-sm">{{ $t('marks.filterModal.unsynced') }}</span>
                         </label>
                     </div>
+                </div>
+
+                <!-- Hide Failed Grades -->
+                <div class="space-y-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" v-model="localFilters.hideFailed"
+                            class="rounded border-gray-300 text-primary focus:ring-primary" />
+                        <span class="text-sm font-medium">{{ $t('marks.filterModal.hideFailed') }}</span>
+                    </label>
                 </div>
 
                 <!-- Date From -->

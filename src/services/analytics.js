@@ -1,4 +1,71 @@
-import { repository } from './repository';
+import { repository } from '~services/repository';
+
+// --- Private Utility Functions (Moved outside of the exported object) ---
+
+/**
+ * Builds lookup maps for members (students).
+ * @param {Array<Object>} allMembers - Array of member objects.
+ * @returns {{nameToMember: Map, groupToMembers: Object<string, Set<Object>>}} Lookup maps.
+ */
+const buildMemberLookups = (allMembers) => {
+    const nameToMember = new Map(); // Name/Alias -> Member Object
+    const groupToMembers = {};      // GroupName -> Set(Member Objects)
+
+    allMembers.forEach(s => {
+        // Map name and aliases to member
+        nameToMember.set(s.name, s);
+        if (s.aliases) {
+            s.aliases.forEach(a => nameToMember.set(a, s));
+        }
+
+        // Group grouping
+        if (s.groupName) {
+            if (!groupToMembers[s.groupName]) {
+                groupToMembers[s.groupName] = new Set();
+            }
+            groupToMembers[s.groupName].add(s);
+        }
+    });
+
+    return { nameToMember, groupToMembers };
+};
+
+/**
+ * Fetches common data required for analytics and builds the ignored set.
+ * @returns {Promise<{ignoredSet: Set<string>, groupsMap: Object, allStudents: Array<Object>}>}
+ */
+const fetchCommonData = async () => {
+    const [
+        ignoredUsers,
+        teachers,
+        groupsMap,
+        allStudents
+    ] = await Promise.all([
+        repository.getIgnoredUsers(),
+        repository.getTeachers(),
+        repository.getGroupMap(),
+        repository.getAll('members')
+    ]);
+
+    const ignoredSet = new Set([...ignoredUsers, ...teachers]);
+    return { ignoredSet, groupsMap, allStudents };
+};
+
+
+/**
+ * Determines the status color based on attendance percentage.
+ * @param {number} percentage - The attendance percentage.
+ * @returns {string} Tailwind CSS classes for the status color.
+ */
+function getStatusColor(percentage) {
+    if (percentage <= 15) return 'bg-red-500 text-white';
+    if (percentage <= 30) return 'bg-red-400 text-white';
+    if (percentage <= 50) return 'bg-yellow-200 text-black';
+    if (percentage <= 75) return 'bg-yellow-400 text-black';
+    return 'bg-green-500 text-white';
+}
+
+// --- Exported Service ---
 
 export const analytics = {
     async getGlobalStats(meets = null) {
@@ -6,41 +73,16 @@ export const analytics = {
             meets = await repository.getAllMeets();
         }
 
-        const [ignoredUsers, teachers, groupsMap, allStudents] = await Promise.all([
-            repository.getIgnoredUsers(),
-            repository.getTeachers(),
-            repository.getGroupMap(),
-            repository.getAll('members')
-        ]);
-
-        const ignoredSet = new Set([...ignoredUsers, ...teachers]);
-
-        // Build lookup maps
-        const nameToMember = new Map(); // Name/Alias -> Member Object
-        const groupToMembers = {}; // GroupName -> Set(Member Objects)
-
-        allStudents.forEach(s => {
-            // Map name and aliases to member
-            nameToMember.set(s.name, s);
-            if (s.aliases) {
-                s.aliases.forEach(a => nameToMember.set(a, s));
-            }
-
-            // Group grouping
-            if (s.groupName) {
-                if (!groupToMembers[s.groupName]) {
-                    groupToMembers[s.groupName] = new Set();
-                }
-                groupToMembers[s.groupName].add(s);
-            }
-        });
+        const { ignoredSet, groupsMap, allStudents } = await fetchCommonData();
+        const { nameToMember, groupToMembers } = buildMemberLookups(allStudents);
 
         const grouped = {};
 
         meets.forEach(meet => {
-            if (!grouped[meet.meetId]) {
-                grouped[meet.meetId] = {
-                    meetId: meet.meetId,
+            const meetId = meet.meetId;
+            if (!grouped[meetId]) {
+                grouped[meetId] = {
+                    meetId,
                     totalSessions: 0,
                     totalDuration: 0,
                     totalParticipantAppearances: 0,
@@ -50,36 +92,42 @@ export const analytics = {
                 };
             }
 
-            const stats = grouped[meet.meetId];
+            const stats = grouped[meetId];
             stats.totalSessions++;
             if (meet.date > stats.lastActive) {
                 stats.lastActive = meet.date;
             }
 
             // Determine strict group membership
-            const group = groupsMap[meet.meetId];
+            const group = groupsMap[meetId];
             const targetGroupMembers = group ? groupToMembers[group.name] : null;
 
             let sessionMaxDuration = 0;
 
             meet.participants.forEach(p => {
-                if (ignoredSet.has(p.name)) return;
+                const participantName = p.name;
+                if (ignoredSet.has(participantName)) return;
 
-                const member = nameToMember.get(p.name);
+                const member = nameToMember.get(participantName);
+                let shouldCountParticipant = false;
 
                 // Strict Filtering:
-                // If the group is defined, ONLY count if the participant is a member of that group.
                 if (targetGroupMembers) {
                     if (member && targetGroupMembers.has(member)) {
-                        stats.participants.add(member.id); // Use ID for uniqueness
-                        stats.activeMemberIds.add(member.id);
-                        stats.totalParticipantAppearances++;
-                        if (p.duration > sessionMaxDuration) sessionMaxDuration = p.duration;
+                        shouldCountParticipant = true;
                     }
                 } else {
                     // No group defined, fallback to counting everyone (legacy behavior)
-                    stats.participants.add(p.name);
+                    shouldCountParticipant = true;
+                }
+
+                if (shouldCountParticipant) {
+                    const uniqueId = member?.id || participantName;
+                    stats.participants.add(uniqueId);
                     stats.totalParticipantAppearances++;
+                    if (member) {
+                        stats.activeMemberIds.add(member.id);
+                    }
                     if (p.duration > sessionMaxDuration) sessionMaxDuration = p.duration;
                 }
             });
@@ -92,10 +140,9 @@ export const analytics = {
             let activeParticipantsCount = 0;
 
             if (group && groupToMembers[group.name]) {
-                // Denominator = All Members of the Group
+                // Denominator = All Members of the Group (filtered for ignored users)
                 const groupMembers = groupToMembers[group.name];
 
-                // Filter ignored members from the denominator
                 let validMembersCount = 0;
                 groupMembers.forEach(m => {
                     if (!ignoredSet.has(m.name)) validMembersCount++;
@@ -126,18 +173,14 @@ export const analytics = {
     },
 
     async getDetailedStats(meetId, teacherName = null) {
-        const [meets, groupsMap, allStudents] = await Promise.all([
-            repository.getMeetsByMeetId(meetId),
-            repository.getGroupMap(),
-            repository.getAll('members')
-        ]);
+        const meetsPromise = repository.getMeetsByMeetId(meetId);
+        const { ignoredSet, groupsMap, allStudents } = await fetchCommonData();
+        const meets = await meetsPromise;
 
-        const ignoredUsers = await repository.getIgnoredUsers();
-        const teachers = await repository.getTeachers();
-        const ignoredSet = new Set([...ignoredUsers, ...teachers]);
-
+        // Apply temporary teacher exclusion
+        const localIgnoredSet = new Set(ignoredSet);
         if (teacherName) {
-            ignoredSet.add(teacherName);
+            localIgnoredSet.add(teacherName);
         }
 
         // Identify group and its students
@@ -151,13 +194,12 @@ export const analytics = {
             });
         }
 
-        // Squash by date
         const sessionsByDate = {};
         const allParticipants = new Set();
 
         // Pass 1: Aggregate durations per date
         meets.forEach(meet => {
-            const date = meet.date; // YYYY-MM-DD
+            const date = meet.date;
             if (!sessionsByDate[date]) {
                 sessionsByDate[date] = {
                     date,
@@ -177,7 +219,7 @@ export const analytics = {
             }
 
             meet.participants.forEach(p => {
-                if (ignoredSet.has(p.name)) return;
+                if (localIgnoredSet.has(p.name)) return;
 
                 allParticipants.add(p.name);
 
@@ -190,19 +232,15 @@ export const analytics = {
 
         // Add missing group students to allParticipants
         groupStudents.forEach(name => {
-            if (!ignoredSet.has(name)) {
+            if (!localIgnoredSet.has(name)) {
                 allParticipants.add(name);
             }
         });
 
-        // Pass 2: Calculate max duration for each date (after aggregation)
+        // Pass 2: Calculate max duration for each date
         Object.values(sessionsByDate).forEach(session => {
             const durations = Object.values(session.participants);
-            if (durations.length > 0) {
-                session.maxDuration = Math.max(...durations);
-            } else {
-                session.maxDuration = 0;
-            }
+            session.maxDuration = durations.length > 0 ? Math.max(...durations) : 0;
         });
 
         // Pass 3: Calculate percentages
@@ -213,8 +251,10 @@ export const analytics = {
             const row = { name, totalDuration: 0, totalPossible: 0 };
 
             dates.forEach(date => {
-                const duration = sessionsByDate[date].participants[name] || 0;
-                const max = sessionsByDate[date].maxDuration || 1; // avoid div by 0
+                const session = sessionsByDate[date];
+                const duration = session.participants[name] || 0;
+                const max = session.maxDuration || 1; // avoid div by 0
+
                 const percentage = Math.round((duration / max) * 100);
 
                 row[date] = {
@@ -228,7 +268,6 @@ export const analytics = {
             });
 
             // Total % across all dates
-            // Weighted average based on session lengths
             row.totalPercentage = row.totalPossible > 0
                 ? Math.round((row.totalDuration / row.totalPossible) * 100)
                 : 0;
@@ -239,29 +278,20 @@ export const analytics = {
         return {
             dates,
             matrix,
-            sessions: sessionsByDate // Return the sessions object containing metadata
+            sessions: sessionsByDate
         };
     },
 
     async getSingleReportStats(id) {
-        const meet = await repository.getMeetById(id);
+        const meetPromise = repository.getMeetById(id);
+        const { ignoredSet, allStudents } = await fetchCommonData();
+        const meet = await meetPromise;
+
         if (!meet) throw new Error('Meet not found');
 
-        const ignoredUsers = await repository.getIgnoredUsers();
-        const teachers = await repository.getTeachers();
-        const allMembers = await repository.getAll('members');
-        const ignoredSet = new Set([...ignoredUsers, ...teachers]);
-
-        // Create name -> group map
-        const memberGroupMap = new Map();
-        allMembers.forEach(m => {
-            if (m.groupName) {
-                memberGroupMap.set(m.name, m.groupName);
-                if (m.aliases) {
-                    m.aliases.forEach(a => memberGroupMap.set(a, m.groupName));
-                }
-            }
-        });
+        const { nameToMember: memberGroupMap } = buildMemberLookups(allStudents);
+        // Note: memberGroupMap now maps name/alias to member object,
+        // we access groupName directly in the loop.
 
         const date = meet.date;
         const participants = meet.participants.filter(p => !ignoredSet.has(p.name));
@@ -274,10 +304,11 @@ export const analytics = {
         if (maxDuration === 0) maxDuration = 1;
 
         const matrix = participants.map(p => {
+            const member = memberGroupMap.get(p.name);
             const percentage = Math.round((p.duration / maxDuration) * 100);
             return {
                 name: p.name,
-                groupName: memberGroupMap.get(p.name) || '',
+                groupName: member?.groupName || '', // Access groupName from the member object
                 joinTime: p.joinTime || null,
                 totalDuration: p.duration,
                 totalPossible: maxDuration,
@@ -290,7 +321,7 @@ export const analytics = {
             };
         }).sort((a, b) => b.totalDuration - a.totalDuration);
 
-        // Mock session object for compatibility
+        // Session object for compatibility
         const sessions = {
             [date]: {
                 date,
@@ -317,11 +348,3 @@ export const analytics = {
         };
     }
 };
-
-function getStatusColor(percentage) {
-    if (percentage <= 15) return 'bg-red-500 text-white';
-    if (percentage <= 30) return 'bg-red-400 text-white'; // Bright Red
-    if (percentage <= 50) return 'bg-yellow-200 text-black'; // Yellow
-    if (percentage <= 75) return 'bg-yellow-400 text-black'; // Bright Yellow
-    return 'bg-green-500 text-white';
-}

@@ -41,11 +41,13 @@ const showFilterModal = ref(false);
 const filterSynced = ref('unsynced');
 const filterDateFrom = ref('');
 const filterGroup = ref(null);
+const filterHideFailed = ref(false);
 
 const activeFilters = computed(() => ({
     synced: filterSynced.value,
     dateFrom: filterDateFrom.value,
-    group: filterGroup.value
+    group: filterGroup.value,
+    hideFailed: filterHideFailed.value
 }));
 
 const activeFilterCount = computed(() => {
@@ -53,6 +55,7 @@ const activeFilterCount = computed(() => {
     if (activeFilters.value.synced !== 'all') count++;
     if (activeFilters.value.dateFrom) count++;
     if (activeFilters.value.group) count++;
+    if (activeFilters.value.hideFailed) count++;
     return count;
 });
 
@@ -74,6 +77,7 @@ useQuerySync({
     synced: filterSynced,
     dateFrom: filterDateFrom,
     group: filterGroup,
+    hideFailed: filterHideFailed,
     sort: sortField,
     order: sortDirection
 });
@@ -108,6 +112,14 @@ const filteredMarks = computed(() => {
 
     if (activeFilters.value.group) {
         result = result.filter(m => m.groupName === activeFilters.value.group);
+    }
+
+    if (activeFilters.value.hideFailed) {
+        result = result.filter(m => {
+            const max = Number(m.maxPoints) || 100;
+            const percent = (Number(m.score) / max) * 100;
+            return percent >= 60;
+        });
     }
 
     if (searchQuery.value) {
@@ -274,6 +286,7 @@ function applyFilters(filters) {
     filterSynced.value = filters.synced;
     filterDateFrom.value = filters.dateFrom;
     filterGroup.value = filters.group;
+    filterHideFailed.value = filters.hideFailed;
 }
 
 function formatTaskName(taskName) {

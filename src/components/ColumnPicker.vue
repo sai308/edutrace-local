@@ -25,24 +25,6 @@ function closeDropdown() {
     isOpen.value = false;
 }
 
-// Close dropdown when clicking outside
-function handleClickOutside(event) {
-    if (!event.target.closest('.column-picker-container')) {
-        closeDropdown();
-    }
-}
-
-// Add/remove click listener when dropdown opens/closes
-function handleToggle() {
-    if (!isOpen.value) {
-        setTimeout(() => {
-            document.addEventListener('click', handleClickOutside);
-        }, 0);
-    } else {
-        document.removeEventListener('click', handleClickOutside);
-    }
-}
-
 function handleToggleColumn(columnId) {
     emit('toggle-column', columnId);
 }
@@ -54,8 +36,8 @@ function handleReset() {
 </script>
 
 <template>
-    <div class="relative column-picker-container">
-        <button @click="toggleDropdown(); handleToggle()"
+    <div class="relative column-picker-container" v-click-outside="closeDropdown">
+        <button @click="toggleDropdown"
             class="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md border bg-background hover:bg-muted transition-colors"
             :class="{ 'bg-muted': isOpen }">
             <Columns class="w-4 h-4" />

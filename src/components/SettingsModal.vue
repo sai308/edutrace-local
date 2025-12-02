@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, toRaw } from 'vue';
+import { ref, onMounted, toRaw, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { X, Download, Upload, Trash2, Settings2, Database, Zap, Cog } from 'lucide-vue-next';
 import { repository } from '../services/repository';
@@ -22,9 +22,23 @@ const emit = defineEmits(['close', 'refresh']);
 
 import { useModalClose } from '../composables/useModalClose';
 
-useModalClose(() => {
-    if (props.isOpen) {
-        emit('close');
+useModalClose(() => props.isOpen, () => {
+    emit('close');
+});
+
+// Reset all nested modal states when Settings modal closes
+watch(() => props.isOpen, (isOpen) => {
+    if (!isOpen) {
+        // Reset all nested modals
+        showTeachersModal.value = false;
+        showEraseConfirm.value = false;
+        showEraseReportsConfirm.value = false;
+        showEraseGroupsConfirm.value = false;
+        showEraseMarksConfirm.value = false;
+        showEraseMembersConfirm.value = false;
+        showImportConfirm.value = false;
+        showWorkspaceSelection.value = false;
+        showWorkspaceSizes.value = false;
     }
 });
 
@@ -49,6 +63,7 @@ const durationLimit = ref(DEFAULT_DURATION_MINUTES_LIMIT);
 const showTeachersModal = ref(false);
 const allStudents = ref([]);
 const teacherCount = ref(0);
+const configuredTeachers = ref([]);
 
 // Entity Statistics
 const entityCounts = ref({
@@ -70,6 +85,7 @@ const entitySizes = ref({
     reports: 0,
     groups: 0,
     marks: 0,
+    tasks: 0,
     members: 0
 });
 
@@ -121,6 +137,7 @@ async function loadSettings() {
     durationLimit.value = limit;
     const teachers = await repository.getTeachers(); // Get configured teachers list
     teacherCount.value = teachers.length;
+    configuredTeachers.value = teachers;
     entityCounts.value = counts;
     entitySizes.value = sizes;
     globalStats.value = globalStatsData;
@@ -131,7 +148,7 @@ async function loadSettings() {
     const currentWs = workspaces.find(w => w.id === currentId);
     currentWorkspaceInfo.value = {
         name: currentWs ? currentWs.name : 'Unknown',
-        size: sizes.reports + sizes.groups + sizes.marks + sizes.members
+        size: sizes.reports + sizes.groups + sizes.marks + sizes.tasks + sizes.members
     };
 }
 
@@ -286,7 +303,16 @@ async function handleImportFile(event, type) {
 
         pendingImportData.value = data;
         pendingImportType.value = type;
-        showImportConfirm.value = true;
+        
+        // Only show confirmation for legacy imports that override current workspace data
+        // Multi-workspace imports and granular imports don't need confirmation
+        if (type === 'all' && !data.type) {
+            // Legacy format (no 'type' field means old backup format)
+            showImportConfirm.value = true;
+        } else {
+            // New multi-workspace format or granular import - execute directly
+            await executeImport();
+        }
     } catch (e) {
         console.error('Error reading import file:', e);
         toast.error(t('toast.invalidJson'));
@@ -548,7 +574,11 @@ async function executeEraseMembers() {
                             <div class="flex flex-col sm:flex-row gap-2">
                                 <input v-model="defaultTeacher" type="text"
                                     :placeholder="$t('settings.general.defaultTeacher.placeholder')"
+                                    list="teachers-list"
                                     class="flex-1 px-3 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
+                                <datalist id="teachers-list">
+                                    <option v-for="teacher in configuredTeachers" :key="teacher" :value="teacher" />
+                                </datalist>
                                 <button @click="saveDefaultTeacher"
                                     class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors">
                                     {{ $t('settings.general.defaultTeacher.save') }}
@@ -711,6 +741,28 @@ async function executeEraseMembers() {
                                             {{ $t('settings.data.marks.memory') }}: {{ formatBytes(entitySizes.marks) }}
                                         </p>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Tasks Card -->
+                            <div class="border rounded-lg p-4 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">{{ $t('settings.data.tasks.title') }}</h4>
+                                    <span v-if="entityCounts.tasks > 0"
+                                        class="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {{ entityCounts.tasks }}
+                                    </span>
+                                </div>
+                                <div class="flex gap-4 items-center">
+                                    <button disabled
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md opacity-50 cursor-not-allowed transition-colors"
+                                        :title="$t('settings.data.actions.eraseDisabled')">
+                                        <Trash2 class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.erase') }}
+                                    </button>
+                                    <p v-if="entitySizes.tasks > 0" class="text-xs text-muted-foreground">
+                                        {{ $t('settings.data.tasks.memory') }}: {{ formatBytes(entitySizes.tasks) }}
+                                    </p>
                                 </div>
                             </div>
 

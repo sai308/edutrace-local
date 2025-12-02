@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { localeService } from '../services/locale';
 import { repository } from '../services/repository';
 import { useModalClose } from '../composables/useModalClose';
 import {
@@ -10,6 +11,8 @@ import {
     UsersRound, Scale, Calendar, Globe, PencilRuler, PenTool,
     BrainCircuit, Server, ChartNoAxesGantt, BrickWall, ShieldEllipsis, Box
 } from 'lucide-vue-next';
+
+import { fadeOutAndReload } from '../utils/transition';
 
 const router = useRouter();
 
@@ -69,7 +72,17 @@ const currentWorkspaceName = computed(() => {
 
 async function handleSwitch(id) {
     if (id === currentWorkspaceId.value) return;
-    await repository.switchWorkspace(id);
+
+    try {
+        await repository.switchWorkspace(id);
+        // Smooth transition before reload
+        const message = localeService.getTranslation('loader.switchingWorkspace');
+        fadeOutAndReload(message);
+    } catch (error) {
+        console.error('Error switching workspace:', error);
+        // Fallback reload if something goes wrong
+        window.location.reload();
+    }
 }
 
 async function handleCreate() {

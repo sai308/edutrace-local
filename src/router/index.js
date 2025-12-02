@@ -52,6 +52,11 @@ const routes = [
         component: MarksPage
     },
     {
+        path: '/exam',
+        name: 'Exam',
+        component: () => import('../pages/ExamPage.vue')
+    },
+    {
         path: '/guide',
         name: 'Guide',
         component: GuidePage

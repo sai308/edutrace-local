@@ -1,12 +1,14 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { Logs, LayoutDashboard, File, Settings, Users, UserRoundSearch, Star, BookOpen } from 'lucide-vue-next';
+import { Logs, LayoutDashboard, File, Settings, Users, UserRoundSearch, Star } from 'lucide-vue-next';
 import SettingsModal from './components/SettingsModal.vue';
 import WorkspaceSwitcher from './components/WorkspaceSwitcher.vue';
 import ToastContainer from './components/ToastContainer.vue';
 import AppFooter from './components/AppFooter.vue';
 import { useMeets } from './composables/useMeets';
+
+import { fadeOutOnLoad } from './utils/transition';
 
 // State
 const router = useRouter();
@@ -36,6 +38,7 @@ function checkFirstVisit() {
 onMounted(() => {
   loadMeets();
   checkFirstVisit();
+  fadeOutOnLoad();
 });
 
 function refreshDashboard() {
@@ -125,7 +128,8 @@ onUnmounted(() => {
 
     <main class="container mx-auto px-4 py-4 md:py-8 space-y-0 md:space-y-8">
       <!-- Desktop Navigation Tabs -->
-      <div v-if="route.name !== 'ReportDetails'" class="hidden md:flex items-center gap-4 border-b pb-px overflow-x-auto">
+      <div v-if="route.name !== 'ReportDetails'"
+        class="hidden md:flex items-center gap-4 border-b pb-px overflow-x-auto">
         <router-link to="/reports"
           class="flex items-center gap-2 px-4 py-2 border-b-2 transition-colors whitespace-nowrap"
           :class="route.path.startsWith('/reports') ? 'border-primary text-primary font-medium' : 'border-transparent text-muted-foreground hover:text-foreground'">

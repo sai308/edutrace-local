@@ -19,10 +19,8 @@ const emit = defineEmits(['close', 'update:items']);
 
 import { useModalClose } from '../composables/useModalClose';
 
-useModalClose(() => {
-  if (props.isOpen) {
+useModalClose(() => props.isOpen, () => {
     emit('close');
-  }
 });
 
 

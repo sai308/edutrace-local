@@ -120,7 +120,7 @@
                 "memory": "Memory"
             },
             "marks": {
-                "title": "Marks (with Tasks)",
+                "title": "Marks",
                 "memory": "Memory"
             },
             "members": {
@@ -130,15 +130,20 @@
             "actions": {
                 "export": "Export",
                 "import": "Import",
-                "erase": "Erase"
+                "erase": "Erase",
+                "eraseDisabled": "Erase (disabled), data is required for other entities"
+            },
+            "tasks": {
+                "title": "Tasks (Anotation)",
+                "memory": "Memory"
             }
         },
         "advanced": {
             "global": {
-                "title": "Global Operations",
+                "title": "Workspace Operations",
                 "description": {
-                    "title": "Manage all data at once",
-                    "list": "(Reports, Groups, Members, Marks and Settings)"
+                    "title": "Manage workspace data",
+                    "list": "Export, import, or erase data from selected workspace(s)"
                 },
                 "totalRecords": "Total Records",
                 "totalMemory": "Total Memory",
@@ -160,7 +165,7 @@
     "confirm": {
         "import": {
             "title": "Import Data",
-            "message": "This will replace existing data. Are you sure?",
+            "message": "This will replace all data in the current workspace. Are you sure?",
             "confirm": "Import"
         },
         "eraseAll": {
@@ -410,7 +415,8 @@
             "dateFrom": "Added From",
             "reset": "Reset",
             "cancel": "Cancel",
-            "apply": "Apply Filters"
+            "apply": "Apply Filters",
+            "hideFailed": "Hide failed grades (less than FX)"
         }
     },
     "reports": {
