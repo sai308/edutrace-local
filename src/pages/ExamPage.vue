@@ -41,7 +41,7 @@ let saveTimeout = null;
 
 // Fetch groups on mount
 onMounted(async () => {
-    availableGroups.value = await repository.getGroups();
+    availableGroups.value = (await repository.getGroups()).sort((a, b) => a.name.localeCompare(b.name));
 
     // Check for group query param
     const groupQuery = route.query.group;

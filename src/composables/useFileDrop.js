@@ -41,7 +41,13 @@ export function useFileDrop(emit) {
 
     function onDragLeave(e) {
         e.preventDefault();
-        dragCounter--;
+
+        // FIX: Prevent counter from drifting into negative numbers
+        // If a drop just happened (resetting counter to 0), 
+        // a subsequent dragleave should be ignored.
+        if (dragCounter > 0) {
+            dragCounter--;
+        }
 
         if (dragCounter === 0) {
             isOver.value = false;

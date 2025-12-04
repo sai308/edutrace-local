@@ -21,6 +21,10 @@ function onFileSelect(event) {
   const files = event.target.files;
   if (files && files.length > 0) {
     emit('files-dropped', Array.from(files));
+
+    // FIX: Reset the input value so the change event fires 
+    // even if the user selects the same file again.
+    event.target.value = '';
   }
 }
 </script>

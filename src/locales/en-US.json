@@ -652,6 +652,15 @@
         "hint": "Drag & drop CSV files here, or click to select",
         "invalidType": "Invalid file type. Only CSV files are allowed."
     },
+    "csvFilter": {
+        "title": "CSV Processing Options",
+        "message": "How would you like to process the uploaded CSV files?",
+        "parseAll": "Parse All",
+        "parseAllDesc": "Process all CSV files",
+        "relatedOnly": "Related Groups Only",
+        "relatedOnlyDesc": "Process only files for registered groups",
+        "skippedUnrecognized": "Skipped {count} file(s) with unrecognized group IDs."
+    },
     "views": {
         "overview": "Overview",
         "table": "Table",
