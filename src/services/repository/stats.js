@@ -27,25 +27,28 @@ const getSize = (data) => {
 export async function getEntityCounts() {
     const db = await getDb();
 
-    // Use parallel count operations for efficiency
-    const [meetsCount, groupsCount, tasksCount, marksCount, membersCount, finalAssessmentsCount, modulesCount] = await Promise.all([
+    // Check which stores exist (for backward compatibility with older DB versions)
+    const storeNames = Array.from(db.objectStoreNames);
+
+    // Use parallel count operations for efficiency, but only for stores that exist
+    const counts = await Promise.all([
         db.count('meets'),
         db.count('groups'),
         db.count('tasks'),
         db.count('marks'),
         db.count('members'),
-        db.count('finalAssessments'),
-        db.count('modules')
+        storeNames.includes('finalAssessments') ? db.count('finalAssessments') : Promise.resolve(0),
+        storeNames.includes('modules') ? db.count('modules') : Promise.resolve(0)
     ]);
 
     return {
-        reports: meetsCount,
-        groups: groupsCount,
-        marks: marksCount,
-        tasks: tasksCount,
-        members: membersCount,
-        finalAssessments: finalAssessmentsCount,
-        modules: modulesCount
+        reports: counts[0],
+        groups: counts[1],
+        marks: counts[3],
+        tasks: counts[2],
+        members: counts[4],
+        finalAssessments: counts[5],
+        modules: counts[6]
     };
 }
 
