@@ -56,7 +56,132 @@
         "groups": "Групи",
         "students": "Студенти",
         "marks": "Оцінки",
+        "summary": "Підсумки",
         "guide": "Посібник"
+    },
+    "summary": {
+        "description": "Налаштуйте параметри іспиту та перегляньте допуск/оцінки студентів.",
+        "views": {
+            "list": "Список",
+            "modules": "Модулі",
+            "documents": "Документи"
+        },
+        "targetGroup": "Цільова група",
+        "selectGroup": "Оберіть групу",
+        "assessmentType": "Тип оцінювання",
+        "types": {
+            "examination": "Іспит",
+            "credit": "Залік"
+        },
+        "thresholds": {
+            "completion": "Виконання (%)",
+            "attendance": "Відвідування (%)",
+            "attendanceTitle": "Увімкнути/вимкнути врахування відвідування для визначення статусу",
+            "requiredTasks": "Необх. завдання"
+        },
+        "modules": {
+            "title": "Оцінювання модулів",
+            "add": "Додати модуль",
+            "selectGroupHint": "Будь ласка, оберіть групу для налаштування модулів.",
+            "emptyHint": "Модулі ще не додано. Натисніть \"Додати модуль\", щоб почати.",
+            "deleteConfirmTitle": "Видалити модуль",
+            "deleteConfirmMessage": "Ви впевнені, що хочете видалити цей модуль? Цю дію неможливо скасувати.",
+            "card": {
+                "name": "Назва модуля",
+                "testTask": "Тестове завдання",
+                "selectTest": "Оберіть тест...",
+                "tasks": "Завдання",
+                "addTask": "Додати завдання...",
+                "testCoeff": "Коеф. тесту",
+                "tasksCoeff": "Коеф. завдань",
+                "minTasks": "Мін. завдань",
+                "remove": "Видалити модуль"
+            }
+        },
+        "list": {
+            "title": "Список студентів",
+            "searchPlaceholder": "Пошук студентів...",
+            "unsavedChanges": "Незбережені зміни",
+            "table": {
+                "student": "Ім'я студента",
+                "total": "Всього",
+                "completion": "Виконання (%)",
+                "attendance": "Відвідування (%)",
+                "status": "Статус",
+                "examGrade": "Екзамен",
+                "creditGrade": "Залік",
+                "date": "Дата"
+            },
+            "tooltips": {
+                "completion": "{exact}% - {details}",
+                "attendance": "{exact}% - {details}",
+                "moduleGrade": "{details}"
+            },
+            "status": {
+                "automatic": "Автомат",
+                "allowed": "Допущено",
+                "notAllowed": "Не допущено",
+                "automaticTooltip": "Студент відповідає всім критеріям для отримання автомату",
+                "allowedTooltip": "Студент допущений до складання іспиту",
+                "notAllowedTooltip": "Студент не відповідає критеріям допуску"
+            },
+            "actions": {
+                "save": "Зберегти оцінку",
+                "applyAuto": "Застосувати автомат",
+                "setManual": "Встановити вручну",
+                "remove": "Видалити оцінку"
+            }
+        },
+        "modal": {
+            "title": "Встановити екзаменаційну оцінку",
+            "grade": "Оцінка",
+            "placeholder": "Введіть оцінку..."
+        },
+        "documents": {
+            "title": "Документи підсумкового оцінювання",
+            "searchPlaceholder": "Пошук студентів...",
+            "table": {
+                "student": "Ім'я студента",
+                "grade": "Підсумкова оцінка",
+                "assessmentType": "Тип",
+                "createdAt": "Створено",
+                "syncedAt": "Синхронізовано",
+                "documentedAt": "Задокументовано"
+            },
+            "tooltips": {
+                "markAsSynced": "Позначити як синхронізоване",
+                "markAsUnsynced": "Позначити як не синхронізоване",
+                "markAsDocumented": "Позначити як задокументоване",
+                "markAsUndocumented": "Позначити як не задокументоване"
+            }
+        },
+        "data": {
+            "status": {
+                "automatic": "Автомат",
+                "allowed": "Допущено",
+                "notAllowed": "Не допущено"
+            },
+            "cause": {
+                "criteriaNotMet": "Критерії не виконано.",
+                "requirementsNotMet": "Вимоги не виконано: {reasons}",
+                "excellentPerformance": "Відмінна успішність: Всі модулі зараховано (Тест + Мін. завдань) та розраховано загальний бал.",
+                "admitted": "Допущено: Студент відповідає вимогам відвідування (> {attendanceThreshold}%) та загального виконання (> {completionThreshold}%)."
+            },
+            "reasons": {
+                "attendance": "Відвідування {percentage}% (потрібно {threshold}%)",
+                "completion": "Виконання {percentage}% (потрібно {threshold}%)",
+                "modulesIncomplete": "Модулі не завершено (відсутній загальний бал)"
+            },
+            "details": {
+                "completion": "{completed} з {total} завдань виконано",
+                "attendance": "{attended} з {total} зустрічей відвідано",
+                "modules": {
+                    "incompleteMissingTest": "Не завершено (відсутній тест)",
+                    "incompleteMissingTasks": "Не завершено (потрібно ще {count} завдання) | Не завершено (потрібно ще {count} завдань) | Не завершено (потрібно ще {count} завдань)",
+                    "details": "Сер. завдань: {avg} (×{tasksCoeff}), Тест: {test} (×{testCoeff})"
+                }
+            }
+        }
     },
     "settings": {
         "title": "Налаштування",
@@ -136,6 +261,10 @@
             "tasks": {
                 "title": "Завдання (Анотація)",
                 "memory": "Пам'ять"
+            },
+            "summary": {
+                "title": "Підсумки (Налаштування та Оцінки)",
+                "memory": "Пам'ять"
             }
         },
         "advanced": {
@@ -163,6 +292,10 @@
         }
     },
     "confirm": {
+        "confirm": "Підтвердити",
+        "cancel": "Скасувати",
+        "defaultTitle": "Підтвердження дії",
+        "defaultMessage": "Ви впевнені, що хочете продовжити?",
         "import": {
             "title": "Імпортувати дані",
             "message": "Це замінить всі дані в поточному робочому просторі. Ви впевнені?",
@@ -193,7 +326,11 @@
             "message": "Це назавжди видалить всіх учасників. Цю дію неможливо скасувати.",
             "confirm": "Видалити"
         },
-        "cancel": "Скасувати"
+        "eraseSummary": {
+            "title": "Видалити підсумки",
+            "message": "Це назавжди видалить всі підсумкові оцінки та налаштування модулів. Цю дію неможливо скасувати.",
+            "confirm": "Видалити"
+        }
     },
     "toast": {
         "defaultTeacherSaved": "Викладача за замовчуванням збережено",
@@ -227,6 +364,10 @@
         "marksEraseFailed": "Не вдалося видалити оцінки",
         "membersErased": "Учасників видалено",
         "membersEraseFailed": "Не вдалося видалити учасників",
+        "summaryErased": "Підсумки видалено",
+        "summaryEraseFailed": "Не вдалося видалити підсумки",
+        "summaryExported": "Підсумки успішно експортовано",
+        "summaryExportFailed": "Не вдалося експортувати підсумки",
         "emailCopied": "Email скопійовано в буфер обміну"
     },
     "students": {
@@ -365,7 +506,7 @@
     "marks": {
         "title": "Оцінки",
         "subtitle": "{count} з {total} оцінок",
-        "gradeScale": "Шкала оцінювання:",
+        "gradeScale": "Шкала оцінювання",
         "scales": {
             "default": "За замовчуванням",
             "5point": "5-бальна",

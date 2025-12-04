@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { Logs, LayoutDashboard, File, Settings, Users, UserRoundSearch, Star } from 'lucide-vue-next';
+import { Logs, LayoutDashboard, File, Settings, Users, UserRoundSearch, Star, FileBadge } from 'lucide-vue-next';
 import SettingsModal from './components/SettingsModal.vue';
 import WorkspaceSwitcher from './components/WorkspaceSwitcher.vue';
 import ToastContainer from './components/ToastContainer.vue';
@@ -160,6 +160,12 @@ onUnmounted(() => {
           <Star class="w-4 h-4" />
           {{ $t('nav.marks') }}
         </router-link>
+        <router-link to="/summary"
+          class="flex items-center gap-2 px-4 py-2 border-b-2 transition-colors whitespace-nowrap"
+          :class="route.path === '/summary' ? 'border-primary text-primary font-medium' : 'border-transparent text-muted-foreground hover:text-foreground'">
+          <FileBadge class="w-4 h-4" />
+          {{ $t('nav.summary') }}
+        </router-link>
       </div>
 
       <!-- Views -->
@@ -204,6 +210,12 @@ onUnmounted(() => {
           :class="route.path === '/marks' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'">
           <Star class="w-5 h-5" />
           <span>{{ $t('nav.marks') }}</span>
+        </router-link>
+        <router-link to="/summary"
+          class="flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-medium transition-colors"
+          :class="route.path === '/summary' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'">
+          <FileBadge class="w-5 h-5" />
+          <span>{{ $t('nav.summary') }}</span>
         </router-link>
       </div>
     </nav>

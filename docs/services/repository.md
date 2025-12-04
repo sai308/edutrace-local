@@ -5,7 +5,7 @@
 The `repository` service is the core data access layer for the EduTrace application. It has been refactored into a modular architecture to improve maintainability. The main `index.js` acts as a facade, delegating operations to specialized sub-modules.
 
 **File Location**: `src/services/repository/` (Directory)
-**Entry Point**: [index.js](file:///home/sai/Projects/AI/marks-journal/src/services/repository/index.js)
+**Entry Point**: [index.js](file:///home/sai/Projects/AI/edutrace/src/services/repository/index.js)
 
 **Database Technology**: IndexedDB (via `idb` library)  
 **Current DB Version**: 9  

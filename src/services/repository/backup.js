@@ -6,6 +6,8 @@ import * as groups from './groups';
 import * as tasks from './tasks';
 import * as marks from './marks';
 import * as members from './members';
+import * as finalAssessments from './finalAssessments';
+import * as modules from './modules';
 
 // --- Clear Methods ---
 
@@ -31,19 +33,31 @@ export async function clearMembers() {
     await db.clear('members');
 }
 
+export async function clearFinalAssessments() {
+    const db = await getDb();
+    await db.clear('finalAssessments');
+}
+
+export async function clearModules() {
+    const db = await getDb();
+    await db.clear('modules');
+}
+
 export async function clearAll() {
     await clearReports();
     await clearGroups();
     await clearMarks();
     await clearMembers();
+    await clearFinalAssessments();
+    await clearModules();
     settings.clearSettings(); // Clears localStorage settings for current workspace
 }
 
 // --- Full Export/Import ---
 
-// Full backup format: version 3
+// Full backup format: version 4
 export async function exportData() {
-    const [allMeets, allGroups, ignoredUsers, durationLimit, defaultTeacher, allTeachers, allTasks, allMarks, allMembers] = await Promise.all([
+    const [allMeets, allGroups, ignoredUsers, durationLimit, defaultTeacher, allTeachers, allTasks, allMarks, allMembers, allFinalAssessments, allModules, examSettings] = await Promise.all([
         meets.getAllMeets(),
         groups.getGroups(),
         settings.getIgnoredUsers(),
@@ -52,7 +66,10 @@ export async function exportData() {
         settings.getTeachers(),
         tasks.getAllTasks(),
         marks.getAllMarks(),
-        members.getAllMembers()
+        members.getAllMembers(),
+        finalAssessments.getAllFinalAssessments(),
+        modules.getAllModules(),
+        settings.getExamSettings()
     ]);
 
     return {
@@ -61,13 +78,16 @@ export async function exportData() {
         tasks: allTasks,
         marks: allMarks,
         members: allMembers,
+        finalAssessments: allFinalAssessments,
+        modules: allModules,
         settings: {
             ignoredUsers,
             durationLimit,
             defaultTeacher,
-            teachers: allTeachers
+            teachers: allTeachers,
+            examSettings
         },
-        version: 3, // Current version
+        version: 4, // Current version
         timestamp: new Date().toISOString()
     };
 }
@@ -100,7 +120,7 @@ export async function importData(jsonData) {
 
     // 3. Restore Settings (Stored in localStorage, scoped by workspace)
     if (jsonData.settings) {
-        const { durationLimit, defaultTeacher, ignoredUsers, teachers } = jsonData.settings;
+        const { durationLimit, defaultTeacher, ignoredUsers, teachers, examSettings } = jsonData.settings;
         if (durationLimit !== undefined) {
             await settings.saveDurationLimit(durationLimit);
         }
@@ -112,6 +132,10 @@ export async function importData(jsonData) {
         }
         if (Object.prototype.hasOwnProperty.call(jsonData.settings, 'teachers')) {
             await settings.saveTeachers(Array.isArray(teachers) ? teachers : []);
+        }
+        // Restore exam settings (version 4+)
+        if (Object.prototype.hasOwnProperty.call(jsonData.settings, 'examSettings')) {
+            await settings.saveExamSettings(examSettings || {});
         }
     }
 
@@ -161,6 +185,22 @@ export async function importData(jsonData) {
         }));
 
         await txMarks.done;
+    }
+
+    // 7. Restore Final Assessments (version 4+)
+    if (jsonData.finalAssessments && jsonData.finalAssessments.length > 0) {
+        const txFinalAssessments = db.transaction('finalAssessments', 'readwrite');
+        const storeFinalAssessments = txFinalAssessments.objectStore('finalAssessments');
+        await Promise.all(jsonData.finalAssessments.map(item => storeFinalAssessments.put(item)));
+        await txFinalAssessments.done;
+    }
+
+    // 8. Restore Modules (version 4+)
+    if (jsonData.modules && jsonData.modules.length > 0) {
+        const txModules = db.transaction('modules', 'readwrite');
+        const storeModules = txModules.objectStore('modules');
+        await Promise.all(jsonData.modules.map(item => storeModules.put(item)));
+        await txModules.done;
     }
 }
 
@@ -299,5 +339,73 @@ export async function importMarks(jsonData) {
         }));
 
         await tx.done;
+    }
+}
+// Summary backup format (version 1): finalAssessments, modules, examSettings
+export async function exportSummary() {
+    const [allFinalAssessments, allModules, examSettings] = await Promise.all([
+        finalAssessments.getAllFinalAssessments(),
+        modules.getAllModules(),
+        settings.getExamSettings()
+    ]);
+    return {
+        finalAssessments: allFinalAssessments,
+        modules: allModules,
+        settings: {
+            examSettings
+        },
+        version: 1,
+        type: 'summary',
+        timestamp: new Date().toISOString()
+    };
+}
+
+export async function importSummary(jsonData) {
+    if (!jsonData) {
+        throw new Error('Invalid summary data format');
+    }
+
+    const db = await getDb();
+
+    // 1. Create ONE transaction for all stores involved in the import
+    // This locks 'finalAssessments' and 'modules' for the duration of the entire import
+    const tx = db.transaction(['finalAssessments', 'modules'], 'readwrite');
+
+    const finalAssessmentsStore = tx.objectStore('finalAssessments');
+    const modulesStore = tx.objectStore('modules');
+
+    // 2. Clear existing data within the SAME transaction
+    // (We inline the clear logic here to ensure atomicity)
+    await Promise.all([
+        finalAssessmentsStore.clear(),
+        modulesStore.clear()
+    ]);
+
+    const finalAssessmentsData = jsonData.finalAssessments || [];
+    const modulesData = jsonData.modules || [];
+
+    // 3. Import new data
+    // We map the operations to an array of promises
+    const operations = [];
+
+    if (finalAssessmentsData.length > 0) {
+        finalAssessmentsData.forEach(item => {
+            operations.push(finalAssessmentsStore.put(item));
+        });
+    }
+
+    if (modulesData.length > 0) {
+        modulesData.forEach(item => {
+            operations.push(modulesStore.put(item));
+        });
+    }
+
+    // 4. Await all operations, then await the transaction commit
+    await Promise.all(operations);
+    await tx.done;
+
+    // 5. Import Exam Settings (This usually goes to LocalStorage or a separate store, so it stays outside)
+    if (jsonData.settings && jsonData.settings.examSettings) {
+        await settings.saveExamSettings(jsonData.settings.examSettings);
     }
 }

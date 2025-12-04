@@ -177,7 +177,7 @@ export async function exportWorkspaces(workspaceIds) {
         workspaces: []
     };
 
-    const storeNames = ['meets', 'groups', 'tasks', 'marks', 'members'];
+    const storeNames = ['meets', 'groups', 'tasks', 'marks', 'members', 'finalAssessments', 'modules'];
 
     for (const ws of workspacesToExport) {
         let db;
@@ -186,7 +186,7 @@ export async function exportWorkspaces(workspaceIds) {
             db = await openDB(ws.dbName, DB_VERSION);
 
             // Fetch all data in parallel
-            const [meets, groups, tasks, marks, members] = await Promise.all(
+            const [meets, groups, tasks, marks, members, finalAssessments, modules] = await Promise.all(
                 storeNames.map(name => db.getAll(name))
             );
 
@@ -195,7 +195,7 @@ export async function exportWorkspaces(workspaceIds) {
                 name: ws.name,
                 icon: ws.icon,
                 dbName: ws.dbName,
-                data: { meets, groups, tasks, marks, members }
+                data: { meets, groups, tasks, marks, members, finalAssessments, modules }
             });
         } catch (e) {
             console.error(`Error exporting data for workspace ${ws.name}:`, e);
@@ -244,14 +244,14 @@ export async function importWorkspaces(data, selectedIds) {
             // Open DB, initialize schema if necessary
             db = await openDB(targetWs.dbName, DB_VERSION, { upgrade: initDbSchema });
 
-            const storeNames = ['meets', 'groups', 'tasks', 'marks', 'members'];
+            const storeNames = ['meets', 'groups', 'tasks', 'marks', 'members', 'finalAssessments', 'modules'];
             const tx = db.transaction(storeNames, 'readwrite');
 
             // Clear existing data
             await Promise.all(storeNames.map(name => tx.objectStore(name).clear()));
 
             // Import new data
-            const { meets, groups, tasks, marks, members } = wsData.data;
+            const { meets, groups, tasks, marks, members, finalAssessments, modules } = wsData.data;
 
             const importPromises = [];
 
@@ -260,6 +260,8 @@ export async function importWorkspaces(data, selectedIds) {
             if (tasks) importPromises.push(...tasks.map(t => tx.objectStore('tasks').put(t)));
             if (marks) importPromises.push(...marks.map(m => tx.objectStore('marks').put(m)));
             if (members) importPromises.push(...members.map(m => tx.objectStore('members').put(m)));
+            if (finalAssessments) importPromises.push(...finalAssessments.map(f => tx.objectStore('finalAssessments').put(f)));
+            if (modules) importPromises.push(...modules.map(m => tx.objectStore('modules').put(m)));
 
             await Promise.all(importPromises);
             await tx.done;

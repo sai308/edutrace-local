@@ -36,6 +36,7 @@ watch(() => props.isOpen, (isOpen) => {
         showEraseGroupsConfirm.value = false;
         showEraseMarksConfirm.value = false;
         showEraseMembersConfirm.value = false;
+        showEraseSummaryConfirm.value = false;
         showImportConfirm.value = false;
         showWorkspaceSelection.value = false;
         showWorkspaceSizes.value = false;
@@ -70,7 +71,9 @@ const entityCounts = ref({
     reports: 0,
     groups: 0,
     marks: 0,
-    members: 0
+    members: 0,
+    finalAssessments: 0,
+    modules: 0
 });
 const globalStats = ref({
     total: 0,
@@ -86,7 +89,8 @@ const entitySizes = ref({
     groups: 0,
     marks: 0,
     tasks: 0,
-    members: 0
+    members: 0,
+    summary: 0
 });
 
 onMounted(async () => {
@@ -101,6 +105,7 @@ const showEraseReportsConfirm = ref(false);
 const showEraseGroupsConfirm = ref(false);
 const showEraseMarksConfirm = ref(false);
 const showEraseMembersConfirm = ref(false);
+const showEraseSummaryConfirm = ref(false);
 const showImportConfirm = ref(false);
 const pendingImportData = ref(null);
 const pendingImportType = ref(null);
@@ -118,6 +123,7 @@ const importAllInput = ref(null);
 const importReportsInput = ref(null);
 const importGroupsInput = ref(null);
 const importMarksInput = ref(null);
+const importSummaryInput = ref(null);
 
 onMounted(async () => {
     await loadSettings();
@@ -254,6 +260,17 @@ async function exportMarks() {
     }
 }
 
+async function exportSummary() {
+    try {
+        const data = await repository.exportSummary();
+        downloadJSON(data, `summary-${getTimestamp()}.json`);
+        toast.success(t('toast.summaryExported'));
+    } catch (e) {
+        console.error('Error exporting summary:', e);
+        toast.error(t('toast.summaryExportFailed'));
+    }
+}
+
 function downloadJSON(data, filename) {
     const jsonString = JSON.stringify(data, null, 2);
     const uri = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonString);
@@ -287,6 +304,10 @@ function triggerImportMarks() {
     importMarksInput.value?.click();
 }
 
+function triggerImportSummary() {
+    importSummaryInput.value?.click();
+}
+
 async function handleImportFile(event, type) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -303,7 +324,7 @@ async function handleImportFile(event, type) {
 
         pendingImportData.value = data;
         pendingImportType.value = type;
-        
+
         // Only show confirmation for legacy imports that override current workspace data
         // Multi-workspace imports and granular imports don't need confirmation
         if (type === 'all' && !data.type) {
@@ -345,6 +366,10 @@ function validateImportData(data, type) {
         return Array.isArray(items) && hasKeys(items, ['taskId', 'studentId', 'score']);
     }
 
+    if (type === 'summary') {
+        return data && data.type === 'summary' && 'finalAssessments' in data && 'modules' in data;
+    }
+
     if (type === 'all') {
         // Multi-workspace backup
         if (data.type === 'multi-workspace-backup' && Array.isArray(data.workspaces)) return true;
@@ -381,6 +406,13 @@ async function executeImport() {
                 pendingWorkspaceAction.value = async (selectedIds) => {
                     try {
                         await repository.importWorkspaces(data, selectedIds);
+                        
+                        // Switch to the last imported workspace
+                        if (selectedIds && selectedIds.length > 0) {
+                            const lastWorkspaceId = selectedIds[selectedIds.length - 1];
+                            await repository.switchWorkspace(lastWorkspaceId);
+                        }
+
                         toast.success(t('toast.workspacesImported'));
                         // Smooth transition before reload
                         fadeOutAndReload(t('loader.loadingWorkspaces'));
@@ -402,6 +434,8 @@ async function executeImport() {
             await repository.importGroups(data);
         } else if (type === 'marks') {
             await repository.importMarks(data);
+        } else if (type === 'summary') {
+            await repository.importSummary(data);
         }
 
         if (type !== 'all') {
@@ -512,6 +546,20 @@ async function executeEraseMembers() {
         toast.error(t('toast.membersEraseFailed'));
     }
 }
+
+async function executeEraseSummary() {
+    showEraseSummaryConfirm.value = false;
+    try {
+        await repository.clearFinalAssessments();
+        await repository.clearModules();
+        toast.success(t('toast.summaryErased'));
+        await loadSettings(); // Reload counts
+        emit('refresh');
+    } catch (e) {
+        console.error('Error erasing summary:', e);
+        toast.error(t('toast.summaryEraseFailed'));
+    }
+}
 </script>
 
 <template>
@@ -607,7 +655,7 @@ async function executeEraseMembers() {
                                 </div>
                             </div>
                             <p class="text-xs text-muted-foreground">{{ $t('settings.general.durationLimit.description')
-                                }}</p>
+                            }}</p>
                         </div>
 
                         <!-- Teachers -->
@@ -786,6 +834,40 @@ async function executeEraseMembers() {
                                     </p>
                                 </div>
                             </div>
+
+                            <!-- Summary Card -->
+                            <div class="border rounded-lg p-4 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="font-medium">{{ $t('settings.data.summary.title') }}</h4>
+                                    <span v-if="(entityCounts.finalAssessments + entityCounts.modules) > 0"
+                                        class="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {{ entityCounts.finalAssessments + entityCounts.modules }}
+                                    </span>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button @click="exportSummary"
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
+                                        <Download class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.export') }}
+                                    </button>
+                                    <button @click="triggerImportSummary"
+                                        class="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md hover:bg-muted transition-colors">
+                                        <Upload class="w-4 h-4" />
+                                        {{ $t('settings.data.actions.import') }}
+                                    </button>
+                                    <div class="flex gap-4 items-center">
+                                        <button @click="showEraseSummaryConfirm = true"
+                                            class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-destructive border border-destructive/20 rounded-md hover:bg-destructive/10 transition-colors">
+                                            <Trash2 class="w-4 h-4" />
+                                            {{ $t('settings.data.actions.erase') }}
+                                        </button>
+                                        <p v-if="entitySizes.summary > 0" class="text-xs text-muted-foreground">
+                                            {{ $t('settings.data.summary.memory') }}: {{
+                                                formatBytes(entitySizes.summary) }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -795,7 +877,7 @@ async function executeEraseMembers() {
                         <div class="border rounded-lg p-4 space-y-3">
                             <h4 class="font-medium">{{ $t('settings.advanced.global.title') }}</h4>
                             <p class="text-sm text-muted-foreground">{{ $t('settings.advanced.global.description.title')
-                            }}<br>{{ $t('settings.advanced.global.description.list')
+                                }}<br>{{ $t('settings.advanced.global.description.list')
                                 }}
                             </p>
 
@@ -809,7 +891,7 @@ async function executeEraseMembers() {
                                     <template v-if="globalStats.total > 0">
                                         <span>{{ $t('settings.advanced.global.totalSize') }}: {{
                                             formatBytes(globalStats.total)
-                                        }}</span>
+                                            }}</span>
                                         <button @click="showWorkspaceSizes = !showWorkspaceSizes"
                                             class="ml-4 text-primary hover:underline">
                                             {{ showWorkspaceSizes ? $t('settings.advanced.global.hideDetails') :
@@ -901,8 +983,10 @@ async function executeEraseMembers() {
             class="hidden" />
         <input ref="importGroupsInput" type="file" accept=".json" @change="handleImportFile($event, 'groups')"
             class="hidden" />
-        <input ref="importMarksInput" type="file" accept=".json" @change="handleImportFile($event, 'marks')"
-            class="hidden" />
+        <input ref="importMarksInput" type="file" accept=".json" class="hidden"
+            @change="(e) => handleImportFile(e, 'marks')" />
+        <input ref="importSummaryInput" type="file" accept=".json" class="hidden"
+            @change="(e) => handleImportFile(e, 'summary')" />
 
         <!-- Filter Modal -->
         <FilterModal :is-open="showTeachersModal" :all-users="allStudents" mode="teachers"
@@ -932,6 +1016,10 @@ async function executeEraseMembers() {
         <ConfirmModal :is-open="showEraseMembersConfirm" :title="$t('confirm.eraseMembers.title')"
             :message="$t('confirm.eraseMembers.message')" :confirm-text="$t('confirm.eraseMembers.confirm')"
             @cancel="showEraseMembersConfirm = false" @confirm="executeEraseMembers" />
+
+        <ConfirmModal :is-open="showEraseSummaryConfirm" :title="$t('confirm.eraseSummary.title')"
+            :message="$t('confirm.eraseSummary.message')" :confirm-text="$t('confirm.eraseSummary.confirm')"
+            @cancel="showEraseSummaryConfirm = false" @confirm="executeEraseSummary" />
 
         <!-- Workspace Selection Modal -->
         <WorkspaceSelectionModal :is-open="showWorkspaceSelection" :workspaces="availableWorkspaces"

@@ -52,8 +52,8 @@ const routes = [
         component: MarksPage
     },
     {
-        path: '/exam',
-        name: 'Exam',
+        path: '/summary',
+        name: 'Summary',
         component: () => import('../pages/ExamPage.vue')
     },
     {

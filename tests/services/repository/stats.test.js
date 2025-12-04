@@ -24,7 +24,9 @@ describe('stats.js', () => {
                 groups: 0,
                 marks: 0,
                 tasks: 0,
-                members: 0
+                members: 0,
+                finalAssessments: 0,
+                modules: 0
             });
         });
 
@@ -75,7 +77,9 @@ describe('stats.js', () => {
                 groups: 1,
                 marks: 1,
                 tasks: 1,
-                members: 1
+                members: 1,
+                finalAssessments: 0,
+                modules: 0
             });
         });
     });
@@ -90,6 +94,7 @@ describe('stats.js', () => {
             expect(typeof sizes.marks).toBe('number');
             expect(typeof sizes.tasks).toBe('number');
             expect(typeof sizes.members).toBe('number');
+            expect(typeof sizes.summary).toBe('number');
 
             // All sizes should be non-negative
             expect(sizes.reports).toBeGreaterThanOrEqual(0);
@@ -97,6 +102,7 @@ describe('stats.js', () => {
             expect(sizes.marks).toBeGreaterThanOrEqual(0);
             expect(sizes.tasks).toBeGreaterThanOrEqual(0);
             expect(sizes.members).toBeGreaterThanOrEqual(0);
+            expect(sizes.summary).toBeGreaterThanOrEqual(0);
         });
 
         it('should handle serialization errors gracefully', async () => {
@@ -111,6 +117,7 @@ describe('stats.js', () => {
             expect(sizes).toHaveProperty('marks');
             expect(sizes).toHaveProperty('tasks');
             expect(sizes).toHaveProperty('members');
+            expect(sizes).toHaveProperty('summary');
         });
 
         it('should calculate sizes for all entity types using Blob', async () => {

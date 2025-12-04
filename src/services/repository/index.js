@@ -10,6 +10,8 @@ import * as tasks from './tasks';
 import * as marks from './marks';
 import * as backup from './backup';
 import * as stats from './stats';
+import * as modules from './modules';
+import * as finalAssessments from './finalAssessments';
 
 class Repository {
     // General DB Access
@@ -148,6 +150,56 @@ class Repository {
         return tasks.findTaskByNaturalKey(name, date, groupName);
     }
 
+    // --- Modules (from modules.js) ---
+    async saveModule(module) {
+        return modules.saveModule(module);
+    }
+
+    async getAllModules() {
+        return modules.getAllModules();
+    }
+
+    async getModulesByGroup(groupName) {
+        return modules.getModulesByGroup(groupName);
+    }
+
+    async getModuleById(id) {
+        return modules.getModuleById(id);
+    }
+
+    async deleteModule(id) {
+        return modules.deleteModule(id);
+    }
+
+    // --- FinalAssessments (from finalAssessments.js) ---
+    async saveFinalAssessment(assessment) {
+        return finalAssessments.saveFinalAssessment(assessment);
+    }
+
+    async getFinalAssessmentByStudent(studentId, assessmentType) {
+        return finalAssessments.getFinalAssessmentByStudent(studentId, assessmentType);
+    }
+
+    async getAllFinalAssessments() {
+        return finalAssessments.getAllFinalAssessments();
+    }
+
+    async getFinalAssessmentsByType(assessmentType) {
+        return finalAssessments.getFinalAssessmentsByType(assessmentType);
+    }
+
+    async deleteFinalAssessment(id) {
+        return finalAssessments.deleteFinalAssessment(id);
+    }
+
+    async updateAssessmentSyncStatus(id, syncedAt) {
+        return finalAssessments.updateSyncStatus(id, syncedAt);
+    }
+
+    async updateAssessmentDocumentStatus(id, documentedAt) {
+        return finalAssessments.updateDocumentStatus(id, documentedAt);
+    }
+
     // --- Marks (from marks.js) ---
     async saveMark(mark) {
         return marks.saveMark(mark);
@@ -208,6 +260,14 @@ class Repository {
 
     async saveTeachers(teachers) {
         return settings.saveTeachers(teachers);
+    }
+
+    async getExamSettings() {
+        return settings.getExamSettings();
+    }
+
+    async saveExamSettings(examSettings) {
+        return settings.saveExamSettings(examSettings);
     }
 
     // --- Workspace (from workspace.js) ---
@@ -304,6 +364,14 @@ class Repository {
         return backup.importMarks(jsonData);
     }
 
+    async exportSummary() {
+        return backup.exportSummary();
+    }
+
+    async importSummary(jsonData) {
+        return backup.importSummary(jsonData);
+    }
+
     // Granular Clear Methods
     async clearReports() {
         return backup.clearReports();
@@ -319,6 +387,14 @@ class Repository {
 
     async clearMembers() {
         return backup.clearMembers();
+    }
+
+    async clearFinalAssessments() {
+        return backup.clearFinalAssessments();
+    }
+
+    async clearModules() {
+        return backup.clearModules();
     }
 
     // --- Statistics (from stats.js) ---

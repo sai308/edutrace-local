@@ -111,6 +111,14 @@ export async function saveTeachers(teachers) {
     }
 }
 
+export async function getExamSettings() {
+    return getSetting('examSettings', {});
+}
+
+export async function saveExamSettings(settings) {
+    saveSetting('examSettings', settings || {});
+}
+
 export function clearSettings() {
     const settingsKeys = ['ignoredUsers', 'durationLimit', 'defaultTeacher', 'teachers'];
 

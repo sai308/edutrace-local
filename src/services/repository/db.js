@@ -2,7 +2,7 @@
 import { openDB } from 'idb';
 import { getCurrentWorkspaceId } from './workspace';
 
-export const DB_VERSION = 9;
+export const DB_VERSION = 11;
 export const DEFAULT_DB_NAME = 'meet-attendance-db';
 
 // Dynamic DB Connection Cache
@@ -47,6 +47,8 @@ export async function resetDbConnection() {
             const db = await _dbPromise;
             // Explicitly close the connection to release the lock
             db.close();
+            // Add a delay to ensure fake-indexeddb cleans up properly
+            await new Promise(resolve => setTimeout(resolve, 10));
         } catch (e) {
             console.warn('Error closing DB connection during reset:', e);
         }
@@ -188,6 +190,38 @@ export async function initDbSchema(db, oldVersion, newVersion, transaction) {
     // Drop legacy 'students' store
     if (oldVersion < 9 && db.objectStoreNames.contains('students')) {
         db.deleteObjectStore('students');
+    }
+
+    // Modules Store
+    if (!db.objectStoreNames.contains('modules')) {
+        const store = db.createObjectStore('modules', {
+            keyPath: 'id',
+            autoIncrement: true,
+        });
+        store.createIndex('groupId', 'groupId', { unique: false });
+        store.createIndex('groupName', 'groupName', { unique: false });
+    } else if (oldVersion < 10) {
+        const store = transaction.objectStore('modules');
+        if (!store.indexNames.contains('groupId')) {
+            store.createIndex('groupId', 'groupId', { unique: false });
+        }
+        if (!store.indexNames.contains('groupName')) {
+            store.createIndex('groupName', 'groupName', { unique: false });
+        }
+    }
+
+    // FinalAssessments Store
+    if (!db.objectStoreNames.contains('finalAssessments')) {
+        const store = db.createObjectStore('finalAssessments', {
+            keyPath: 'id',
+            autoIncrement: true,
+        });
+        store.createIndex('studentId', 'studentId', { unique: false });
+        store.createIndex('assessmentType', 'assessmentType', { unique: false });
+        // Composite unique index: one grade per student per assessment type
+        store.createIndex('student_type', ['studentId', 'assessmentType'], {
+            unique: true,
+        });
     }
 }
 

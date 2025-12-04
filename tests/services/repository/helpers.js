@@ -91,6 +91,43 @@ export function createMarkFixture(overrides = {}) {
 }
 
 /**
+ * Create a module fixture with optional overrides
+ */
+export function createModuleFixture(overrides = {}) {
+    return {
+        ordinal: 1,
+        name: 'Module 1',
+        groupName: 'KH-41',
+        test: { name: 'Test 1', date: '2024-01-20' },
+        tasks: [
+            { name: 'Lab 1', date: '2024-01-15' },
+            { name: 'Lab 2', date: '2024-01-18' }
+        ],
+        testCoeff: 0.6,
+        taskCoeff: 0.4,
+        ...overrides,
+    };
+}
+
+/**
+ * Create a final assessment fixture with optional overrides
+ */
+export function createFinalAssessmentFixture(overrides = {}) {
+    return {
+        studentId: 1,
+        groupName: 'KH-41',
+        assessmentType: 'examination',
+        grade5: 5,
+        grade100: 95,
+        gradeECTS: 'A',
+        isAutomatic: false,
+        createdAt: new Date().toISOString(),
+        ...overrides,
+    };
+}
+
+
+/**
  * Create multiple fixtures at once
  */
 export function createFixtures(type, count, overridesFn = () => ({})) {
@@ -101,6 +138,8 @@ export function createFixtures(type, count, overridesFn = () => ({})) {
         member: createMemberFixture,
         task: createTaskFixture,
         mark: createMarkFixture,
+        module: createModuleFixture,
+        finalAssessment: createFinalAssessmentFixture,
     };
 
     const creator = creators[type];
