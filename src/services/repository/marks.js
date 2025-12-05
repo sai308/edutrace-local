@@ -16,6 +16,11 @@ export async function saveMark(mark) {
     const existing = await index.get([mark.taskId, mark.studentId]);
 
     if (existing) {
+        // Prevent overwriting if already synced
+        if (existing.synced) {
+            return { id: existing.id, isNew: false, updated: false, skipped: true };
+        }
+
         // Update existing mark if score or other fields changed
         if (existing.score !== mark.score) {
             const updated = {
@@ -23,6 +28,7 @@ export async function saveMark(mark) {
                 ...mark, // Allow updating other fields like score/synced
                 id: existing.id,
                 synced: false,
+                syncedAt: null // Clear syncedAt if it was somehow set
             };
             await store.put(updated);
             await tx.done;
@@ -56,6 +62,11 @@ export async function updateMarkSynced(id, synced) {
         // Only update if the value is actually different to avoid unnecessary writes
         if (mark.synced !== synced) {
             mark.synced = synced;
+            if (synced) {
+                mark.syncedAt = new Date().toISOString();
+            } else {
+                mark.syncedAt = null;
+            }
             await store.put(mark);
         }
     }
