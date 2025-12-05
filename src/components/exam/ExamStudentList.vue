@@ -435,13 +435,19 @@ function openProfile(student) {
                                 {{ student.total !== null ? student.total : '-' }}
                             </td>
 
-                            <td class="p-3 text-center"
-                                :class="{ 'text-destructive': student.completion < completionThreshold, 'text-green-600': student.completion >= completionThreshold }"
+                            <td class="p-3 text-center" :class="{
+                                'text-destructive': student.completion < completionThreshold && student.completion < 50,
+                                'text-orange-500': student.completion >= 50 && student.completion < completionThreshold,
+                                'text-green-600': student.completion >= completionThreshold
+                            }"
                                 :title="$t('summary.list.tooltips.completion', { exact: student.completionExact, details: student.completionDetails })">
                                 {{ student.completion }}%
                             </td>
-                            <td class="p-3 text-center"
-                                :class="{ 'text-destructive': student.attendance < attendanceThreshold, 'text-green-600': student.attendance >= attendanceThreshold }"
+                            <td class="p-3 text-center" :class="{
+                                'text-destructive': student.attendance < attendanceThreshold && student.attendance < 50,
+                                'text-orange-500': student.attendance >= 50 && student.attendance < attendanceThreshold,
+                                'text-green-600': student.attendance >= attendanceThreshold
+                            }"
                                 :title="$t('summary.list.tooltips.attendance', { exact: student.attendanceExact, details: student.attendanceDetails })">
                                 {{ student.attendance }}%
                             </td>

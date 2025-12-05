@@ -217,7 +217,7 @@ function hideTestResults() {
 
                         <div v-if="showTestResults && filteredTests.length > 0"
                             class="absolute top-full left-0 mt-1 w-full bg-popover border rounded-md shadow-md z-20 max-h-48 overflow-y-auto">
-                            <div v-for="test in filteredTests" :key="getTaskKey(test)" @click="selectTest(test)"
+                            <div v-for="test in filteredTests" :key="getTaskKey(test)" @mousedown.prevent="selectTest(test)"
                                 class="px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors">
                                 {{ formatTask(test) }}
                             </div>

@@ -2,7 +2,8 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
-import { List, Layers, Users, Percent, BookDashed, ChevronDown, SquareStar, FileText } from 'lucide-vue-next';
+import { List, Layers, Users, Percent, BookDashed, SquareStar, FileText } from 'lucide-vue-next';
+import { serializeModule } from '../services/examSerialization';
 import ExamConfiguration from '../components/exam/ExamConfiguration.vue';
 import ExamStudentList from '../components/exam/ExamStudentList.vue';
 import DocumentsList from '../components/exam/DocumentsList.vue';
@@ -21,7 +22,7 @@ const attendanceThreshold = ref(60);
 const attendanceEnabled = ref(true);
 const requiredTasks = ref(0);
 const modules = ref([]);
-const selectedFormat = ref('5-scale'); // 'raw', '5-scale', '100-scale', 'ects'
+const selectedFormat = ref('100-scale'); // 'raw', '5-scale', '100-scale', 'ects'
 
 const formatOptions = computed(() => [
     { value: '5-scale', label: t('marks.scales.5point') },
@@ -114,35 +115,11 @@ watch(modules, async (newModules) => {
     // Clear existing timeout
     if (saveTimeout) clearTimeout(saveTimeout);
 
-    // Debounce saves by 500ms
     saveTimeout = setTimeout(async () => {
         // Save all modules with group reference
         for (const module of newModules) {
             try {
-                // Serialize module to plain object, stripping Vue proxies
-                const plainModule = {
-                    id: module.id,
-                    name: module.name,
-                    tasks: module.tasks ? module.tasks.map(t => ({
-                        id: t.id,
-                        name: t.name,
-                        date: t.date,
-                        groupName: t.groupName,
-                        groupId: t.groupId
-                    })) : [],
-                    test: module.test ? {
-                        id: module.test.id,
-                        name: module.test.name,
-                        date: module.test.date,
-                        groupName: module.test.groupName,
-                        groupId: module.test.groupId
-                    } : null,
-                    tasksCoefficient: module.tasksCoefficient,
-                    testCoefficient: module.testCoefficient,
-                    groupName: selectedGroup.value.name,
-                    groupId: selectedGroup.value.id
-                };
-
+                const plainModule = serializeModule(module, selectedGroup.value);
                 await repository.saveModule(plainModule);
             } catch (error) {
                 console.error('Failed to save module:', error, module);

@@ -1,13 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import ReportsPage from '../pages/ReportsPage.vue';
-import AnalyticsPage from '../pages/AnalyticsPage.vue';
-import GroupsPage from '../pages/GroupsPage.vue';
-import StudentsPage from '../pages/StudentsPage.vue';
-import MarksPage from '../pages/MarksPage.vue';
-import GuidePage from '../pages/GuidePage.vue';
-import AboutPage from '../pages/AboutPage.vue';
 import NotFoundPage from '../pages/NotFoundPage.vue';
-import DetailedView from '../components/DetailedView.vue';
 
 const routes = [
     {
@@ -17,39 +9,39 @@ const routes = [
     {
         path: '/reports',
         name: 'Reports',
-        component: ReportsPage
+        component: () => import('../pages/ReportsPage.vue')
     },
     {
         path: '/students',
         name: 'Students',
-        component: StudentsPage
+        component: () => import('../pages/StudentsPage.vue')
     },
     {
         path: '/reports/:id',
         name: 'ReportDetails',
-        component: DetailedView,
+        component: () => import('../pages/ReportDetailsPage.vue'),
         props: true
     },
     {
         path: '/analytics/:id',
         name: 'AnalyticsDetails',
-        component: DetailedView,
+        component: () => import('../pages/AnalyticsDetailsPage.vue'),
         props: true
     },
     {
         path: '/analytics',
         name: 'Analytics',
-        component: AnalyticsPage
+        component: () => import('../pages/AnalyticsPage.vue')
     },
     {
         path: '/groups',
         name: 'Groups',
-        component: GroupsPage
+        component: () => import('../pages/GroupsPage.vue')
     },
     {
         path: '/marks',
         name: 'Marks',
-        component: MarksPage
+        component: () => import('../pages/MarksPage.vue')
     },
     {
         path: '/summary',
@@ -59,12 +51,12 @@ const routes = [
     {
         path: '/guide',
         name: 'Guide',
-        component: GuidePage
+        component: () => import('../pages/GuidePage.vue')
     },
     {
         path: '/about',
         name: 'About',
-        component: AboutPage
+        component: () => import('../pages/AboutPage.vue')
     },
     {
         path: '/:pathMatch(.*)*',
