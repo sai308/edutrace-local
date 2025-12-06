@@ -1,5 +1,6 @@
 import { beforeEach, vi } from 'vitest';
-import { resetDbConnection, DEFAULT_DB_NAME } from '~repository/db';
+import { databaseService, DEFAULT_DB_NAME } from '@/shared/services/DatabaseService';
+import 'fake-indexeddb/auto';
 
 // Optional helper if you want a single place to maintain DB names
 const TEST_DB_NAMES = [
@@ -12,6 +13,7 @@ const TEST_DB_NAMES = [
 
 async function resetIndexedDb() {
     // best-effort cleanup: delete all known DBs
+    // With fake-indexeddb, we might need to be careful, but deleteDatabase works.
     for (const name of TEST_DB_NAMES) {
         try {
             indexedDB.deleteDatabase(name);
@@ -19,20 +21,18 @@ async function resetIndexedDb() {
             // ignore in tests
         }
     }
-
-    // If fake-indexeddb ever supports indexedDB.databases(), you could
-    // also enumerate and delete everything dynamically.
 }
 
 beforeEach(async () => {
     // reset db connection
-    await resetDbConnection();
+    await databaseService.resetConnection();
 
     // reset indexeddb
     await resetIndexedDb();
 
     // jsdom localStorage – safe & test-only
     localStorage.clear();
+    sessionStorage.clear();
 
     // Drop cached modules so repository singletons are rebuilt per test
     vi.resetModules();

@@ -6,7 +6,7 @@ import SettingsModal from './components/SettingsModal.vue';
 import WorkspaceSwitcher from './components/WorkspaceSwitcher.vue';
 import ToastContainer from './components/ToastContainer.vue';
 import AppFooter from './components/AppFooter.vue';
-import { useMeets } from './composables/useMeets';
+import { useMeets } from '@/modules/Analytics/composables/useMeets';
 
 import { fadeOutOnLoad } from './utils/transition';
 
@@ -128,8 +128,7 @@ onUnmounted(() => {
 
     <main class="container mx-auto px-4 py-4 md:py-8 space-y-0 md:space-y-8">
       <!-- Desktop Navigation Tabs -->
-      <div v-if="route.name !== 'ReportDetails'"
-        class="hidden md:flex items-center gap-4 border-b pb-px overflow-x-auto">
+      <div class="hidden md:flex items-center gap-4 border-b pb-px overflow-x-auto">
         <router-link to="/reports"
           class="flex items-center gap-2 px-4 py-2 border-b-2 transition-colors whitespace-nowrap"
           :class="route.path.startsWith('/reports') ? 'border-primary text-primary font-medium' : 'border-transparent text-muted-foreground hover:text-foreground'">
@@ -178,8 +177,7 @@ onUnmounted(() => {
     </main>
 
     <!-- Mobile Bottom Navigation -->
-    <nav v-if="route.name !== 'ReportDetails'"
-      class="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-40 pb-safe">
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-40 pb-safe">
       <div class="flex items-center justify-around h-16">
         <router-link to="/reports"
           class="flex flex-col items-center justify-center w-full h-full gap-1 text-[10px] font-medium transition-colors"

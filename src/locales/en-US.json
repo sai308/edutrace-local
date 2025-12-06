@@ -37,7 +37,8 @@
         "save": "Save",
         "delete": "Delete",
         "edit": "Edit",
-        "close": "Close"
+        "close": "Close",
+        "back": "Back"
     },
     "workspaceSelection": {
         "title": {
@@ -692,6 +693,27 @@
                 "avgDuration": "Average session duration in minutes",
                 "participants": "Active Participants / Total Students in Group",
                 "viewDetails": "Click to view detailed analytics"
+            }
+        },
+        "details": {
+            "title": "Sessions analytics for meet",
+            "subtitle": "Session Analytics",
+            "noData": "No details found.",
+            "overview": {
+                "totalSessions": "Total Sessions",
+                "totalStudents": "Total Students",
+                "avgAttendance": "Avg. Attendance",
+                "studentPerformance": "Student Performance",
+                "avgPercentage": "Avg:",
+                "seeDetails": "See details"
+            },
+            "table": {
+                "student": "Student",
+                "total": "Total %"
+            },
+            "calendar": {
+                "session": "Session",
+                "participants": "{count} participants"
             }
         },
         "toast": {

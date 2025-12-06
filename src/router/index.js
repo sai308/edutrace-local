@@ -9,44 +9,44 @@ const routes = [
     {
         path: '/reports',
         name: 'Reports',
-        component: () => import('../pages/ReportsPage.vue')
+        component: () => import('../modules/Reports/pages/ReportsPage.vue')
     },
     {
         path: '/students',
         name: 'Students',
-        component: () => import('../pages/StudentsPage.vue')
+        component: () => import('../modules/Students/views/StudentsPage.vue')
     },
     {
         path: '/reports/:id',
         name: 'ReportDetails',
-        component: () => import('../pages/ReportDetailsPage.vue'),
+        component: () => import('../modules/Reports/pages/ReportDetailsPage.vue'),
         props: true
     },
     {
         path: '/analytics/:id',
         name: 'AnalyticsDetails',
-        component: () => import('../pages/AnalyticsDetailsPage.vue'),
+        component: () => import('../modules/Analytics/pages/AnalyticsDetailsPage.vue'),
         props: true
     },
     {
         path: '/analytics',
         name: 'Analytics',
-        component: () => import('../pages/AnalyticsPage.vue')
+        component: () => import('../modules/Analytics/pages/AnalyticsPage.vue')
     },
     {
         path: '/groups',
         name: 'Groups',
-        component: () => import('../pages/GroupsPage.vue')
+        component: () => import('../modules/Groups/views/GroupsPage.vue')
     },
     {
         path: '/marks',
         name: 'Marks',
-        component: () => import('../pages/MarksPage.vue')
+        component: () => import('../modules/Marks/views/MarksPage.vue')
     },
     {
         path: '/summary',
         name: 'Summary',
-        component: () => import('../pages/ExamPage.vue')
+        component: () => import('../modules/Summary/views/SummaryPage.vue')
     },
     {
         path: '/guide',

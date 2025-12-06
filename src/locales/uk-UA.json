@@ -37,7 +37,8 @@
         "save": "Зберегти",
         "delete": "Видалити",
         "edit": "Редагувати",
-        "close": "Закрити"
+        "close": "Закрити",
+        "back": "Назад"
     },
     "workspaceSelection": {
         "title": {
@@ -697,6 +698,27 @@
                 "avgDuration": "Середня тривалість сесії в хвилинах",
                 "participants": "Активні учасники / Всього студентів у групі",
                 "viewDetails": "Натисніть, щоб переглянути детальну аналітику"
+            }
+        },
+        "details": {
+            "title": "Аналітика сесій зустрічі",
+            "subtitle": "Аналітика сесій",
+            "noData": "Деталі не знайдено.",
+            "overview": {
+                "totalSessions": "Всього сесій",
+                "totalStudents": "Всього студентів",
+                "avgAttendance": "Сер. відвідуваність",
+                "studentPerformance": "Успішність студентів",
+                "avgPercentage": "Сер:",
+                "seeDetails": "Деталі"
+            },
+            "table": {
+                "student": "Студент",
+                "total": "Всього %"
+            },
+            "calendar": {
+                "session": "Сесія",
+                "participants": "{count} учасників"
             }
         },
         "toast": {

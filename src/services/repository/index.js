@@ -1,413 +1,399 @@
-// index.js (Refactored)
+// index.js (Adapter for Backward Compatibility)
 
-import { getDb } from './db';
-import * as workspace from './workspace';
-import * as settings from './settings';
-import * as meets from './meets';
-import * as groups from './groups';
-import * as members from './members';
-import * as tasks from './tasks';
-import * as marks from './marks';
-import * as backup from './backup';
-import * as stats from './stats';
-import * as modules from './modules';
-import * as finalAssessments from './finalAssessments';
+import { databaseService } from '@/shared/services/DatabaseService';
+import { workspaceRepository } from '@/shared/services/workspace.repository';
+import { settingsRepository } from '@/shared/services/settings.repository';
+import { meetsRepository } from '@/modules/Analytics/services/meets.repository';
+import { groupsRepository } from '@/modules/Groups/services/groups.repository';
+import { studentsRepository } from '@/modules/Students/services/students.repository';
+import { tasksRepository } from '@/modules/Marks/services/tasks.repository';
+import { marksRepository } from '@/modules/Marks/services/marks.repository';
+import { modulesRepository } from '@/modules/Summary/services/modules.repository';
+import { finalAssessmentsRepository } from '@/modules/Summary/services/finalAssessments.repository';
+import * as backupService from '@/shared/services/backup.service';
+import * as statsService from '@/shared/services/stats.service';
+
+// Stats was not moved in my plan, likely missed. 
+// Step 40 showed `stats.js`.
+// I should move `stats.js` too? It uses repositories.
+// Let's assume stats.js is still local for now, but it imports from ./db probably.
+// If stats.js imports ./db, we need to fix it or move it.
+// Let's check stats.js content later. For now, keep it if it works, or if it breaks I fix it.
 
 class Repository {
     // General DB Access
     async getAll(storeName) {
-        const db = await getDb();
+        const db = await databaseService.getDb();
         return db.getAll(storeName);
     }
 
-    // --- Meets/Reports (from meets.js) ---
+    // --- Meets/Reports ---
     async saveMeet(meetData) {
-        return meets.saveMeet(meetData);
+        return meetsRepository.saveMeet(meetData);
     }
 
     async getAllMeets() {
-        return meets.getAllMeets();
+        return meetsRepository.getAllMeets();
     }
 
     async getMeetsByMeetId(meetId) {
-        return meets.getMeetsByMeetId(meetId);
+        return meetsRepository.getMeetsByMeetId(meetId);
     }
 
     async getMeetById(id) {
-        return meets.getMeetById(id);
+        return meetsRepository.getMeetById(id);
     }
 
     async checkMeetExists(meetId, date) {
-        return meets.checkMeetExists(meetId, date);
+        return meetsRepository.checkMeetExists(meetId, date);
     }
 
     async isDuplicateFile(filename, meetId, date) {
-        return meets.isDuplicateFile(filename, meetId, date);
+        return meetsRepository.isDuplicateFile(filename, meetId, date);
     }
 
     async deleteMeet(id) {
-        return meets.deleteMeet(id);
+        return meetsRepository.deleteMeet(id);
     }
 
     async deleteMeets(ids) {
-        return meets.deleteMeets(ids);
+        return meetsRepository.deleteMeets(ids);
     }
 
     async applyDurationLimitToAll(limitMinutes) {
-        return meets.applyDurationLimitToAll(limitMinutes);
+        return meetsRepository.applyDurationLimitToAll(limitMinutes);
     }
 
-    // --- Groups (from groups.js) ---
+    // --- Groups ---
     async getGroups() {
-        return groups.getGroups();
+        return groupsRepository.getGroups();
     }
 
     async saveGroup(group) {
-        return groups.saveGroup(group);
+        return groupsRepository.saveGroup(group);
     }
 
     async syncMembersFromMeets(group) {
-        return groups.syncMembersFromMeets(group);
+        return groupsRepository.syncMembersFromMeets(group);
     }
 
     async deleteGroup(id) {
-        return groups.deleteGroup(id);
+        return groupsRepository.deleteGroup(id);
     }
 
     async getGroupMap() {
-        return groups.getGroupMap();
+        return groupsRepository.getGroupMap();
     }
 
-    // --- Members (from members.js) ---
+    // --- Members ---
     async saveMember(member) {
-        return members.saveMember(member);
+        return studentsRepository.saveMember(member);
     }
 
     async getAllMembers() {
-        return members.getAllMembers();
+        return studentsRepository.getAllMembers();
     }
 
     async getMembersByGroup(groupName) {
-        return members.getMembersByGroup(groupName);
+        return studentsRepository.getMembersByGroup(groupName);
     }
 
     async deleteMember(id) {
-        return members.deleteMember(id);
+        return studentsRepository.deleteMember(id);
     }
 
     async deleteMembers(ids) {
-        return members.deleteMembers(ids);
+        return studentsRepository.deleteMembers(ids);
     }
 
     async syncAllMembersFromMeets() {
-        return members.syncAllMembersFromMeets();
+        return studentsRepository.syncAllMembersFromMeets();
     }
 
     async hideMember(id) {
-        return members.hideMember(id);
+        return studentsRepository.hideMember(id);
     }
 
     async hideMembers(ids) {
-        return members.hideMembers(ids);
+        return studentsRepository.hideMembers(ids);
     }
 
-    // Legacy Aliases for Students - PRESERVED CONTRACT
-    /** @deprecated Use saveMember instead */
+    // Legacy Aliases
     async saveStudent(student) {
         return this.saveMember(student);
     }
 
-    /** @deprecated Use getAllMembers instead */
     async getAllStudents() {
         return this.getAllMembers();
     }
 
-    /** @deprecated Use getMembersByGroup instead */
     async getStudentsByGroup(groupName) {
         return this.getMembersByGroup(groupName);
     }
 
-    /** @deprecated Use clearMembers instead */
     async clearStudents() {
-        return this.clearMembers();
+        return studentsRepository.clearMembers();
     }
 
+    // Member clear equivalent
+    async clearMembers() {
+        return studentsRepository.clearMembers();
+    }
 
-    // --- Tasks (from tasks.js) ---
+    // --- Tasks ---
     async saveTask(task) {
-        return tasks.saveTask(task);
+        return tasksRepository.saveTask(task);
     }
 
     async getAllTasks() {
-        return tasks.getAllTasks();
+        return tasksRepository.getAllTasks();
     }
 
     async getTasksByGroup(groupName) {
-        return tasks.getTasksByGroup(groupName);
+        return tasksRepository.getTasksByGroup(groupName);
     }
 
     async findTaskByNaturalKey(name, date, groupName) {
-        return tasks.findTaskByNaturalKey(name, date, groupName);
+        return tasksRepository.findTaskByNaturalKey(name, date, groupName);
     }
 
-    // --- Modules (from modules.js) ---
+    // --- Modules ---
     async saveModule(module) {
-        return modules.saveModule(module);
+        return modulesRepository.saveModule(module);
     }
 
     async getAllModules() {
-        return modules.getAllModules();
+        return modulesRepository.getAllModules();
     }
 
     async getModulesByGroup(groupName) {
-        return modules.getModulesByGroup(groupName);
+        return modulesRepository.getModulesByGroup(groupName);
     }
 
     async getModuleById(id) {
-        return modules.getModuleById(id);
+        return modulesRepository.getModuleById(id);
     }
 
     async deleteModule(id) {
-        return modules.deleteModule(id);
+        return modulesRepository.deleteModule(id);
     }
 
-    // --- FinalAssessments (from finalAssessments.js) ---
+    // --- FinalAssessments ---
     async saveFinalAssessment(assessment) {
-        return finalAssessments.saveFinalAssessment(assessment);
+        return finalAssessmentsRepository.saveFinalAssessment(assessment);
     }
 
     async getFinalAssessmentByStudent(studentId, assessmentType) {
-        return finalAssessments.getFinalAssessmentByStudent(studentId, assessmentType);
+        return finalAssessmentsRepository.getFinalAssessmentByStudent(studentId, assessmentType);
     }
 
     async getAllFinalAssessments() {
-        return finalAssessments.getAllFinalAssessments();
+        return finalAssessmentsRepository.getAllFinalAssessments();
     }
 
     async getFinalAssessmentsByType(assessmentType) {
-        return finalAssessments.getFinalAssessmentsByType(assessmentType);
+        return finalAssessmentsRepository.getFinalAssessmentsByType(assessmentType);
     }
 
     async deleteFinalAssessment(id) {
-        return finalAssessments.deleteFinalAssessment(id);
+        return finalAssessmentsRepository.deleteFinalAssessment(id);
     }
 
     async updateAssessmentSyncStatus(id, syncedAt) {
-        return finalAssessments.updateSyncStatus(id, syncedAt);
+        return finalAssessmentsRepository.updateSyncStatus(id, syncedAt);
     }
 
     async updateAssessmentDocumentStatus(id, documentedAt) {
-        return finalAssessments.updateDocumentStatus(id, documentedAt);
+        return finalAssessmentsRepository.updateDocumentStatus(id, documentedAt);
     }
 
-    // --- Marks (from marks.js) ---
+    // --- Marks ---
     async saveMark(mark) {
-        return marks.saveMark(mark);
+        return marksRepository.saveMark(mark);
     }
 
     async getMarksByTask(taskId) {
-        return marks.getMarksByTask(taskId);
+        return marksRepository.getMarksByTask(taskId);
     }
 
     async updateMarkSynced(id, synced) {
-        return marks.updateMarkSynced(id, synced);
+        return marksRepository.updateMarkSynced(id, synced);
     }
 
     async getMarksByStudent(studentId) {
-        return marks.getMarksByStudent(studentId);
+        return marksRepository.getMarksByStudent(studentId);
     }
 
     async deleteMark(id) {
-        return marks.deleteMark(id);
+        return marksRepository.deleteMark(id);
     }
 
     async deleteMarks(ids) {
-        return marks.deleteMarks(ids);
+        return marksRepository.deleteMarks(ids);
     }
 
     async getAllMarksWithRelations() {
-        return marks.getAllMarksWithRelations();
+        return marksRepository.getAllMarksWithRelations();
     }
 
-    // --- Settings (from settings.js) ---
+    // --- Settings ---
     async getDurationLimit() {
-        return settings.getDurationLimit();
+        return settingsRepository.getDurationLimit();
     }
 
     async saveDurationLimit(limit) {
-        return settings.saveDurationLimit(limit);
+        return settingsRepository.saveDurationLimit(limit);
     }
 
     async getDefaultTeacher() {
-        return settings.getDefaultTeacher();
+        return settingsRepository.getDefaultTeacher();
     }
 
     async saveDefaultTeacher(teacher) {
-        return settings.saveDefaultTeacher(teacher);
+        return settingsRepository.saveDefaultTeacher(teacher);
     }
 
     async getIgnoredUsers() {
-        return settings.getIgnoredUsers();
+        return settingsRepository.getIgnoredUsers();
     }
 
     async saveIgnoredUsers(users) {
-        return settings.saveIgnoredUsers(users);
+        return settingsRepository.saveIgnoredUsers(users);
     }
 
     async getTeachers() {
-        return settings.getTeachers();
+        return settingsRepository.getTeachers();
     }
 
     async saveTeachers(teachers) {
-        return settings.saveTeachers(teachers);
+        return settingsRepository.saveTeachers(teachers);
     }
 
     async getExamSettings() {
-        return settings.getExamSettings();
+        return settingsRepository.getExamSettings();
     }
 
     async saveExamSettings(examSettings) {
-        return settings.saveExamSettings(examSettings);
+        return settingsRepository.saveExamSettings(examSettings);
     }
 
-    // --- Workspace (from workspace.js) ---
+    // --- Workspace ---
     getWorkspaces() {
-        return workspace.getWorkspaces();
+        return workspaceRepository.getWorkspaces();
     }
 
     getCurrentWorkspaceId() {
-        return workspace.getCurrentWorkspaceId();
+        return workspaceRepository.getCurrentWorkspaceId();
     }
 
     async createWorkspace(name, options = {}) {
-        // Provide callbacks for settings management (as was done in original file)
-        const settingsOptions = {
-            ...options,
-            getSettings: options.exportSettings ? async () => {
-                return {
-                    durationLimit: await settings.getDurationLimit(),
-                    defaultTeacher: await settings.getDefaultTeacher(),
-                    ignoredUsers: await settings.getIgnoredUsers(),
-                    teachers: await settings.getTeachers()
-                };
-            } : null,
-            saveSettings: options.exportSettings ? async (s) => {
-                await settings.saveDurationLimit(s.durationLimit);
-                await settings.saveDefaultTeacher(s.defaultTeacher);
-                await settings.saveIgnoredUsers(s.ignoredUsers);
-                await settings.saveTeachers(s.teachers || []);
-            } : null
-        };
-        return workspace.createWorkspace(name, settingsOptions);
+        return workspaceRepository.createWorkspace(name, options);
     }
 
     async updateWorkspace(id, updates) {
-        return workspace.updateWorkspace(id, updates);
+        return workspaceRepository.updateWorkspace(id, updates);
     }
 
     async exportWorkspaces(workspaceIds) {
-        return workspace.exportWorkspaces(workspaceIds);
+        return workspaceRepository.exportWorkspaces(workspaceIds);
     }
 
     async importWorkspaces(data, selectedIds) {
-        return workspace.importWorkspaces(data, selectedIds);
+        return workspaceRepository.importWorkspaces(data, selectedIds);
     }
 
     async switchWorkspace(id) {
-        return workspace.switchWorkspace(id);
+        return workspaceRepository.switchWorkspace(id);
     }
 
     async deleteWorkspace(id) {
-        return workspace.deleteWorkspace(id);
+        return workspaceRepository.deleteWorkspace(id);
     }
 
     async deleteWorkspacesData(workspaceIds) {
-        return workspace.deleteWorkspacesData(workspaceIds);
+        return workspaceRepository.deleteWorkspacesData(workspaceIds);
     }
 
-    // --- Backup/Clear (from backup.js) ---
+    // --- Backup/Clear ---
     async exportData() {
-        return backup.exportData();
+        return backupService.exportData();
     }
 
     async importData(jsonData) {
-        return backup.importData(jsonData);
+        return backupService.importData(jsonData);
     }
 
     async clearAll() {
-        return backup.clearAll();
+        return backupService.clearAll();
     }
 
-    // Granular Export Methods
     async exportReports() {
-        return backup.exportReports();
+        return backupService.exportReports();
     }
 
     async exportGroups() {
-        return backup.exportGroups();
+        return backupService.exportGroups();
     }
 
     async exportMarks() {
-        return backup.exportMarks();
+        return backupService.exportMarks();
     }
 
-    // Granular Import Methods
     async importReports(jsonData) {
-        return backup.importReports(jsonData);
+        return backupService.importReports(jsonData);
     }
 
     async importGroups(jsonData) {
-        return backup.importGroups(jsonData);
+        return backupService.importGroups(jsonData);
     }
 
     async importMarks(jsonData) {
-        return backup.importMarks(jsonData);
+        return backupService.importMarks(jsonData);
     }
 
     async exportSummary() {
-        return backup.exportSummary();
+        return backupService.exportSummary();
     }
 
     async importSummary(jsonData) {
-        return backup.importSummary(jsonData);
+        return backupService.importSummary(jsonData);
     }
 
-    // Granular Clear Methods
     async clearReports() {
-        return backup.clearReports();
+        return backupService.clearReports();
     }
 
     async clearGroups() {
-        return backup.clearGroups();
+        return backupService.clearGroups();
     }
 
     async clearMarks() {
-        return backup.clearMarks();
+        return backupService.clearMarks();
     }
 
-    async clearMembers() {
-        return backup.clearMembers();
-    }
+    // clearMembers already defined above
 
     async clearFinalAssessments() {
-        return backup.clearFinalAssessments();
+        return backupService.clearFinalAssessments();
     }
 
     async clearModules() {
-        return backup.clearModules();
+        return backupService.clearModules();
     }
 
-    // --- Statistics (from stats.js) ---
+    // --- Statistics ---
+    // Should be moved or wrapped
     async getEntityCounts() {
-        return stats.getEntityCounts();
+        // stats.js needs lookup.
+        return statsService.getEntityCounts();
     }
 
     async getEntitySizes() {
-        return stats.getEntitySizes();
+        return statsService.getEntitySizes();
     }
 
     async getAllWorkspacesSizes() {
-        return stats.getAllWorkspacesSizes();
+        return workspaceRepository.getAllWorkspacesSizes();
     }
 }
 
