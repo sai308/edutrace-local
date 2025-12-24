@@ -13,7 +13,7 @@ const { formatDuration, formatTime } = useFormatters();
 
 <template>
     <div class="border rounded-lg overflow-hidden bg-card shadow-sm">
-        <div class="overflow-x-auto overflow-y-hidden">
+        <div class="overflow-x-auto overflow-y-hidden custom-scrollbar">
             <table class="w-full text-sm text-left border-collapse">
                 <thead class="bg-muted/50 text-muted-foreground">
                     <tr>

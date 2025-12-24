@@ -51,7 +51,7 @@ function formatDuration(seconds) {
       </div>
 
       <!-- Content -->
-      <div class="overflow-y-auto p-0">
+      <div class="overflow-y-auto p-0 custom-scrollbar">
         <table class="w-full text-sm text-left">
           <thead class="bg-muted/50 text-muted-foreground sticky top-0 z-10">
             <tr>

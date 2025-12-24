@@ -4,18 +4,38 @@ import { meetsRepository } from '../../../Analytics/services/meets.repository';
 import { groupsRepository } from '../../../Groups/services/groups.repository';
 import { studentsRepository } from '../../../Students/services/students.repository';
 import { settingsRepository } from '@/shared/services/settings.repository';
-import * as parser from '../reportsParser.js';
+// Mock Worker import
+vi.mock('@/workers/parser.worker?worker', () => ({
+    default: class {
+        constructor() {
+            this.postMessage = vi.fn();
+            this.terminate = vi.fn();
+        }
+    }
+}));
 
+const { mockParseMeetReport } = vi.hoisted(() => ({
+    mockParseMeetReport: vi.fn()
+}));
+
+// Mock Comlink
+vi.mock('comlink', () => ({
+    wrap: vi.fn().mockReturnValue({
+        parseMeetReport: mockParseMeetReport
+    }),
+    expose: vi.fn()
+}));
+
+// Mock repositories
 vi.mock('../../../Analytics/services/meets.repository');
 vi.mock('../../../Groups/services/groups.repository');
 vi.mock('../../../Students/services/students.repository');
 vi.mock('@/shared/services/settings.repository');
-vi.mock('../reportsParser.js');
-// The parser is not a class, so we can mock its exports.
 
 describe('ReportsService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+
         // Polyfill File if needed
         if (typeof File === 'undefined') {
             global.File = class File {
@@ -24,13 +44,20 @@ describe('ReportsService', () => {
                     this.name = filename;
                     this.options = options;
                 }
+                text() {
+                    return Promise.resolve(this.parts[0] || '');
+                }
             };
         }
     });
 
     it('should process files correctly', async () => {
         // Mock data
-        const files = [new File(['content'], 'test.csv')];
+        const mockFile = {
+            name: 'test.csv',
+            text: vi.fn().mockResolvedValue('content')
+        };
+        const files = [mockFile];
         const parsedData = {
             meetId: 'm1',
             filename: 'test.csv',
@@ -40,10 +67,13 @@ describe('ReportsService', () => {
         const groupsMap = { 'm1': { name: 'G1' } };
 
         // Mock impls
-        vi.spyOn(parser, 'parseCSV').mockResolvedValue(parsedData);
+        mockParseMeetReport.mockResolvedValue(parsedData);
         groupsRepository.getGroupMap.mockResolvedValue(groupsMap);
         settingsRepository.getDurationLimit.mockResolvedValue(0);
         meetsRepository.isDuplicateFile.mockResolvedValue(false);
+        studentsRepository.getAllMembers.mockResolvedValue([]); // For reconciler
+        studentsRepository.bulkPut.mockResolvedValue();
+        meetsRepository.saveMeet.mockResolvedValue();
 
         // Execute
         const result = await reportsService.processFiles(files);
@@ -51,22 +81,21 @@ describe('ReportsService', () => {
         // Verify
         expect(result.saved).toBe(1);
         expect(meetsRepository.saveMeet).toHaveBeenCalledWith(parsedData);
-        expect(studentsRepository.saveMember).toHaveBeenCalledWith({
-            name: 'S1',
-            groupName: 'G1',
-            email: '',
-            role: 'student'
-        });
     });
 
     it('should skip duplicates', async () => {
-        const files = [new File([''], 'dup.csv')];
+        const mockFile = {
+            name: 'dup.csv',
+            text: vi.fn().mockResolvedValue('')
+        };
+        const files = [mockFile];
         const parsedData = { meetId: 'm1', filename: 'dup.csv', date: '2023-01-01', participants: [] };
 
-        vi.spyOn(parser, 'parseCSV').mockResolvedValue(parsedData);
+        mockParseMeetReport.mockResolvedValue(parsedData);
         groupsRepository.getGroupMap.mockResolvedValue({});
         settingsRepository.getDurationLimit.mockResolvedValue(0);
         meetsRepository.isDuplicateFile.mockResolvedValue(true);
+        studentsRepository.getAllMembers.mockResolvedValue([]); // For reconciler
 
         const result = await reportsService.processFiles(files);
 

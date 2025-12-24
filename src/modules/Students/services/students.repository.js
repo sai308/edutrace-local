@@ -18,6 +18,7 @@ class StudentsRepository extends BaseRepository {
     }
 
     async getMembersByGroup(groupName) {
+        // Use the index on 'groupName' directly
         const members = await this.getAllFromIndex('groupName', groupName);
         return members.filter(m => !m.hidden);
     }

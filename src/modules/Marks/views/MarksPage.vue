@@ -1,7 +1,11 @@
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import MarksView from '../components/MarksView.vue';
 import { useMarks } from '../composables/useMarks';
+
+const route = useRoute();
+const router = useRouter();
 
 const {
     groups,
@@ -9,7 +13,8 @@ const {
     isProcessing,
     allMeetIds,
     allTeachers,
-    loadAllData,
+    loadMarksData,
+    loadGroups,
     loadSuggestions,
     createGroup,
     processFile,
@@ -20,14 +25,38 @@ const {
 } = useMarks();
 
 onMounted(async () => {
+    // 1. Load auxiliary data
     await Promise.all([
-        loadAllData(),
+        loadGroups(),
         loadSuggestions()
     ]);
+
+    // 2. Determine initial group
+    // Priority: URL query -> First available group -> None
+    let targetGroup = route.query.group;
+    
+    if (!targetGroup && groups.value.length > 0) {
+        targetGroup = groups.value[0].name;
+        // Sync URL without triggering a navigation stack push if possible, 
+        // but replace is good. 
+        // Note: useQuerySync in MarksView might also try to sync. 
+        // We set it here so MarksView picks it up.
+        router.replace({ query: { ...route.query, group: targetGroup } });
+    }
+
+    // 3. Load Marks
+    await loadMarksData(targetGroup);
 });
 
-function handleProcessFile(payload) {
-    processFile(payload.file, payload.groupName);
+// Watch for URL changes (e.g. user changes filter in MarksView)
+watch(() => route.query.group, async (newGroup) => {
+    await loadMarksData(newGroup);
+});
+
+async function handleProcessFile(payload) {
+    await processFile(payload.file, payload.groupName);
+    // Switch view to the imported group
+    router.replace({ query: { ...route.query, group: payload.groupName } });
 }
 
 function handleCreateGroup(groupData) {
@@ -45,6 +74,10 @@ function handleDeleteMark(id) {
 function handleBulkDeleteMarks(ids) {
     deleteMarks(ids);
 }
+
+function handleRefresh() {
+    loadMarksData(route.query.group);
+}
 </script>
 
 <template>
@@ -52,6 +85,6 @@ function handleBulkDeleteMarks(ids) {
         <MarksView :marks="flatMarks" :groups="groups" :is-processing="isProcessing" :all-meet-ids="allMeetIds"
             :all-teachers="allTeachers" :is-loading="isLoading" @process-file="handleProcessFile"
             @create-group="handleCreateGroup" @toggle-synced="handleToggleSynced" @delete-mark="handleDeleteMark"
-            @bulk-delete-marks="handleBulkDeleteMarks" @refresh="loadAllData" />
+            @bulk-delete-marks="handleBulkDeleteMarks" @refresh="handleRefresh" />
     </div>
 </template>

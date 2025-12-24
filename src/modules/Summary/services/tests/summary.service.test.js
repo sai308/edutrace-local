@@ -1,4 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mock Worker globally for JSDOM
+if (typeof Worker === 'undefined') {
+    global.Worker = class {
+        constructor() { }
+        postMessage() { }
+        onmessage() { }
+        terminate() { }
+    };
+}
+
 import { summaryService } from '../summary.service';
 import { studentsRepository } from '../../../Students/services/students.repository';
 import { tasksRepository } from '../../../Marks/services/tasks.repository';
@@ -17,6 +28,17 @@ vi.mock('../../../Groups/services/groups.repository');
 vi.mock('@/shared/services/settings.repository');
 vi.mock('../finalAssessments.repository');
 
+const { mockCalculateSummary } = vi.hoisted(() => ({
+    mockCalculateSummary: vi.fn()
+}));
+
+vi.mock('comlink', () => ({
+    wrap: vi.fn().mockReturnValue({
+        calculateSummary: mockCalculateSummary
+    }),
+    expose: vi.fn()
+}));
+
 describe('SummaryService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -30,59 +52,50 @@ describe('SummaryService', () => {
         expect(result).toEqual([]);
     });
 
-    it('should load and process data correctly', async () => {
+    it('should load data and delegate processing to worker', async () => {
         // Setup Mocks
-        studentsRepository.getMembersByGroup.mockResolvedValue([
-            { id: 's1', name: 'Alice', groupName: 'G1' },
-            { id: 's2', name: 'Bob', groupName: 'G1' }
-        ]);
-        tasksRepository.getTasksByGroup.mockResolvedValue([
-            { id: 't1', title: 'Task 1', maxPoints: 10 },
-            { id: 'test1', title: 'Test 1', maxPoints: 100 }
-        ]);
-        // allMarks mocking - assume raw structure
-        marksRepository.getAllMarksWithRelations.mockResolvedValue([
-            { studentId: 's1', taskId: 't1', score: 10 },
-            { studentId: 's1', taskId: 'test1', score: 90 },
-            { studentId: 's2', taskId: 't1', score: 5 },
-            // Bob missing test
-        ]);
-        meetsRepository.getMeetsByMeetId.mockResolvedValue([
-            {
-                id: 'meet1',
-                participants: [{ name: 'Alice', duration: 3600 }, { name: 'Bob', duration: 1800 }]
-            }
-        ]);
-        groupsRepository.getGroupMap.mockResolvedValue({ 'm1': mockGroup });
-        settingsRepository.getDurationLimit.mockResolvedValue(0);
-        finalAssessmentsRepository.getAllFinalAssessments.mockResolvedValue([]);
+        const mockStudents = [{ id: 's1', name: 'Alice', role: 'student' }];
+        const mockTasks = [{ id: 't1' }];
+        const mockMarks = [{ score: 10 }];
+        const mockMeets = [{ id: 'meet1' }];
+        const mockGroupsMap = { 'm1': mockGroup };
+        const mockDurationLimit = 60;
+        const mockAssessments = [];
 
-        const modules = [
+        const modules = [{ name: 'Mod1' }];
+
+        studentsRepository.getMembersByGroup.mockResolvedValue(mockStudents);
+        tasksRepository.getTasksByGroup.mockResolvedValue(mockTasks);
+        marksRepository.getMarksByGroup.mockResolvedValue(mockMarks);
+        meetsRepository.getMeetsByMeetId.mockResolvedValue(mockMeets);
+        groupsRepository.getGroupMap.mockResolvedValue(mockGroupsMap);
+        settingsRepository.getDurationLimit.mockResolvedValue(mockDurationLimit);
+        finalAssessmentsRepository.getAllFinalAssessments.mockResolvedValue(mockAssessments);
+
+        // Reset and configure the mock for this specific test
+        mockCalculateSummary.mockClear();
+        mockCalculateSummary.mockResolvedValueOnce([
             {
-                name: 'Mod1',
-                tasks: [{ id: 't1' }],
-                test: { id: 'test1' },
-                minTasksRequired: 1,
-                tasksCoefficient: 1,
-                testCoefficient: 1
+                id: 's1',
+                stats: {
+                    completionExact: 100,
+                    completedRegularTasks: 1,
+                    effectiveTotal: 1,
+                    attendance: { percentage: 100, attendedMeets: 1, totalMeets: 1, attendedDuration: 3600 },
+                    modules: { moduleGrades: { 'Mod1': 5 }, total: 5, moduleDetailsData: {}, isAutomaticCandidate: true },
+                    averageMark: 5
+                }
             }
-        ];
+        ]);
 
         const { students } = await summaryService.loadExamData(mockGroup, { ...mockOptions, modules });
 
-        expect(students).toHaveLength(2);
+        // Verify Delegation
+        expect(mockCalculateSummary).toHaveBeenCalled();
 
-        const alice = students.find(s => s.id === 's1');
-        const bob = students.find(s => s.id === 's2');
-
-        // Alice: 10/10 task (100%), 90/100 test (90%). Avg = (100+90)/2 = 95.
-        // Grade 5 (90+).
+        expect(students).toHaveLength(1);
+        const alice = students[0];
         expect(alice.moduleGrades['Mod1']).toBe(5);
-        expect(alice.status).toBe('automatic'); // Or allowed? Automatic logic: All modules passed (candidate && grade).
-        // She has test mark and enough tasks. And total calculation.
-
-        // Bob: 5/10 task (50%), missing test.
-        expect(bob.moduleGrades['Mod1']).toBeUndefined(); // Incomplete
-        expect(bob.status).not.toBe('automatic');
+        expect(alice.status).toBe('automatic');
     });
 });

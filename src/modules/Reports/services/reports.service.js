@@ -1,11 +1,18 @@
-import { parseCSV } from './reportsParser.js';
+import * as Comlink from 'comlink';
+import ParserWorker from '@/workers/parser.worker?worker';
 import { meetsRepository } from '../../Analytics/services/meets.repository';
 import { groupsRepository } from '../../Groups/services/groups.repository';
 import { studentsRepository } from '../../Students/services/students.repository';
 import { settingsRepository } from '@/shared/services/settings.repository';
+import { IdentityReconciler } from '@/shared/services/reconciliation/IdentityReconciler.js';
 import { toast } from '@/services/toast';
 
 export class ReportsService {
+    constructor() {
+        this.identityReconciler = new IdentityReconciler();
+        this.worker = new ParserWorker();
+        this.parser = Comlink.wrap(this.worker);
+    }
 
     /**
      * Parse a single file.
@@ -13,7 +20,8 @@ export class ReportsService {
      * @returns {Promise<Object>}
      */
     async parseFile(file) {
-        return parseCSV(file);
+        const text = await file.text();
+        return await this.parser.parseMeetReport(text, file.name);
     }
 
     /**
@@ -71,28 +79,38 @@ export class ReportsService {
                 });
             }
 
-            // Save Meet
-            await meetsRepository.saveMeet(result);
-            stats.saved++;
-
             // Sync Students if group exists
             const group = groupsMap[result.meetId];
             if (group) {
-                // We should batch this or let repo handle it?
-                // For now, iterate as before, but maybe studentsRepository has a batch method?
-                // saveMember handles one by one.
-                // We can use syncParticipants from repo if we have it?
-                // BaseRepo syncParticipants logic was slightly different (from list of meets).
-                // Let's stick to simple loop for now to be safe.
-                for (const p of result.participants) {
-                    await studentsRepository.saveMember({
-                        name: p.name,
-                        groupName: group.name,
-                        email: p.email || '',
-                        role: 'student' // Default role
-                    });
-                }
+                const rawStudents = result.participants.map(p => ({
+                    name: p.name,
+                    email: p.email || '',
+                    groupName: group.name,
+                    // Preserve original participant data index to map back Ids?
+                    // IdentityReconciler returns array in same order.
+                }));
+
+                const reconciledStudents = await this.identityReconciler.resolveIdentities(rawStudents);
+
+                // Add required fields for storage if new
+                const studentsToSave = reconciledStudents.map(s => ({
+                    ...s,
+                    role: s.role || 'student'
+                }));
+
+                // Bulk save students
+                await studentsRepository.bulkPut(studentsToSave);
+
+                // Update participants with resolved IDs
+                // Reconciled array corresponds to participants array by index.
+                result.participants.forEach((p, index) => {
+                    p.id = reconciledStudents[index].id;
+                });
             }
+
+            // Save Meet (now includes participant IDs if group found)
+            await meetsRepository.saveMeet(result);
+            stats.saved++;
         }
 
         return stats;

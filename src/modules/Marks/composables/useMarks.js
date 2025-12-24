@@ -20,12 +20,12 @@ export function useMarks() {
         allTeachers.value = teachers;
     }
 
-    async function loadAllData() {
+    async function loadMarksData(groupName = null) {
         isLoading.value = true;
+        // clear old data immediately to avoid confusion
+        flatMarks.value = [];
         try {
-            const data = await marksService.loadAllData();
-            groups.value = data.groups;
-            flatMarks.value = data.flatMarks;
+            flatMarks.value = await marksService.loadMarksData(groupName);
         } catch (error) {
             console.error('Failed to load marks data:', error);
             toast.error('Failed to load data');
@@ -39,7 +39,8 @@ export function useMarks() {
             const newGroup = await marksService.createGroup(groupData);
 
             // Refresh logic - we could optimize this but reloading ensures consistency
-            await loadAllData();
+            await loadMarksData(groupData.name);
+            await loadGroups(); // Refresh group list for dropdowns
 
             toast.success(`Group "${newGroup.name}" created.`);
             return newGroup;
@@ -68,7 +69,7 @@ export function useMarks() {
                 toast.info('No marks found in file.');
             }
 
-            await loadAllData();
+            await loadMarksData(groupName);
         } catch (e) {
             console.error('Error processing marks:', e);
             toast.error('Failed to process marks CSV');
@@ -123,7 +124,7 @@ export function useMarks() {
         isLoading,
         loadGroups,
         loadSuggestions,
-        loadAllData,
+        loadMarksData,
         createGroup,
         processFile,
         toggleSynced,

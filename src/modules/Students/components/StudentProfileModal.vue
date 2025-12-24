@@ -391,7 +391,7 @@ const studentMarks = computed(() => {
             </div>
 
             <!-- Content -->
-            <div class="flex-1 overflow-y-auto p-6">
+            <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
                 <Transition name="fade" mode="out-in">
                     <!-- Attendance View -->
                     <div v-if="viewMode === 'attendance'" key="attendance" class="space-y-6">

@@ -13,8 +13,8 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility';
 import { useFormatters } from '@/composables/useFormatters';
 import { useSort } from '@/composables/useSort';
 import { useMarkFormat } from '@/composables/useMarkFormat';
-import { parseMarksCSV as parseMarks } from '../services/marksParser';
-import { Calendar, Search, Clock, Trash2, CircleCheckBig, Filter, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, Loader2 } from 'lucide-vue-next';
+import { useVirtualList } from '@vueuse/core';
+import { Calendar, Search, Clock, Trash2, CircleCheckBig, Filter, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, Loader2, FileUp } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
@@ -34,7 +34,8 @@ const { getFormattedMark, getMarkTooltip, formatMarkToFiveScale, formatMarkToECT
 
 const searchQuery = ref('');
 const showFormatDropdown = ref(false);
-const selectedFormat = ref('raw'); // 'raw', '5-scale', '100-scale', 'ects'
+const showGroupDropdown = ref(false);
+const selectedFormat = ref(''); // '', '5-scale', '100-scale', 'ects'
 
 // Advanced Filters
 const showFilterModal = ref(false);
@@ -61,14 +62,35 @@ const activeFilterCount = computed(() => {
 
 // Column visibility setup
 const columns = computed(() => [
-    { id: 'added', label: t('marks.table.added'), defaultVisible: true },
-    { id: 'student', label: t('marks.table.student'), defaultVisible: true },
-    { id: 'group', label: t('marks.table.group'), defaultVisible: true },
-    { id: 'task', label: t('marks.table.task'), defaultVisible: true },
-    { id: 'mark', label: t('marks.table.mark'), defaultVisible: true }
+    { id: 'added', label: t('marks.table.added'), defaultVisible: true, width: '120px' },
+    { id: 'student', label: t('marks.table.student'), defaultVisible: true, width: 'minmax(150px, 2fr)' },
+    { id: 'group', label: t('marks.table.group'), defaultVisible: true, width: 'minmax(100px, 1fr)' },
+    { id: 'task', label: t('marks.table.task'), defaultVisible: true, width: 'minmax(150px, 1.5fr)' },
+    { id: 'mark', label: t('marks.table.mark'), defaultVisible: true, width: '80px' }
 ]);
 
 const { visibleColumns, toggleColumn, resetColumns, isColumnVisible } = useColumnVisibility('marks', columns.value);
+
+// Grid Style logic
+const gridStyle = computed(() => {
+    // Checkbox column fixed width (40px)
+    let cols = ['40px'];
+
+    columns.value.forEach(col => {
+        if (isColumnVisible(col.id)) {
+            cols.push(col.width);
+        }
+    });
+
+    // Actions column fixed width (100px)
+    cols.push('100px');
+
+    return {
+        gridTemplateColumns: cols.join(' ')
+    };
+});
+
+
 
 // Sorting
 useQuerySync({
@@ -153,6 +175,10 @@ const filteredMarks = computed(() => {
     return result;
 });
 
+const { list, containerProps, wrapperProps } = useVirtualList(filteredMarks, {
+    itemHeight: 60,
+});
+
 function toggleSelection(id) {
     if (selectedMarks.value.has(id)) {
         selectedMarks.value.delete(id);
@@ -178,11 +204,9 @@ async function processNextInQueue() {
     isQueueProcessing.value = true;
     const file = fileQueue.value[0];
 
-    // Validate file content first
-    try {
-        await validateMarksFile(file);
-    } catch (e) {
-        toast.error(e.message);
+    // Validate file extension
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        toast.error('Invalid file type. Please upload a CSV file.');
         fileQueue.value.shift(); // Skip invalid file
         processNextInQueue();
         return;
@@ -327,6 +351,39 @@ function formatTaskName(taskName) {
             </div>
 
             <div class="flex flex-wrap items-center gap-2 md:gap-4 w-full md:w-auto">
+                <!-- Group Selector -->
+                <div class="relative flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card">
+                    <span
+                        class="text-xs font-medium text-muted-foreground whitespace-nowrap pointer-events-none select-none">{{
+                            $t('marks.table.group')
+                        }}</span>
+
+                    <div class="relative" v-click-outside="() => showGroupDropdown = false">
+                        <button @click="showGroupDropdown = !showGroupDropdown"
+                            class="flex items-center justify-between min-w-[100px] text-sm font-medium focus:outline-none cursor-pointer bg-transparent pr-6">
+                            {{ filterGroup || $t('marks.filterModal.allGroups') }}
+
+                            <ChevronDown
+                                class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-50 pointer-events-none" />
+                        </button>
+
+                        <div v-if="showGroupDropdown"
+                            class="absolute z-20 mt-1 right-0 min-w-[150px] max-h-[300px] overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-lg">
+                            <button @click="filterGroup = null; showGroupDropdown = false"
+                                :class="{ 'bg-accent text-accent-foreground': !filterGroup }"
+                                class="block w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">
+                                {{ $t('marks.filterModal.allGroups') }}
+                            </button>
+                            <button v-for="group in groups" :key="group.id"
+                                @click="filterGroup = group.name; showGroupDropdown = false"
+                                :class="{ 'bg-accent text-accent-foreground': filterGroup === group.name }"
+                                class="block w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">
+                                {{ group.name }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Format Selector with Label (Custom Dropdown) -->
                 <div class="relative flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card">
                     <span
@@ -337,7 +394,7 @@ function formatTaskName(taskName) {
                     <div class="relative" v-click-outside="() => showFormatDropdown = false">
                         <button @click="showFormatDropdown = !showFormatDropdown"
                             class="flex items-center justify-between min-w-[100px] text-sm font-medium focus:outline-none cursor-pointer bg-transparent pr-6">
-                            {{ selectedFormat === 'raw' ? $t('marks.scales.default') : selectedFormat === '5-scale' ?
+                            {{ (selectedFormat === 'raw' || selectedFormat === '') ? $t('marks.scales.default') : selectedFormat === '5-scale' ?
                                 $t('marks.scales.5point') :
                                 selectedFormat === '100-scale' ? $t('marks.scales.100point') : $t('marks.scales.ects') }}
 
@@ -352,8 +409,8 @@ function formatTaskName(taskName) {
                         <div v-if="showFormatDropdown"
                             class="absolute z-20 mt-1 right-0 min-w-[150px] rounded-md border bg-popover p-1 text-popover-foreground shadow-lg">
 
-                            <button @click="selectedFormat = 'raw'; showFormatDropdown = false"
-                                :class="{ 'bg-accent text-accent-foreground': selectedFormat === 'raw' }"
+                            <button @click="selectedFormat = ''; showFormatDropdown = false"
+                                :class="{ 'bg-accent text-accent-foreground': selectedFormat === 'raw' || selectedFormat === '' }"
                                 class="block w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">{{
                                     $t('marks.scales.default') }}</button>
 
@@ -402,151 +459,172 @@ function formatTaskName(taskName) {
                 @reset="resetColumns" />
         </div>
 
-        <!-- Data Table (Flat List) -->
-        <div v-if="filteredMarks.length > 0" class="border rounded-lg overflow-hidden bg-card shadow-sm">
-            <div class="overflow-x-auto overflow-y-hidden">
-                <table class="w-full text-sm text-left">
-                    <thead class="bg-muted/50 text-muted-foreground font-medium border-b">
-                        <tr>
-                            <th class="p-3 w-10 text-center">
-                                <input type="checkbox"
-                                    :checked="selectedMarks.size === filteredMarks.length && filteredMarks.length > 0"
-                                    @change="toggleSelectAll"
-                                    class="rounded border-gray-300 text-primary focus:ring-primary" />
-                            </th>
-                            <th v-if="isColumnVisible('added')"
-                                class="p-3 text-left w-32 cursor-pointer hover:text-foreground transition-colors select-none"
-                                @click="handleSort('createdAt')" :title="$t('marks.table.tooltips.added')">
+        <!-- Data Table (Virtual List) -->
+        <div v-if="filteredMarks.length > 0" class="border rounded-lg bg-card shadow-sm flex flex-col h-[calc(100vh-14rem)]">
+            <!-- Header Row (Grid) -->
+            <div class="grid gap-2 p-3 bg-muted/50 border-b font-medium text-muted-foreground text-sm sticky top-0 z-10 shrink-0 select-none items-center"
+                :style="gridStyle">
+                
+                <div class="flex items-center justify-center">
+                    <input type="checkbox"
+                        :checked="selectedMarks.size === filteredMarks.length && filteredMarks.length > 0"
+                        @change="toggleSelectAll"
+                        class="rounded border-gray-300 text-primary focus:ring-primary" />
+                </div>
+
+                <div v-if="isColumnVisible('added')"
+                    class="cursor-pointer hover:text-foreground transition-colors select-none"
+                    @click="handleSort('createdAt')" :title="$t('marks.table.tooltips.added')">
+                    <div class="flex items-center gap-1">
+                        {{ $t('marks.table.added') }}
+                        <ArrowUp v-if="sortField === 'createdAt' && sortDirection === 'asc'" class="w-3 h-3" />
+                        <ArrowDown v-if="sortField === 'createdAt' && sortDirection === 'desc'" class="w-3 h-3" />
+                        <ArrowUpDown v-if="sortField !== 'createdAt'" class="w-3 h-3 opacity-50" />
+                    </div>
+                </div>
+
+                <div v-if="isColumnVisible('student')"
+                    class="cursor-pointer hover:text-foreground transition-colors select-none"
+                    @click="handleSort('studentName')" :title="$t('marks.table.tooltips.student')">
+                    <div class="flex items-center gap-1">
+                        {{ $t('marks.table.student') }}
+                        <ArrowUp v-if="sortField === 'studentName' && sortDirection === 'asc'" class="w-3 h-3" />
+                        <ArrowDown v-if="sortField === 'studentName' && sortDirection === 'desc'" class="w-3 h-3" />
+                        <ArrowUpDown v-if="sortField !== 'studentName'" class="w-3 h-3 opacity-50" />
+                    </div>
+                </div>
+
+                <div v-if="isColumnVisible('group')"
+                    class="cursor-pointer hover:text-foreground transition-colors select-none"
+                    @click="handleSort('groupName')" :title="$t('marks.table.tooltips.group')">
+                    <div class="flex items-center gap-1">
+                        {{ $t('marks.table.group') }}
+                        <ArrowUp v-if="sortField === 'groupName' && sortDirection === 'asc'" class="w-3 h-3" />
+                        <ArrowDown v-if="sortField === 'groupName' && sortDirection === 'desc'" class="w-3 h-3" />
+                        <ArrowUpDown v-if="sortField !== 'groupName'" class="w-3 h-3 opacity-50" />
+                    </div>
+                </div>
+
+                <div v-if="isColumnVisible('task')"
+                    class="cursor-pointer hover:text-foreground transition-colors select-none"
+                    @click="handleSort('taskName')" :title="$t('marks.table.tooltips.task')">
+                    <div class="flex items-center gap-1">
+                        {{ $t('marks.table.task') }}
+                        <ArrowUp v-if="sortField === 'taskName' && sortDirection === 'asc'" class="w-3 h-3" />
+                        <ArrowDown v-if="sortField === 'taskName' && sortDirection === 'desc'" class="w-3 h-3" />
+                        <ArrowUpDown v-if="sortField !== 'taskName'" class="w-3 h-3 opacity-50" />
+                    </div>
+                </div>
+
+                <div v-if="isColumnVisible('mark')" class="text-center" :title="$t('marks.table.tooltips.mark')">
+                    {{ $t('marks.table.mark') }}
+                </div>
+
+                <div class="text-right">{{ $t('marks.table.actions') }}</div>
+            </div>
+
+            <!-- Virtual List Body -->
+            <div v-bind="containerProps" class="h-full overflow-y-auto w-full relative custom-scrollbar">
+                <div v-bind="wrapperProps" class="w-full">
+                    <div v-for="{ index, data: mark } in list" :key="mark.id"
+                        class="grid gap-2 p-3 border-b hover:bg-muted/50 transition-colors items-center text-sm"
+                        :class="{ 'bg-muted/30': selectedMarks.has(mark.id) }"
+                        :style="{ ...gridStyle, height: '60px' }">
+                        
+                        <div class="flex items-center justify-center">
+                            <input type="checkbox" :checked="selectedMarks.has(mark.id)"
+                                @change="toggleSelection(mark.id)"
+                                class="rounded border-gray-300 text-primary focus:ring-primary" />
+                        </div>
+
+                        <div v-if="isColumnVisible('added')" class="text-xs text-muted-foreground">
+                            <div class="flex flex-col gap-1">
                                 <div class="flex items-center gap-1">
-                                    {{ $t('marks.table.added') }}
-                                    <ArrowUp v-if="sortField === 'createdAt' && sortDirection === 'asc'"
-                                        class="w-3 h-3" />
-                                    <ArrowDown v-if="sortField === 'createdAt' && sortDirection === 'desc'"
-                                        class="w-3 h-3" />
-                                    <ArrowUpDown v-if="sortField !== 'createdAt'" class="w-3 h-3 opacity-50" />
+                                    <Calendar class="w-3 h-3" />
+                                    {{ formatDate(mark.createdAt) }}
                                 </div>
-                            </th>
-                            <th v-if="isColumnVisible('student')"
-                                class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
-                                @click="handleSort('studentName')" :title="$t('marks.table.tooltips.student')">
-                                <div class="flex items-center gap-1">
-                                    {{ $t('marks.table.student') }}
-                                    <ArrowUp v-if="sortField === 'studentName' && sortDirection === 'asc'"
-                                        class="w-3 h-3" />
-                                    <ArrowDown v-if="sortField === 'studentName' && sortDirection === 'desc'"
-                                        class="w-3 h-3" />
-                                    <ArrowUpDown v-if="sortField !== 'studentName'" class="w-3 h-3 opacity-50" />
+                                <div class="flex items-center gap-1 text-[10px] opacity-80">
+                                    <Clock class="w-3 h-3" />
+                                    {{ formatTime(mark.createdAt) }}
                                 </div>
-                            </th>
-                            <th v-if="isColumnVisible('group')"
-                                class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
-                                @click="handleSort('groupName')" :title="$t('marks.table.tooltips.group')">
-                                <div class="flex items-center gap-1">
-                                    {{ $t('marks.table.group') }}
-                                    <ArrowUp v-if="sortField === 'groupName' && sortDirection === 'asc'"
-                                        class="w-3 h-3" />
-                                    <ArrowDown v-if="sortField === 'groupName' && sortDirection === 'desc'"
-                                        class="w-3 h-3" />
-                                    <ArrowUpDown v-if="sortField !== 'groupName'" class="w-3 h-3 opacity-50" />
+                            </div>
+                        </div>
+
+                        <div v-if="isColumnVisible('student')" class="font-medium truncate" :title="mark.studentName">
+                            {{ mark.studentName }}
+                        </div>
+
+                        <div v-if="isColumnVisible('group')">
+                            <button @click="activeFilters.group = mark.groupName"
+                                class="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors truncate max-w-[120px]"
+                                :class="{ 'ring-2 ring-primary': activeFilters.group === mark.groupName }">
+                                {{ mark.groupName }}
+                            </button>
+                        </div>
+
+                        <div v-if="isColumnVisible('task')" class="truncate" :title="mark.taskName">
+                            <div class="flex flex-col">
+                                <span class="truncate">{{ formatTaskName(mark.taskName) }}</span>
+                                <span class="text-xs text-muted-foreground">{{ mark.taskDate }}</span>
+                            </div>
+                        </div>
+
+                        <div v-if="isColumnVisible('mark')" class="text-center relative">
+                            <div class="flex items-center justify-center gap-1">
+                                <span
+                                    class="font-mono font-bold cursor-help border-b border-dotted border-muted-foreground/50 group"
+                                    @mouseenter="mark.showTooltip = true" @mouseleave="mark.showTooltip = false">
+                                    {{ getFormattedMark(mark, selectedFormat) }}
+                                    <Transition name="fade">
+                                        <div v-if="mark.showTooltip"
+                                            class="absolute z-10 px-3 py-2.5 bg-card border border-border rounded-md shadow-md text-xs text-card-foreground whitespace-nowrap right-full top-1/2 -translate-y-1/2 mr-2 pointer-events-none transition-opacity duration-200 ease-in-out">
+                                            <div v-for="(tooltipLine, index) in getMarkTooltip(mark.score, mark.maxPoints)"
+                                                :key="index">{{ tooltipLine }}</div>
+                                        </div>
+                                    </Transition>
+                                </span>
+                                <!-- Unsynced Dot -->
+                                <div class="w-2 h-2 flex items-center justify-center">
+                                    <span v-if="!mark.synced"
+                                        class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"
+                                        :title="$t('marks.tooltips.unSynced')"></span>
                                 </div>
-                            </th>
-                            <th v-if="isColumnVisible('task')"
-                                class="p-3 cursor-pointer hover:text-foreground transition-colors select-none"
-                                @click="handleSort('taskName')" :title="$t('marks.table.tooltips.task')">
-                                <div class="flex items-center gap-1">
-                                    {{ $t('marks.table.task') }}
-                                    <ArrowUp v-if="sortField === 'taskName' && sortDirection === 'asc'"
-                                        class="w-3 h-3" />
-                                    <ArrowDown v-if="sortField === 'taskName' && sortDirection === 'desc'"
-                                        class="w-3 h-3" />
-                                    <ArrowUpDown v-if="sortField !== 'taskName'" class="w-3 h-3 opacity-50" />
-                                </div>
-                            </th>
-                            <th v-if="isColumnVisible('mark')" class="p-3 text-center"
-                                :title="$t('marks.table.tooltips.mark')">{{ $t('marks.table.mark') }}</th>
-                            <th class="p-3 text-center">{{ $t('marks.table.actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y">
-                        <tr v-for="(mark, index) in filteredMarks" :key="mark.id"
-                            class="hover:bg-muted/50 transition-colors table-row-animate"
-                            :style="{ animationDelay: `${index * 0.0125}s` }"
-                            :class="{ 'bg-muted/30': selectedMarks.has(mark.id) }">
-                            <td class="p-3 text-center">
-                                <input type="checkbox" :checked="selectedMarks.has(mark.id)"
-                                    @change="toggleSelection(mark.id)"
-                                    class="rounded border-gray-300 text-primary focus:ring-primary" />
-                            </td>
-                            <td v-if="isColumnVisible('added')" class="p-3 text-xs text-muted-foreground">
-                                <div class="flex flex-col gap-1">
-                                    <div class="flex items-center gap-1">
-                                        <Calendar class="w-3 h-3" />
-                                        {{ formatDate(mark.createdAt) }}
-                                    </div>
-                                    <div class="flex items-center gap-1 text-[10px] opacity-80">
-                                        <Clock class="w-3 h-3" />
-                                        {{ formatTime(mark.createdAt) }}
-                                    </div>
-                                </div>
-                            </td>
-                            <td v-if="isColumnVisible('student')" class="p-3 font-medium">{{ mark.studentName }}</td>
-                            <td v-if="isColumnVisible('group')" class="p-3">
-                                <button @click="activeFilters.group = mark.groupName"
-                                    class="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors"
-                                    :class="{ 'ring-2 ring-primary': activeFilters.group === mark.groupName }">
-                                    {{ mark.groupName }}
-                                </button>
-                            </td>
-                            <td v-if="isColumnVisible('task')" class="p-3" :title="mark.taskName">
-                                <div class="flex flex-col">
-                                    <span>{{ formatTaskName(mark.taskName) }}</span>
-                                    <span class="text-xs text-muted-foreground">{{ mark.taskDate }}</span>
-                                </div>
-                            </td>
-                            <td v-if="isColumnVisible('mark')" class="p-3 text-center relative">
-                                <div class="flex items-center justify-center gap-1">
-                                    <span
-                                        class="font-mono font-bold cursor-help border-b border-dotted border-muted-foreground/50 group"
-                                        @mouseenter="mark.showTooltip = true" @mouseleave="mark.showTooltip = false">
-                                        {{ getFormattedMark(mark, selectedFormat) }}
-                                        <Transition name="fade">
-                                            <div v-if="mark.showTooltip"
-                                                class="absolute z-10 px-3 py-2.5 bg-card border border-border rounded-md shadow-md text-xs text-card-foreground whitespace-nowrap right-full top-1/2 -translate-y-1/2 mr-2 pointer-events-none transition-opacity duration-200 ease-in-out">
-                                                <div v-for="(tooltipLine, index) in getMarkTooltip(mark.score, mark.maxPoints)"
-                                                    :key="index">{{ tooltipLine }}</div>
-                                            </div>
-                                        </Transition>
-                                    </span>
-                                    <!-- Unsynced Dot -->
-                                    <div class="w-2 h-2 flex items-center justify-center">
-                                        <span v-if="!mark.synced"
-                                            class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"
-                                            :title="$t('marks.tooltips.unSynced')"></span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="p-3 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <button @click="toggleSynced(mark)" class="p-1.5 rounded-md transition-colors"
-                                        :class="mark.synced ? 'text-green-600 hover:bg-green-50' : 'text-muted-foreground hover:text-primary hover:bg-muted'"
-                                        :title="mark.synced ? $t('marks.tooltips.markAsUnsynced') : $t('marks.tooltips.markAsSynced')">
-                                        <CircleCheckBig class="w-4 h-4" />
-                                    </button>
-                                    <button @click="confirmDelete(mark)"
-                                        class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                                        :title="$t('marks.tooltips.delete')">
-                                        <Trash2 class="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            </div>
+                        </div>
+
+                        <div class="text-right flex justify-end gap-2">
+                            <button @click="toggleSynced(mark)" class="p-1.5 rounded-md transition-colors"
+                                :class="mark.synced ? 'text-green-600 hover:bg-green-50' : 'text-muted-foreground hover:text-primary hover:bg-muted'"
+                                :title="mark.synced ? $t('marks.tooltips.markAsUnsynced') : $t('marks.tooltips.markAsSynced')">
+                                <CircleCheckBig class="w-4 h-4" />
+                            </button>
+                            <button @click="confirmDelete(mark)"
+                                class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                                :title="$t('marks.tooltips.delete')">
+                                <Trash2 class="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div v-else class="text-center py-12 text-muted-foreground">
-            {{ searchQuery ? $t('marks.noMatch') : $t('marks.noMarks') }}
+        <div v-else class="text-center py-12 text-muted-foreground flex flex-col items-center justify-center min-h-[400px]">
+            <div v-if="groups.length === 0" class="flex flex-col items-center gap-4 max-w-md mx-auto">
+                <div class="bg-muted p-4 rounded-full">
+                    <FileUp class="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 class="text-lg font-semibold">{{ $t('marks.emptyState.title') }}</h3>
+                <p class="text-sm text-center">
+                    {{ $t('marks.emptyState.description') }}
+                </p>
+                <p class="text-xs text-muted-foreground text-center">
+                    {{ $t('marks.emptyState.hint') }}
+                </p>
+            </div>
+            <div v-else>
+                {{ searchQuery ? $t('marks.noMatch') : $t('marks.noMarks') }}
+            </div>
         </div>
 
         <!-- Group Modal -->

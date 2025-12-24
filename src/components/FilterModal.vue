@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import { Search, X } from 'lucide-vue-next';
-import { repository } from '../services/repository';
+import { studentsRepository } from '@/modules/Students/services/students.repository';
+import { settingsRepository } from '@/shared/services/settings.repository';
 
 const props = defineProps({
   isOpen: Boolean,
@@ -33,12 +34,12 @@ const items = ref([]); // Added to support the new onMounted logic
 async function loadData() {
   if (props.mode === 'teachers') {
     // For teachers mode, we want to show ALL members so we can select who is a teacher
-    const members = await repository.getAllMembers();
+    const members = await studentsRepository.getAllMembers();
     // Filter out duplicates by name just in case, though DB enforces unique name
     items.value = members.map(m => m.name).sort();
 
     // Load currently selected teachers
-    const selected = await repository.getTeachers();
+    const selected = await settingsRepository.getTeachers();
     selectedItems.value = new Set(selected);
   } else {
     // ... other modes
@@ -56,7 +57,7 @@ watch(() => props.isOpen, (newVal) => {
 // Watch for changes and save
 watch(selectedItems, async (newSet) => {
   const items = Array.from(newSet);
-  await repository.saveTeachers(items);
+  await settingsRepository.saveTeachers(items);
   emit('update:items', items);
 }, { deep: true });
 

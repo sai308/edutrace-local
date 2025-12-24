@@ -1,8 +1,9 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
-import { Plus, Layers } from 'lucide-vue-next';
+import { Plus, Layers, Copy } from 'lucide-vue-next';
 import ModuleCard from './ModuleCard.vue';
 import ConfirmModal from '@/components/ConfirmModal.vue';
+import CopyModulesModal from './CopyModulesModal.vue';
 import { summaryService } from '../services/summary.service';
 import { useI18n } from 'vue-i18n';
 
@@ -29,6 +30,9 @@ const allGroupTasks = ref([]);
 // Delete confirmation state
 const showDeleteConfirm = ref(false);
 const moduleToDelete = ref(null);
+
+// Copy modules state
+const showCopyModal = ref(false);
 
 // Drag and drop state
 const draggedIndex = ref(null);
@@ -143,6 +147,29 @@ function handleDrop(targetIndex, event) {
 function handleDragEnd() {
     draggedIndex.value = null;
 }
+
+async function handleCopyModules(sourceGroup) {
+    if (!sourceGroup || !props.group) return;
+
+    try {
+        // Fetch modules from source group
+        const sourceModules = await summaryService.getModulesByGroup(sourceGroup.name);
+        
+        if (sourceModules.length === 0) return;
+
+        // Create copies with new IDs and updated group references
+        const copiedModules = sourceModules.map((module, index) => ({
+            ...module,
+            id: Date.now() + index, // Generate new unique ID
+            groupName: props.group.name // Update to target group
+        }));
+
+        // Emit the copied modules
+        emit('update:modules', copiedModules);
+    } catch (error) {
+        console.error('Failed to copy modules:', error);
+    }
+}
 </script>
 
 <template>
@@ -174,8 +201,13 @@ function handleDragEnd() {
                     {{ $t('summary.modules.selectGroupHint') }}
                 </div>
                 <div v-else-if="modules.length === 0"
-                    class="text-center py-8 border rounded-lg border-dashed text-muted-foreground">
-                    {{ $t('summary.modules.emptyHint') }}
+                    class="flex flex-col items-center gap-4 py-8 border rounded-lg border-dashed">
+                    <p class="text-muted-foreground text-center">{{ $t('summary.modules.emptyHintWithCopy') }}</p>
+                    <button @click="showCopyModal = true"
+                        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-muted transition-colors">
+                        <Copy class="w-4 h-4" />
+                        {{ $t('summary.modules.copyFromGroup') }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -184,5 +216,9 @@ function handleDragEnd() {
         <ConfirmModal :is-open="showDeleteConfirm" :title="$t('summary.modules.deleteConfirmTitle')"
             :message="$t('summary.modules.deleteConfirmMessage')" :confirm-text="$t('confirm.confirm')"
             :cancel-text="$t('confirm.cancel')" variant="danger" @confirm="confirmDelete" @cancel="cancelDelete" />
+
+        <!-- Copy Modules Modal -->
+        <CopyModulesModal :is-open="showCopyModal" :current-group="group" @close="showCopyModal = false"
+            @copy="handleCopyModules" />
     </div>
 </template>

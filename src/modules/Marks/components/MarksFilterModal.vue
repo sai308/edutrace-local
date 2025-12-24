@@ -77,15 +77,7 @@ function clear() {
 
             <!-- Content -->
             <div class="p-6 space-y-6">
-                <!-- Group Filter -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">{{ $t('marks.filterModal.group') }}</label>
-                    <select v-model="localFilters.group"
-                        class="w-full p-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none">
-                        <option :value="null">{{ $t('marks.filterModal.allGroups') }}</option>
-                        <option v-for="g in groups" :key="g.id" :value="g.name">{{ g.name }}</option>
-                    </select>
-                </div>
+
 
                 <!-- Synced Status -->
                 <div class="space-y-2">

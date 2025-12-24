@@ -123,25 +123,7 @@ function formatDateSplit(dateString) {
     return { line1, line2 };
 }
 
-// Helper to convert percentage (0-100) to 5-scale
-function percentToFiveScale(percent) {
-    if (percent >= 90) return 5;
-    if (percent >= 75) return 4;
-    if (percent >= 60) return 3;
-    if (percent >= 35) return 2;
-    return 1;
-}
-
-// Helper to convert percentage (0-100) to ECTS
-function percentToECTS(percent) {
-    if (percent >= 90) return 'A';
-    if (percent >= 82) return 'B';
-    if (percent >= 75) return 'C';
-    if (percent >= 67) return 'D';
-    if (percent >= 60) return 'E';
-    if (percent >= 35) return 'FX';
-    return 'F';
-}
+import { to5Scale as percentToFiveScale, toECTS as percentToECTS } from '@/shared/utils/grades';
 
 function getGradeDisplay(assessment) {
     const grade = assessment.grade;
@@ -207,7 +189,7 @@ function openProfile(studentId) {
         </div>
 
         <div class="border rounded-lg overflow-hidden bg-card shadow-sm">
-            <div class="overflow-x-auto overflow-visible">
+            <div class="overflow-x-auto overflow-visible custom-scrollbar">
                 <table class="w-full text-sm text-left">
                     <thead class="bg-muted/50 text-muted-foreground font-medium border-b">
                         <tr>

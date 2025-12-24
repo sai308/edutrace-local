@@ -169,7 +169,7 @@ function openQrModal(meetId) {
 
     <!-- List -->
     <div class="bg-card rounded-lg border overflow-hidden">
-      <div class="overflow-x-auto overflow-y-hidden">
+      <div class="overflow-x-auto overflow-y-hidden custom-scrollbar">
         <table class="w-full text-sm">
           <thead class="bg-muted/50 border-b">
             <tr>

@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { studentsService } from '../services/students.service';
+import { studentStatsService } from '../services/studentStats.service';
 import { toast } from '@/services/toast';
 
 export function useStudents() {
@@ -13,7 +14,7 @@ export function useStudents() {
     async function loadData() {
         isLoading.value = true;
         try {
-            const data = await studentsService.loadStudentsData();
+            const data = await studentStatsService.loadDashboardData();
             students.value = data.students;
             groupsMap.value = data.groupsMap;
             teachers.value = data.teachers;

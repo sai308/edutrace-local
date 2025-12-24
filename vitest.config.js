@@ -9,7 +9,6 @@ export default mergeConfig(
             globals: true,
             setupFiles: [
                 './tests/setup/env.js',
-                './tests/setup/db.js',
             ],
             restoreMocks: true,
             clearMocks: true,

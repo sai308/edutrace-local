@@ -1,27 +1,24 @@
+import { to5Scale, toECTS } from '../shared/utils/grades';
+
 export function useMarkFormat() {
+    function percentToFiveScale(percent) {
+        return to5Scale(percent);
+    }
+
+    function percentToECTS(percent) {
+        return toECTS(percent);
+    }
+
     function formatMarkToFiveScale(mark) {
         const max = Number(mark.maxPoints) || 100;
         const percent = (Number(mark.score) / max) * 100;
-
-        if (percent >= 90) return 5;
-        if (percent >= 75) return 4;
-        if (percent >= 60) return 3;
-        if (percent >= 35) return 2;
-        return 1;
+        return percentToFiveScale(percent);
     }
 
     function formatMarkToECTS(mark) {
         const max = Number(mark.maxPoints) || 100;
         const percent = (Number(mark.score) / max) * 100;
-
-        if (percent >= 90) return 'A';
-        if (percent >= 82) return 'B';
-        if (percent >= 75) return 'C';
-        if (percent >= 67) return 'D';
-        if (percent >= 60) return 'E';
-        if (percent >= 35) return 'FX';
-
-        return 'F';
+        return percentToECTS(percent);
     }
 
     function getFormattedMark(mark, format = 'raw') {
@@ -35,11 +32,11 @@ export function useMarkFormat() {
         }
 
         if (format === '5-scale') {
-            return formatMarkToFiveScale(mark);
+            return percentToFiveScale(percent);
         }
 
         if (format === 'ects') {
-            return formatMarkToECTS(mark);
+            return percentToECTS(percent);
         }
 
         return mark.score;
@@ -50,17 +47,8 @@ export function useMarkFormat() {
         const percent = (Number(score) / max) * 100;
 
         const scale100 = Math.round(percent);
-
-        let scale5 = 0;
-        let ects = 'F';
-
-        if (percent >= 90) { scale5 = 5; ects = 'A'; }
-        else if (percent >= 82) { scale5 = 4; ects = 'B'; }
-        else if (percent >= 75) { scale5 = 4; ects = 'C'; }
-        else if (percent >= 67) { scale5 = 3; ects = 'D'; }
-        else if (percent >= 60) { scale5 = 3; ects = 'E'; }
-        else if (percent >= 35) { scale5 = 2; ects = 'FX'; }
-        else { scale5 = 1; ects = 'F'; }
+        const scale5 = percentToFiveScale(percent);
+        const ects = percentToECTS(percent);
 
         return [`5-scale: ${scale5}`, `100-scale: ${scale100}`, `ECTS: ${ects}`];
     }
@@ -69,6 +57,8 @@ export function useMarkFormat() {
         formatMarkToFiveScale,
         formatMarkToECTS,
         getFormattedMark,
-        getMarkTooltip
+        getMarkTooltip,
+        percentToFiveScale,
+        percentToECTS
     };
 }

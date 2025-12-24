@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useVirtualList } from '@vueuse/core';
 
 import { settingsRepository } from '@/shared/services/settings.repository';
 
@@ -50,16 +51,34 @@ const selectedGroup = ref(null); // For filtering by group
 
 // Column visibility setup
 const columns = computed(() => [
-  { id: 'group', label: t('reports.table.group'), defaultVisible: true },
-  { id: 'meetId', label: t('reports.table.meetId'), defaultVisible: true },
-  { id: 'date', label: t('reports.table.date'), defaultVisible: true },
-  { id: 'participants', label: t('reports.table.participants'), defaultVisible: true },
-  { id: 'duration', label: t('reports.table.duration'), defaultVisible: true },
-  { id: 'filename', label: t('reports.table.filename'), defaultVisible: false },
-  { id: 'uploadedAt', label: t('reports.table.uploadedAt'), defaultVisible: true }
+  { id: 'group', label: t('reports.table.group'), defaultVisible: true, width: 'minmax(100px, 1fr)' },
+  { id: 'meetId', label: t('reports.table.meetId'), defaultVisible: true, width: 'minmax(120px, 1.2fr)' },
+  { id: 'date', label: t('reports.table.date'), defaultVisible: true, width: 'minmax(120px, 1fr)' },
+  { id: 'participants', label: t('reports.table.participants'), defaultVisible: true, width: '100px' },
+  { id: 'duration', label: t('reports.table.duration'), defaultVisible: true, width: '100px' },
+  { id: 'filename', label: t('reports.table.filename'), defaultVisible: false, width: 'minmax(150px, 1.5fr)' },
+  { id: 'uploadedAt', label: t('reports.table.uploadedAt'), defaultVisible: true, width: '120px' }
 ]);
 
 const { visibleColumns, toggleColumn, resetColumns, isColumnVisible } = useColumnVisibility('reports', columns.value);
+
+const gridStyle = computed(() => {
+  // Checkbox column fixed width (40px)
+  let cols = ['40px'];
+
+  columns.value.forEach(col => {
+    if (isColumnVisible(col.id)) {
+      cols.push(col.width);
+    }
+  });
+
+  // Actions column fixed width (80px)
+  cols.push('80px');
+
+  return {
+    gridTemplateColumns: cols.join(' ')
+  };
+});
 
 useQuerySync({
   search: searchQuery,
@@ -179,6 +198,11 @@ const filteredMeets = computed(() => {
   return result;
 });
 
+// Virtual List Setup
+const { list, containerProps, wrapperProps } = useVirtualList(filteredMeets, {
+    itemHeight: 56, // height of a row
+});
+
 
 // Selection
 const allSelected = computed(() => {
@@ -237,7 +261,7 @@ function handleSearchPaste(event) {
         }) }}</span>
         <!-- Bulk Delete -->
         <button v-if="selectedIds.size > 0" @click="handleBulkDelete"
-          class="flex items-selectedIds gap-2 px-3 py-1.5 text-sm font-medium text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-md transition-colors">
+          class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-md transition-colors">
           <Trash2 class="w-4 h-4" />
           Видалити
           <span class="ml-1 text-destructive bg-destructive/10 text-[10px] px-2 py-0.25 rounded-full">
@@ -278,17 +302,18 @@ function handleSearchPaste(event) {
       </button>
     </div>
 
-    <div class="bg-card rounded-lg border overflow-hidden">
-      <div class="overflow-x-auto overflow-y-hidden">
-        <table class="w-full text-sm">
-          <thead class="bg-muted/50 border-b">
-            <tr>
-              <th class="h-12 px-4 w-10 align-middle">
-                <input type="checkbox" :checked="allSelected" @change="toggleSelectAll"
-                  class="rounded border-gray-300 text-primary focus:ring-primary" />
-              </th>
-              <th v-if="isColumnVisible('group')"
-                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+    <div v-if="filteredMeets.length > 0" class="border rounded-lg bg-card shadow-sm flex flex-col h-[calc(100vh-14rem)]">
+        <!-- Header Row (Grid) -->
+        <div class="grid gap-2 p-3 bg-muted/50 border-b font-medium text-muted-foreground text-sm sticky top-0 z-10 shrink-0 select-none items-center"
+            :style="gridStyle">
+            
+            <div class="flex items-center justify-center">
+              <input type="checkbox" :checked="allSelected" @change="toggleSelectAll"
+                class="rounded border-gray-300 text-primary focus:ring-primary" />
+            </div>
+
+            <div v-if="isColumnVisible('group')"
+                class="cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('group')" :title="$t('reports.table.tooltips.group')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.group') }}
@@ -296,9 +321,10 @@ function handleSearchPaste(event) {
                   <ArrowDown v-if="sortKey === 'group' && sortOrder === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortKey !== 'group'" class="w-3 h-3 opacity-50" />
                 </div>
-              </th>
-              <th v-if="isColumnVisible('meetId')"
-                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+            </div>
+
+            <div v-if="isColumnVisible('meetId')"
+                class="cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('meetId')" :title="$t('reports.table.tooltips.meetId')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.meetId') }}
@@ -306,9 +332,10 @@ function handleSearchPaste(event) {
                   <ArrowDown v-if="sortKey === 'meetId' && sortOrder === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortKey !== 'meetId'" class="w-3 h-3 opacity-50" />
                 </div>
-              </th>
-              <th v-if="isColumnVisible('date')"
-                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+            </div>
+
+            <div v-if="isColumnVisible('date')"
+                class="cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('date')" :title="$t('reports.table.tooltips.date')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.date') }}
@@ -316,13 +343,15 @@ function handleSearchPaste(event) {
                   <ArrowDown v-if="sortKey === 'date' && sortOrder === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortKey !== 'date'" class="w-3 h-3 opacity-50" />
                 </div>
-              </th>
-              <th v-if="isColumnVisible('participants')"
-                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground"
+            </div>
+
+            <div v-if="isColumnVisible('participants')"
+                class=""
                 :title="$t('reports.table.tooltips.participants')">{{
-                  $t('reports.table.participants') }}</th>
-              <th v-if="isColumnVisible('duration')"
-                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                  $t('reports.table.participants') }}</div>
+
+            <div v-if="isColumnVisible('duration')"
+                class="cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('duration')" :title="$t('reports.table.tooltips.duration')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.duration') }}
@@ -330,9 +359,10 @@ function handleSearchPaste(event) {
                   <ArrowDown v-if="sortKey === 'duration' && sortOrder === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortKey !== 'duration'" class="w-3 h-3 opacity-50" />
                 </div>
-              </th>
-              <th v-if="isColumnVisible('filename')"
-                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+            </div>
+
+            <div v-if="isColumnVisible('filename')"
+                class="cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('filename')" :title="$t('reports.table.tooltips.filename')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.filename') }}
@@ -340,9 +370,10 @@ function handleSearchPaste(event) {
                   <ArrowDown v-if="sortKey === 'filename' && sortOrder === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortKey !== 'filename'" class="w-3 h-3 opacity-50" />
                 </div>
-              </th>
-              <th v-if="isColumnVisible('uploadedAt')"
-                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+            </div>
+
+            <div v-if="isColumnVisible('uploadedAt')"
+                class="cursor-pointer hover:text-foreground transition-colors"
                 @click="toggleSort('uploadedAt')" :title="$t('reports.table.tooltips.uploadedAt')">
                 <div class="flex items-center gap-1">
                   {{ $t('reports.table.uploadedAt') }}
@@ -350,93 +381,103 @@ function handleSearchPaste(event) {
                   <ArrowDown v-if="sortKey === 'uploadedAt' && sortOrder === 'desc'" class="w-3 h-3" />
                   <ArrowUpDown v-if="sortKey !== 'uploadedAt'" class="w-3 h-3 opacity-50" />
                 </div>
-              </th>
-              <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">{{
-                $t('reports.table.actions') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="filteredMeets.length === 0">
-              <td colspan="7" class="p-8 text-center text-muted-foreground">
-                {{ searchQuery ? $t('reports.noMatch') : $t('reports.noReports') }}
-              </td>
-            </tr>
-            <tr v-for="(meet, index) in filteredMeets" :key="meet.id"
-              class="border-b last:border-0 hover:bg-muted/50 transition-colors table-row-animate"
-              :style="{ animationDelay: `${index * 0.0125}s` }" :class="{ 'bg-muted/20': selectedIds.has(meet.id) }">
-              <td class="p-4">
-                <input type="checkbox" :checked="selectedIds.has(meet.id)" @change="toggleSelection(meet.id)"
-                  class="rounded border-gray-300 text-primary focus:ring-primary" />
-              </td>
-              <td v-if="isColumnVisible('group')" class="p-4">
-                <button v-if="getGroupName(meet.meetId) !== '-'" @click="filterByGroup(getGroupName(meet.meetId))"
-                  class="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors"
-                  :class="{ 'ring-2 ring-primary': selectedGroup === getGroupName(meet.meetId) }">
-                  {{ getGroupName(meet.meetId) }}
-                </button>
-                <span v-else class="text-muted-foreground text-xs">-</span>
-              </td>
-              <td v-if="isColumnVisible('meetId')" class="p-4">
-                <button @click="filterByMeetId(meet.meetId)"
-                  class="px-2 py-0.5 rounded-full bg-muted hover:bg-primary/10 hover:text-primary text-xs font-mono font-medium transition-colors border border-transparent hover:border-primary/20"
-                  :class="{ 'ring-2 ring-primary bg-primary/10 text-primary': selectedMeetId === meet.meetId }">
-                  {{ meet.meetId }}
-                </button>
-              </td>
+            </div>
+            
+            <div class="text-right">{{ $t('reports.table.actions') }}</div>
+        </div>
 
-              <td v-if="isColumnVisible('date')" class="p-4">
-                <div class="flex items-center gap-2">
-                  <Calendar class="w-4 h-4 text-muted-foreground" />
-                  {{ formatDate(meet.date) }}
-                </div>
-              </td>
-              <td v-if="isColumnVisible('participants')" class="p-4">{{ meet.participants.length }}</td>
-              <td v-if="isColumnVisible('duration')" class="p-4">
-                <div class="flex items-center gap-2">
-                  <Clock class="w-4 h-4 text-muted-foreground" />
-                  {{ formatDuration(getMeetDuration(meet)) }}
-                </div>
-              </td>
-              <td v-if="isColumnVisible('filename')" class="p-4 text-muted-foreground truncate max-w-[200px]"
-                :title="meet.filename">
-                {{ meet.filename }}
-              </td>
-              <td v-if="isColumnVisible('uploadedAt')" class="p-4 text-xs text-muted-foreground">
-                <div class="flex flex-col gap-1">
-                  <div class="flex items-center gap-1">
-                    <Calendar class="w-3 h-3" />
-                    {{ formatCompactDate(meet.uploadedAt) }}
-                  </div>
-                  <div class="flex items-center gap-1 text-[10px] opacity-80">
-                    <Clock class="w-3 h-3" />
-                    {{ formatTime(meet.uploadedAt) }}
-                  </div>
-                </div>
-              </td>
-              <td class="p-4 text-right">
-                <div class="flex items-center justify-end gap-2">
-                  <button
-                    @click="router.push({ name: 'ReportDetails', params: { id: meet.id }, query: { view: 'table' } })"
-                    class="p-2 hover:bg-primary/10 text-primary rounded-md transition-colors"
-                    :title="$t('reports.tooltips.view')">
-                    <Eye class="w-4 h-4" />
-                  </button>
-                  <button @click="$emit('delete-meet', meet.id)"
-                    class="p-2 hover:bg-destructive/10 text-destructive rounded-md transition-colors"
-                    :title="$t('reports.tooltips.delete')">
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <div v-bind="containerProps" class="h-full overflow-y-auto w-full relative custom-scrollbar">
+            <div v-bind="wrapperProps" class="w-full">
+                <div v-for="{ index, data: meet } in list" :key="meet.id"
+                  class="grid gap-2 p-3 border-b hover:bg-muted/50 transition-colors items-center text-sm"
+                  :class="{ 'bg-muted/20': selectedIds.has(meet.id) }"
+                  :style="{ ...gridStyle, height: '56px' }">
+                    
+                    <div class="flex items-center justify-center">
+                      <input type="checkbox" :checked="selectedIds.has(meet.id)" @change="toggleSelection(meet.id)"
+                        class="rounded border-gray-300 text-primary focus:ring-primary" />
+                    </div>
 
-      <ConfirmModal :is-open="showBulkDeleteConfirm" :title="$t('reports.deleteModal.title')"
-        :message="$t('reports.deleteModal.message', { count: selectedIds.size })"
-        :confirm-text="$t('reports.deleteModal.confirm')" variant="danger" @confirm="confirmBulkDelete"
-        @cancel="showBulkDeleteConfirm = false" />
+                    <div v-if="isColumnVisible('group')">
+                       <button v-if="getGroupName(meet.meetId) !== '-'" @click="filterByGroup(getGroupName(meet.meetId))"
+                          class="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors truncate max-w-[100px]"
+                          :class="{ 'ring-2 ring-primary': selectedGroup === getGroupName(meet.meetId) }">
+                          {{ getGroupName(meet.meetId) }}
+                        </button>
+                        <span v-else class="text-muted-foreground text-xs">-</span>
+                    </div>
+
+                    <div v-if="isColumnVisible('meetId')">
+                        <button @click="filterByMeetId(meet.meetId)"
+                          class="px-2 py-0.5 rounded-full bg-muted hover:bg-primary/10 hover:text-primary text-xs font-mono font-medium transition-colors border border-transparent hover:border-primary/20 truncate max-w-[150px]"
+                          :class="{ 'ring-2 ring-primary bg-primary/10 text-primary': selectedMeetId === meet.meetId }">
+                          {{ meet.meetId }}
+                        </button>
+                    </div>
+
+                    <div v-if="isColumnVisible('date')">
+                        <div class="flex items-center gap-2">
+                          <Calendar class="w-4 h-4 text-muted-foreground" />
+                          {{ formatDate(meet.date) }}
+                        </div>
+                    </div>
+
+                    <div v-if="isColumnVisible('participants')">
+                        {{ meet.participants.length }}
+                    </div>
+
+                    <div v-if="isColumnVisible('duration')">
+                        <div class="flex items-center gap-2">
+                          <Clock class="w-4 h-4 text-muted-foreground" />
+                          {{ formatDuration(getMeetDuration(meet)) }}
+                        </div>
+                    </div>
+
+                    <div v-if="isColumnVisible('filename')" class="text-muted-foreground truncate" :title="meet.filename">
+                        {{ meet.filename }}
+                    </div>
+
+                    <div v-if="isColumnVisible('uploadedAt')" class="text-xs text-muted-foreground">
+                        <div class="flex flex-col gap-1">
+                          <div class="flex items-center gap-1">
+                            <Calendar class="w-3 h-3" />
+                            {{ formatCompactDate(meet.uploadedAt) }}
+                          </div>
+                          <div class="flex items-center gap-1 text-[10px] opacity-80">
+                            <Clock class="w-3 h-3" />
+                            {{ formatTime(meet.uploadedAt) }}
+                          </div>
+                        </div>
+                    </div>
+
+                    <div class="text-right">
+                        <div class="flex items-center justify-end gap-2">
+                          <button
+                            @click="router.push({ name: 'ReportDetails', params: { id: meet.id }, query: { view: 'table' } })"
+                            class="p-2 hover:bg-primary/10 text-primary rounded-md transition-colors"
+                            :title="$t('reports.tooltips.view')">
+                            <Eye class="w-4 h-4" />
+                          </button>
+                          <button @click="$emit('delete-meet', meet.id)"
+                            class="p-2 hover:bg-destructive/10 text-destructive rounded-md transition-colors"
+                            :title="$t('reports.tooltips.delete')">
+                            <Trash2 class="w-4 h-4" />
+                          </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     </div>
+    
+    <div v-if="filteredMeets.length === 0" class="text-center py-12 text-muted-foreground">
+        {{ searchQuery ? $t('reports.noMatch') : $t('reports.noReports') }}
+    </div>
+
+    <ConfirmModal :is-open="showBulkDeleteConfirm" :title="$t('reports.deleteModal.title')"
+      :message="$t('reports.deleteModal.message', { count: selectedIds.size })"
+      :confirm-text="$t('reports.deleteModal.confirm')" variant="danger" @confirm="confirmBulkDelete"
+      @cancel="showBulkDeleteConfirm = false" />
   </div>
 </template>

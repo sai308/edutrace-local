@@ -23,7 +23,7 @@ function getFinalStatusColor(totalPercentage) {
 
 <template>
     <!-- Table View -->
-    <div class="overflow-x-auto rounded-lg border bg-card">
+    <div class="overflow-x-auto rounded-lg border bg-card custom-scrollbar">
         <table class="w-full text-sm table-auto">
             <thead class="bg-muted/50 text-muted-foreground">
                 <tr>

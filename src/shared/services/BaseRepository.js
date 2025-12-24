@@ -49,4 +49,19 @@ export class BaseRepository {
         const db = await this.getDb();
         return db.getFromIndex(this.storeName, indexName, query);
     }
+    async bulkPut(items) {
+        const db = await this.getDb();
+        const tx = db.transaction(this.storeName, 'readwrite');
+        const store = tx.objectStore(this.storeName);
+        await Promise.all(items.map(item => store.put(item)));
+        await tx.done;
+    }
+
+    async bulkDelete(ids) {
+        const db = await this.getDb();
+        const tx = db.transaction(this.storeName, 'readwrite');
+        const store = tx.objectStore(this.storeName);
+        await Promise.all(ids.map(id => store.delete(id)));
+        await tx.done;
+    }
 }

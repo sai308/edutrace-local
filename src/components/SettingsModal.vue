@@ -2,7 +2,11 @@
 import { ref, onMounted, toRaw, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { X, Download, Upload, Trash2, Settings2, Database, Zap, Cog } from 'lucide-vue-next';
-import { repository } from '../services/repository';
+import { settingsRepository } from '@/shared/services/settings.repository';
+import { studentsRepository } from '@/modules/Students/services/students.repository';
+import { workspaceRepository } from '@/shared/services/workspace.repository';
+import * as statsService from '@/shared/services/stats.service';
+import * as backupService from '@/shared/services/backup.service';
 import { toast } from '../services/toast';
 import { localeService } from '../services/locale';
 import { fadeOutAndReload } from '../utils/transition';
@@ -95,7 +99,7 @@ const entitySizes = ref({
 
 onMounted(async () => {
     // ... existing load logic ...
-    const students = await repository.getAllStudents();
+    const students = await studentsRepository.getAll();
     allStudents.value = students.map(s => s.name);
 });
 
@@ -131,17 +135,17 @@ onMounted(async () => {
 
 async function loadSettings() {
     const [ignored, limit, defaultT, students, counts, sizes, globalStatsData] = await Promise.all([
-        repository.getIgnoredUsers(),
-        repository.getDurationLimit(),
-        repository.getDefaultTeacher(),
-        repository.getAllMembers(),
-        repository.getEntityCounts(),
-        repository.getEntitySizes(),
-        repository.getAllWorkspacesSizes()
+        settingsRepository.getIgnoredUsers(),
+        settingsRepository.getDurationLimit(),
+        settingsRepository.getDefaultTeacher(),
+        studentsRepository.getAllMembers(),
+        statsService.getEntityCounts(),
+        statsService.getEntitySizes(),
+        workspaceRepository.getAllWorkspacesSizes()
     ]);
     defaultTeacher.value = defaultT;
     durationLimit.value = limit;
-    const teachers = await repository.getTeachers(); // Get configured teachers list
+    const teachers = await settingsRepository.getTeachers(); // Get configured teachers list
     teacherCount.value = teachers.length;
     configuredTeachers.value = teachers;
     entityCounts.value = counts;
@@ -149,8 +153,8 @@ async function loadSettings() {
     globalStats.value = globalStatsData;
 
     // Calculate current workspace info
-    const currentId = repository.getCurrentWorkspaceId();
-    const workspaces = repository.getWorkspaces();
+    const currentId = workspaceRepository.getCurrentWorkspaceId();
+    const workspaces = workspaceRepository.getWorkspaces();
     const currentWs = workspaces.find(w => w.id === currentId);
     currentWorkspaceInfo.value = {
         name: currentWs ? currentWs.name : 'Unknown',
@@ -167,17 +171,17 @@ function formatBytes(bytes) {
 }
 
 async function saveDefaultTeacher() {
-    await repository.saveDefaultTeacher(defaultTeacher.value);
+    await settingsRepository.saveDefaultTeacher(defaultTeacher.value);
     toast.success(t('toast.defaultTeacherSaved'));
 }
 
 async function saveDurationLimit() {
-    await repository.saveDurationLimit(durationLimit.value);
+    await settingsRepository.saveDurationLimit(durationLimit.value);
     toast.success(t('toast.durationLimitSaved'));
 }
 
 async function applyDurationLimit() {
-    const count = await repository.applyDurationLimitToAll(durationLimit.value);
+    const count = await settingsRepository.applyDurationLimitToAll(durationLimit.value);
     toast.success(t('toast.durationLimitApplied', { count }));
     emit('refresh');
 }
@@ -185,7 +189,7 @@ async function applyDurationLimit() {
 // Export Functions
 async function exportAll() {
     try {
-        const workspaces = repository.getWorkspaces();
+        const workspaces = workspaceRepository.getWorkspaces();
         if (workspaces.length > 1) {
             availableWorkspaces.value = workspaces;
             workspaceSelectionMode.value = 'export';
@@ -194,7 +198,7 @@ async function exportAll() {
             showWorkspaceSelection.value = true;
             pendingWorkspaceAction.value = async (selectedIds) => {
                 try {
-                    const data = await repository.exportWorkspaces(selectedIds);
+                    const data = await backupService.exportWorkspaces(selectedIds);
                     downloadJSON(data, `edutrace-multi-workspace-backup-${getTimestamp()}.json`);
                     toast.success(t('toast.workspacesExported'));
                 } catch (e) {
@@ -217,7 +221,7 @@ async function exportAll() {
             // Let's use the new method if the user wants "multi-workspace support".
             // But for backward compatibility or simplicity, if only 1 workspace exists, maybe just do what we did before?
             // Let's show the modal if there are multiple workspaces. If only 1, just do the old export.
-            const data = await repository.exportData();
+            const data = await backupService.exportData();
             downloadJSON(data, `edutrace-backup-${getTimestamp()}.json`);
             toast.success(t('toast.dataExported'));
         }
@@ -229,7 +233,7 @@ async function exportAll() {
 
 async function exportReports() {
     try {
-        const data = await repository.exportReports();
+        const data = await backupService.exportReports();
         downloadJSON(data, `reports-${getTimestamp()}.json`);
         toast.success(t('toast.reportsExported'));
     } catch (e) {
@@ -240,7 +244,7 @@ async function exportReports() {
 
 async function exportGroups() {
     try {
-        const data = await repository.exportGroups();
+        const data = await backupService.exportGroups();
         downloadJSON(data, `groups-${getTimestamp()}.json`);
         toast.success(t('toast.groupsExported'));
     } catch (e) {
@@ -251,7 +255,7 @@ async function exportGroups() {
 
 async function exportMarks() {
     try {
-        const data = await repository.exportMarks();
+        const data = await backupService.exportMarks();
         downloadJSON(data, `marks-${getTimestamp()}.json`);
         toast.success(t('toast.marksExported'));
     } catch (e) {
@@ -262,7 +266,7 @@ async function exportMarks() {
 
 async function exportSummary() {
     try {
-        const data = await repository.exportSummary();
+        const data = await backupService.exportSummary();
         downloadJSON(data, `summary-${getTimestamp()}.json`);
         toast.success(t('toast.summaryExported'));
     } catch (e) {
@@ -405,12 +409,12 @@ async function executeImport() {
                 showWorkspaceSelection.value = true;
                 pendingWorkspaceAction.value = async (selectedIds) => {
                     try {
-                        await repository.importWorkspaces(data, selectedIds);
+                        await backupService.importWorkspaces(data, selectedIds);
                         
                         // Switch to the last imported workspace
                         if (selectedIds && selectedIds.length > 0) {
                             const lastWorkspaceId = selectedIds[selectedIds.length - 1];
-                            await repository.switchWorkspace(lastWorkspaceId);
+                            await workspaceRepository.switchWorkspace(lastWorkspaceId);
                         }
 
                         toast.success(t('toast.workspacesImported'));
@@ -423,19 +427,19 @@ async function executeImport() {
                 };
             } else {
                 // Legacy single workspace import
-                await repository.importData(data);
+                await backupService.importData(data);
                 toast.success(t('toast.dataImported'));
                 await loadSettings();
                 emit('refresh');
             }
         } else if (type === 'reports') {
-            await repository.importReports(data);
+            await backupService.importReports(data);
         } else if (type === 'groups') {
-            await repository.importGroups(data);
+            await backupService.importGroups(data);
         } else if (type === 'marks') {
-            await repository.importMarks(data);
+            await backupService.importMarks(data);
         } else if (type === 'summary') {
-            await repository.importSummary(data);
+            await backupService.importSummary(data);
         }
 
         if (type !== 'all') {
@@ -456,7 +460,7 @@ async function executeImport() {
 async function executeEraseAll() {
     showEraseConfirm.value = false;
     try {
-        await repository.clearAll();
+        await backupService.clearAll();
         defaultTeacher.value = '';
         durationLimit.value = DEFAULT_DURATION_MINUTES_LIMIT;
         toast.success(t('toast.allDataErased'));
@@ -469,7 +473,7 @@ async function executeEraseAll() {
 }
 
 function triggerEraseAll() {
-    const workspaces = repository.getWorkspaces();
+    const workspaces = workspaceRepository.getWorkspaces();
     if (workspaces.length > 1) {
         availableWorkspaces.value = workspaces;
         workspaceSelectionMode.value = 'erase';
@@ -478,7 +482,7 @@ function triggerEraseAll() {
         showWorkspaceSelection.value = true;
         pendingWorkspaceAction.value = async (selectedIds) => {
             try {
-                await repository.deleteWorkspacesData(selectedIds);
+                await workspaceRepository.deleteWorkspacesData(selectedIds);
                 toast.success(t('toast.workspacesErased'));
                 await loadSettings();
                 emit('refresh');
@@ -495,7 +499,7 @@ function triggerEraseAll() {
 async function executeEraseReports() {
     showEraseReportsConfirm.value = false;
     try {
-        await repository.clearReports();
+        await backupService.clearReports();
         toast.success(t('toast.reportsErased'));
         await loadSettings(); // Reload counts
         emit('refresh');
@@ -508,7 +512,7 @@ async function executeEraseReports() {
 async function executeEraseGroups() {
     showEraseGroupsConfirm.value = false;
     try {
-        await repository.clearGroups();
+        await backupService.clearGroups();
         toast.success(t('toast.groupsErased'));
         await loadSettings(); // Reload counts
         emit('refresh');
@@ -521,7 +525,7 @@ async function executeEraseGroups() {
 async function executeEraseMarks() {
     showEraseMarksConfirm.value = false;
     try {
-        await repository.clearMarks();
+        await backupService.clearMarks();
         toast.success(t('toast.marksErased'));
         await loadSettings(); // Reload counts
         emit('refresh');
@@ -534,10 +538,10 @@ async function executeEraseMarks() {
 async function executeEraseMembers() {
     showEraseMembersConfirm.value = false;
     try {
-        await repository.clearMembers();
+        await backupService.clearMembers();
         toast.success(t('toast.membersErased'));
         // Reload local state
-        const members = await repository.getAllMembers();
+        const members = await studentsRepository.getAllMembers();
         allStudents.value = members.map(s => s.name);
         await loadSettings(); // Reload counts
         emit('refresh');
@@ -550,8 +554,8 @@ async function executeEraseMembers() {
 async function executeEraseSummary() {
     showEraseSummaryConfirm.value = false;
     try {
-        await repository.clearFinalAssessments();
-        await repository.clearModules();
+        await backupService.clearFinalAssessments();
+        await backupService.clearModules();
         toast.success(t('toast.summaryErased'));
         await loadSettings(); // Reload counts
         emit('refresh');

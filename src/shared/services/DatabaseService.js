@@ -6,7 +6,7 @@ import { local as storage } from '@/shared/services/StorageService';
  * @typedef {import('idb').IDBPTransaction} IDBPTransaction
  */
 
-export const DB_VERSION = 11;
+export const DB_VERSION = 12;
 export const DEFAULT_DB_NAME = 'meet-attendance-db';
 
 class DatabaseService {
@@ -156,22 +156,41 @@ class DatabaseService {
             }
         }
 
-        // Marks Store
+        // Marks Store (Updated in Version 12)
         if (!db.objectStoreNames.contains('marks')) {
             const store = db.createObjectStore('marks', {
                 keyPath: 'id',
                 autoIncrement: true,
             });
+            // Initial indices
             store.createIndex('taskId', 'taskId', { unique: false });
             store.createIndex('studentId', 'studentId', { unique: false });
             store.createIndex('task_student', ['taskId', 'studentId'], {
                 unique: true,
             });
             store.createIndex('createdAt', 'createdAt', { unique: false });
-        } else if (oldVersion < 9) {
+            // Version 12 indices
+            store.createIndex('groupName', 'groupName', { unique: false });
+        } else {
             const store = transaction.objectStore('marks');
-            if (!store.indexNames.contains('createdAt')) {
+
+            if (oldVersion < 9 && !store.indexNames.contains('createdAt')) {
                 store.createIndex('createdAt', 'createdAt', { unique: false });
+            }
+
+            if (oldVersion < 12) {
+                if (!store.indexNames.contains('groupName')) {
+                    store.createIndex('groupName', 'groupName', { unique: false });
+                }
+                if (!store.indexNames.contains('studentId')) {
+                    store.createIndex('studentId', 'studentId', { unique: false });
+                }
+                if (!store.indexNames.contains('taskId')) {
+                    store.createIndex('taskId', 'taskId', { unique: false });
+                }
+                if (!store.indexNames.contains('task_student')) {
+                    store.createIndex('task_student', ['taskId', 'studentId'], { unique: true });
+                }
             }
         }
 

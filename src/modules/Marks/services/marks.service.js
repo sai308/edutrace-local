@@ -1,104 +1,52 @@
+import * as Comlink from 'comlink';
+import ParserWorker from '@/workers/parser.worker?worker';
+import { v4 as uuidv4 } from 'uuid';
 import { marksRepository } from './marks.repository';
 import { tasksRepository } from './tasks.repository';
 import { groupsRepository } from '../../Groups/services/groups.repository'; // Cross-module dependency
 import { studentsRepository } from '../../Students/services/students.repository'; // Cross-module dependency
 import { meetsRepository } from '../../Analytics/services/meets.repository'; // Cross-module dependency
-import { parseMarksCSV } from './marksParser';
+import { MarksReconciler } from './reconciliation/MarksReconciler';
 
 export class MarksService {
-    async loadGroups() {
-        const allGroups = await groupsRepository.getGroups();
-        return allGroups.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    async loadSuggestions() {
-        const meets = await meetsRepository.getAll();
-        const meetIds = new Set();
-        const teachers = new Set();
-
-        meets.forEach(meet => {
-            if (meet.meetId) meetIds.add(meet.meetId);
-            if (meet.participants) {
-                meet.participants.forEach(p => teachers.add(p.name));
-            }
-        });
-
-        return {
-            allMeetIds: Array.from(meetIds).sort(),
-            allTeachers: Array.from(teachers).sort()
-        };
-    }
-
-    async loadAllData() {
-        const groups = await this.loadGroups();
-        // Use the new batch query method - single efficient database call
-        // Note: marksRepository.getAllMarksWithRelations needs to be verified or implemented if it was on the generic repo previously
-        // Looking at Phase 1 edits, `getAllMarksWithRelations` seems to be a specific method likely on marksRepository or originally on DatabaseService/BaseRepo?
-        // Checking useMarks.js: await repository.getAllMarksWithRelations()
-        // We need to ensure marksRepository has this.
-        const flatMarks = await marksRepository.getAllMarksWithRelations();
-        return { groups, flatMarks };
-    }
-
-    async createGroup(groupData) {
-        const { _pendingFile, ...rest } = groupData;
-        const newGroup = {
-            id: crypto.randomUUID(),
-            ...rest
-        };
-
-        try {
-            await groupsRepository.saveGroup(newGroup);
-
-            if (_pendingFile) {
-                await this.processFile(_pendingFile, newGroup.name);
-            }
-
-            return newGroup;
-        } catch (e) {
-            console.error('Error creating group:', e);
-            throw e;
-        }
+    constructor() {
+        this.marksReconciler = new MarksReconciler();
+        this.worker = new ParserWorker();
+        this.parser = Comlink.wrap(this.worker);
     }
 
     async processFile(file, groupName) {
         try {
-            const result = await parseMarksCSV(file);
+            // 1. Parse via Worker
+            const text = await file.text();
+            const parsedData = await this.parser.parseMarksCSV(text, file.name);
 
-            const taskIds = [];
-            for (const task of result.tasks) {
-                task.groupName = groupName;
-                const { id } = await tasksRepository.saveTask(task);
-                taskIds.push(id);
+            // 2. Reconcile
+            const { students, tasks, marks } = await this.marksReconciler.reconcile(parsedData, groupName);
+
+            // 3. Bulk Persist
+            // Students
+            if (students.length > 0) {
+                await studentsRepository.bulkPut(students);
             }
 
-            let newMarksCount = 0;
-            let skippedMarksCount = 0;
-
-            for (const item of result.studentsData) {
-                item.student.groupName = groupName;
-                // Ensure role is set if not present (though saveMember handles it)
-                const studentId = await studentsRepository.saveMember(item.student);
-
-                for (const mark of item.marks) {
-                    const taskId = taskIds[mark.taskIndex];
-                    // mark.score is parsed, ensure it's correct type
-                    const { isNew } = await marksRepository.saveMark({
-                        taskId,
-                        studentId,
-                        score: mark.score,
-                        synced: mark.synced
-                    });
-
-                    if (isNew) {
-                        newMarksCount++;
-                    } else {
-                        skippedMarksCount++;
-                    }
-                }
+            // Tasks
+            if (tasks.length > 0) {
+                await tasksRepository.bulkPut(tasks);
             }
 
-            return { newMarksCount, skippedMarksCount };
+            // Marks (Safe Save)
+            let stats = { added: 0, updated: 0, skipped: 0 };
+            if (marks.length > 0) {
+                stats = await marksRepository.bulkSaveSafe(marks);
+            }
+
+            // Return stats
+            return {
+                newMarksCount: stats.added,
+                skippedMarksCount: stats.skipped,
+                updatedMarksCount: stats.updated
+            };
         } catch (e) {
             console.error('Error processing marks:', e);
             throw e;
@@ -115,6 +63,48 @@ export class MarksService {
     async deleteMark(id) {
         await marksRepository.deleteMark(id);
     }
+
+    async loadGroups() {
+        const groups = await groupsRepository.getAll();
+        return groups.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    }
+
+    async createGroup(groupData) {
+        // Ensure ID exists
+        const dataToSave = { ...groupData };
+        if (!dataToSave.id) {
+            dataToSave.id = uuidv4();
+        }
+
+        await groupsRepository.add(dataToSave);
+        return dataToSave;
+    }
+
+    async loadSuggestions() {
+        // Fetch all meets and teachers for suggestions
+        const [meets, teachersList] = await Promise.all([
+            meetsRepository.getAll(), // TODO: optimize or use lightweight call
+            import('@/shared/services/settings.repository').then(m => m.settingsRepository.getTeachers())
+        ]);
+
+        // Extract meetIds
+        const allMeetIds = meets.map(m => m.meetId).filter(Boolean);
+        // Unique meet IDs (though meets repo returns meets objects, meetId is a property)
+        // If duplicates exist, Set handles it.
+        const uniqueMeets = [...new Set(allMeetIds)];
+        const uniqueTeachers = [...new Set(teachersList)];
+
+        return { allMeetIds: uniqueMeets, allTeachers: uniqueTeachers };
+    }
+
+    async loadMarksData(groupName = null) {
+        if (groupName) {
+            return marksRepository.getMarksByGroupWithRelations(groupName);
+        } else {
+            return [];
+        }
+    }
+
 
     async deleteMarks(ids) {
         await marksRepository.deleteMarks(ids);

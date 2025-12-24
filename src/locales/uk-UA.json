@@ -57,16 +57,23 @@
         "groups": "Групи",
         "students": "Студенти",
         "marks": "Оцінки",
+        "modules": "Модулі",
+        "documents": "Документи",
         "summary": "Підсумки",
-        "guide": "Посібник"
+        "guide": "Посібник",
+        "navGroups": {
+            "attendance": "Відвідуваність",
+            "organization": "Організація",
+            "control": "Контроль",
+            "documentation": "Документація"
+        }
+    },
+    "modules": {
+        "title": "Модулі",
+        "description": "Налаштування визначень модулів для використання в групах"
     },
     "summary": {
         "description": "Налаштуйте параметри іспиту та перегляньте допуск/оцінки студентів.",
-        "views": {
-            "list": "Список",
-            "modules": "Модулі",
-            "documents": "Документи"
-        },
         "targetGroup": "Цільова група",
         "selectGroup": "Оберіть групу",
         "assessmentType": "Тип оцінювання",
@@ -85,8 +92,18 @@
             "add": "Додати модуль",
             "selectGroupHint": "Будь ласка, оберіть групу для налаштування модулів.",
             "emptyHint": "Модулі ще не додано. Натисніть \"Додати модуль\", щоб почати.",
+            "emptyHintWithCopy": "Модулі ще не додано. Натисніть \"Додати модуль\", щоб почати, або скопіюйте з іншої групи.",
+            "copyFromGroup": "Копіювати з іншої групи",
             "deleteConfirmTitle": "Видалити модуль",
             "deleteConfirmMessage": "Ви впевнені, що хочете видалити цей модуль? Цю дію неможливо скасувати.",
+            "copyModal": {
+                "title": "Копіювати модулі з групи",
+                "selectGroup": "Оберіть групу для копіювання модулів:",
+                "noGroups": "Немає інших груп з модулями.",
+                "modulesCount": "{count} модуль | {count} модулі | {count} модулів",
+                "copy": "Копіювати модулі",
+                "cancel": "Скасувати"
+            },
             "card": {
                 "name": "Назва модуля",
                 "testTask": "Тестове завдання",
@@ -137,50 +154,51 @@
             "title": "Встановити екзаменаційну оцінку",
             "grade": "Оцінка",
             "placeholder": "Введіть оцінку..."
+        }
+    },
+    "documents": {
+        "description": "Відстежуйте та керуйте статусом документації підсумкового оцінювання.",
+        "title": "Документи підсумкового оцінювання",
+        "searchPlaceholder": "Пошук студентів...",
+        "table": {
+            "student": "Ім'я студента",
+            "grade": "Підсумкова оцінка",
+            "assessmentType": "Тип",
+            "createdAt": "Створено",
+            "syncedAt": "Синхронізовано",
+            "documentedAt": "Задокументовано"
         },
-        "documents": {
-            "title": "Документи підсумкового оцінювання",
-            "searchPlaceholder": "Пошук студентів...",
-            "table": {
-                "student": "Ім'я студента",
-                "grade": "Підсумкова оцінка",
-                "assessmentType": "Тип",
-                "createdAt": "Створено",
-                "syncedAt": "Синхронізовано",
-                "documentedAt": "Задокументовано"
-            },
-            "tooltips": {
-                "markAsSynced": "Позначити як синхронізоване",
-                "markAsUnsynced": "Позначити як не синхронізоване",
-                "markAsDocumented": "Позначити як задокументоване",
-                "markAsUndocumented": "Позначити як не задокументоване"
-            }
+        "tooltips": {
+            "markAsSynced": "Позначити як синхронізоване",
+            "markAsUnsynced": "Позначити як не синхронізоване",
+            "markAsDocumented": "Позначити як задокументоване",
+            "markAsUndocumented": "Позначити як не задокументоване"
+        }
+    },
+    "data": {
+        "status": {
+            "automatic": "Автомат",
+            "allowed": "Допущено",
+            "notAllowed": "Не допущено"
         },
-        "data": {
-            "status": {
-                "automatic": "Автомат",
-                "allowed": "Допущено",
-                "notAllowed": "Не допущено"
-            },
-            "cause": {
-                "criteriaNotMet": "Критерії не виконано.",
-                "requirementsNotMet": "Вимоги не виконано: {reasons}",
-                "excellentPerformance": "Відмінна успішність: Всі модулі зараховано (Тест + Мін. завдань) та розраховано загальний бал.",
-                "admitted": "Допущено: Студент відповідає вимогам відвідування (> {attendanceThreshold}%) та загального виконання (> {completionThreshold}%)."
-            },
-            "reasons": {
-                "attendance": "Відвідування {percentage}% (потрібно {threshold}%)",
-                "completion": "Виконання {percentage}% (потрібно {threshold}%)",
-                "modulesIncomplete": "Модулі не завершено (відсутній загальний бал)"
-            },
-            "details": {
-                "completion": "{completed} з {total} завдань виконано",
-                "attendance": "{attended} з {total} зустрічей відвідано",
-                "modules": {
-                    "incompleteMissingTest": "Не завершено (відсутній тест)",
-                    "incompleteMissingTasks": "Не завершено (потрібно ще {count} завдання) | Не завершено (потрібно ще {count} завдань) | Не завершено (потрібно ще {count} завдань)",
-                    "details": "Сер. завдань: {avg} (×{tasksCoeff}), Тест: {test} (×{testCoeff})"
-                }
+        "cause": {
+            "criteriaNotMet": "Критерії не виконано.",
+            "requirementsNotMet": "Вимоги не виконано: {reasons}",
+            "excellentPerformance": "Відмінна успішність: Всі модулі зараховано (Тест + Мін. завдань) та розраховано загальний бал.",
+            "admitted": "Допущено: Студент відповідає вимогам відвідування (> {attendanceThreshold}%) та загального виконання (> {completionThreshold}%)."
+        },
+        "reasons": {
+            "attendance": "Відвідування {percentage}% (потрібно {threshold}%)",
+            "completion": "Виконання {percentage}% (потрібно {threshold}%)",
+            "modulesIncomplete": "Модулі не завершено (відсутній загальний бал)"
+        },
+        "details": {
+            "completion": "{completed} з {total} завдань виконано",
+            "attendance": "{attended} з {total} зустрічей відвідано",
+            "modules": {
+                "incompleteMissingTest": "Не завершено (відсутній тест)",
+                "incompleteMissingTasks": "Не завершено (потрібно ще {count} завдання) | Не завершено (потрібно ще {count} завдань) | Не завершено (потрібно ще {count} завдань)",
+                "details": "Сер. завдань: {avg} (×{tasksCoeff}), Тест: {test} (×{testCoeff})"
             }
         }
     },
@@ -559,6 +577,11 @@
             "cancel": "Скасувати",
             "apply": "Застосувати фільтри",
             "hideFailed": "Приховати незадовільні оцінки (менше FX)"
+        },
+        "emptyState": {
+            "title": "Створіть вашу першу групу!",
+            "description": "Схоже, у вас ще немає груп. Імпортуйте CSV файл з оцінками, щоб ми могли автоматично створити групу для вас.",
+            "hint": "Просто перетягніть файл у зону вище або натисніть на неї."
         }
     },
     "reports": {
@@ -677,11 +700,6 @@
             "course2": "2-й курс",
             "course1": "1-й курс",
             "other": "Інші зустрічі"
-        },
-        "views": {
-            "overview": "Огляд",
-            "table": "Таблиця",
-            "calendar": "Календар"
         },
         "card": {
             "totalSessions": "Всього сесій",

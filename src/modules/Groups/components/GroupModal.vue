@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { X, Save, ChevronDown } from 'lucide-vue-next';
-import { repository } from '@/services/repository';
+import { settingsRepository } from '@/shared/services/settings.repository';
 
 const props = defineProps({
   isOpen: Boolean,
@@ -44,7 +44,7 @@ const showMeetIdSuggestions = ref(false);
 const showTeacherSuggestions = ref(false);
 
 onMounted(async () => {
-  defaultTeacher.value = await repository.getDefaultTeacher();
+  defaultTeacher.value = await settingsRepository.getDefaultTeacher();
 });
 
 // Initialize form when modal opens or group changes

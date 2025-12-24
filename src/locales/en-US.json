@@ -57,16 +57,23 @@
         "groups": "Groups",
         "students": "Students",
         "marks": "Marks",
+        "modules": "Modules",
+        "documents": "Documents",
         "summary": "Summary",
-        "guide": "Guide"
+        "guide": "Guide",
+        "navGroups": {
+            "attendance": "Attendance",
+            "organization": "Organization",
+            "control": "Control",
+            "documentation": "Documentation"
+        }
+    },
+    "modules": {
+        "title": "Modules",
+        "description": "Configure module definitions for use across groups"
     },
     "summary": {
         "description": "Configure exam parameters and view student eligibility/grades.",
-        "views": {
-            "list": "List",
-            "modules": "Modules",
-            "documents": "Documents"
-        },
         "targetGroup": "Target Group",
         "selectGroup": "Select a group",
         "assessmentType": "Assessment Type",
@@ -85,8 +92,18 @@
             "add": "Add Module",
             "selectGroupHint": "Please select a group to configure modules.",
             "emptyHint": "No modules configured. Click \"Add Module\" to start.",
+            "emptyHintWithCopy": "No modules configured. Click \"Add Module\" to start or copy from another group.",
+            "copyFromGroup": "Copy from Other Group",
             "deleteConfirmTitle": "Delete Module",
             "deleteConfirmMessage": "Are you sure you want to delete this module? This action cannot be undone.",
+            "copyModal": {
+                "title": "Copy Modules from Group",
+                "selectGroup": "Select a group to copy modules from:",
+                "noGroups": "No other groups with modules available.",
+                "modulesCount": "{count} module | {count} modules",
+                "copy": "Copy Modules",
+                "cancel": "Cancel"
+            },
             "card": {
                 "name": "Module Name",
                 "testTask": "Test Task",
@@ -137,50 +154,51 @@
             "title": "Set Exam Grade",
             "grade": "Grade",
             "placeholder": "Enter grade..."
+        }
+    },
+    "documents": {
+        "description": "Track and manage final assessment documentation status.",
+        "title": "Final Assessments Documents",
+        "searchPlaceholder": "Search students...",
+        "table": {
+            "student": "Student Name",
+            "grade": "Final Grade",
+            "assessmentType": "Type",
+            "createdAt": "Created",
+            "syncedAt": "Synced",
+            "documentedAt": "Documented"
         },
-        "documents": {
-            "title": "Final Assessments Documents",
-            "searchPlaceholder": "Search students...",
-            "table": {
-                "student": "Student Name",
-                "grade": "Final Grade",
-                "assessmentType": "Type",
-                "createdAt": "Created",
-                "syncedAt": "Synced",
-                "documentedAt": "Documented"
-            },
-            "tooltips": {
-                "markAsSynced": "Mark as Synced",
-                "markAsUnsynced": "Mark as Unsynced",
-                "markAsDocumented": "Mark as Documented",
-                "markAsUndocumented": "Mark as Undocumented"
-            }
+        "tooltips": {
+            "markAsSynced": "Mark as Synced",
+            "markAsUnsynced": "Mark as Unsynced",
+            "markAsDocumented": "Mark as Documented",
+            "markAsUndocumented": "Mark as Undocumented"
+        }
+    },
+    "data": {
+        "status": {
+            "automatic": "Automatic",
+            "allowed": "Allowed",
+            "notAllowed": "Not Allowed"
         },
-        "data": {
-            "status": {
-                "automatic": "Automatic",
-                "allowed": "Allowed",
-                "notAllowed": "Not Allowed"
-            },
-            "cause": {
-                "criteriaNotMet": "Criteria not met.",
-                "requirementsNotMet": "Requirements not met: {reasons}",
-                "excellentPerformance": "Excellent Performance: All modules passed (Test + Min Tasks) and Total Grade is calculated.",
-                "admitted": "Admitted: Student meets attendance (> {attendanceThreshold}%) and global completion (> {completionThreshold}%) requirements."
-            },
-            "reasons": {
-                "attendance": "Attendance is {percentage}% (required {threshold}%)",
-                "completion": "Completion is {percentage}% (required {threshold}%)",
-                "modulesIncomplete": "Modules incomplete (missing Total score)"
-            },
-            "details": {
-                "completion": "{completed} of {total} tasks completed",
-                "attendance": "{attended} of {total} meets attended",
-                "modules": {
-                    "incompleteMissingTest": "Incomplete (missing test)",
-                    "incompleteMissingTasks": "Incomplete (need {count} more task) | Incomplete (need {count} more tasks)",
-                    "details": "Tasks avg: {avg} (×{tasksCoeff}), Test: {test} (×{testCoeff})"
-                }
+        "cause": {
+            "criteriaNotMet": "Criteria not met.",
+            "requirementsNotMet": "Requirements not met: {reasons}",
+            "excellentPerformance": "Excellent Performance: All modules passed (Test + Min Tasks) and Total Grade is calculated.",
+            "admitted": "Admitted: Student meets attendance (> {attendanceThreshold}%) and global completion (> {completionThreshold}%) requirements."
+        },
+        "reasons": {
+            "attendance": "Attendance is {percentage}% (required {threshold}%)",
+            "completion": "Completion is {percentage}% (required {threshold}%)",
+            "modulesIncomplete": "Modules incomplete (missing Total score)"
+        },
+        "details": {
+            "completion": "{completed} of {total} tasks completed",
+            "attendance": "{attended} of {total} meets attended",
+            "modules": {
+                "incompleteMissingTest": "Incomplete (missing test)",
+                "incompleteMissingTasks": "Incomplete (need {count} more task) | Incomplete (need {count} more tasks)",
+                "details": "Tasks avg: {avg} (×{tasksCoeff}), Test: {test} (×{testCoeff})"
             }
         }
     },

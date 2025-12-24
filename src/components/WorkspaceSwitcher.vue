@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { localeService } from '../services/locale';
-import { repository } from '../services/repository';
+import { workspaceRepository } from '@/shared/services/workspace.repository';
 import { useModalClose } from '../composables/useModalClose';
 import {
     Database, Plus, Check, Trash2, X, Download, AlertTriangle, HelpCircle, Pencil,
@@ -57,8 +57,8 @@ const workspaceToDelete = ref(null);
 const deleteConfirmationName = ref('');
 
 function loadWorkspaces() {
-    workspaces.value = repository.getWorkspaces();
-    currentWorkspaceId.value = repository.getCurrentWorkspaceId();
+    workspaces.value = workspaceRepository.getWorkspaces();
+    currentWorkspaceId.value = workspaceRepository.getCurrentWorkspaceId();
 }
 
 onMounted(() => {
@@ -74,7 +74,7 @@ async function handleSwitch(id) {
     if (id === currentWorkspaceId.value) return;
 
     try {
-        await repository.switchWorkspace(id);
+        await workspaceRepository.switchWorkspace(id);
         // Smooth transition before reload
         const message = localeService.getTranslation('loader.switchingWorkspace');
         fadeOutAndReload(message);
@@ -99,7 +99,7 @@ async function handleCreate() {
     newWorkspaceName.value = '';
     selectedIcon.value = 'Database'; // Reset
 
-    const id = await repository.createWorkspace(name, options);
+    const id = await workspaceRepository.createWorkspace(name, options);
 
     // Auto-switch to new workspace for better UX
     await handleSwitch(id);
@@ -117,7 +117,7 @@ async function handleUpdate() {
     if (!editWorkspaceName.value.trim()) return;
 
     try {
-        await repository.updateWorkspace(workspaceToEdit.value.id, {
+        await workspaceRepository.updateWorkspace(workspaceToEdit.value.id, {
             name: editWorkspaceName.value.trim(),
             icon: editSelectedIcon.value
         });
@@ -141,7 +141,7 @@ async function handleDelete() {
     if (!workspaceToDelete.value) return;
     if (deleteConfirmationName.value !== workspaceToDelete.value.name) return;
 
-    await repository.deleteWorkspace(workspaceToDelete.value.id);
+    await workspaceRepository.deleteWorkspace(workspaceToDelete.value.id);
 
     showDeleteModal.value = false;
     workspaceToDelete.value = null;
@@ -200,7 +200,7 @@ useModalClose(() => {
 
         <!-- Dropdown -->
         <div v-if="isOpen"
-            class="absolute right-0 top-full mt-2 w-64 bg-card rounded-lg shadow-lg border z-50 animate-in fade-in zoom-in-95 duration-200">
+            class="absolute left-0 top-full mt-2 w-full bg-card rounded-lg shadow-lg border z-50 animate-in fade-in zoom-in-95 duration-200">
             <div class="p-2 space-y-1">
                 <div class="px-2 py-1.5 flex items-center justify-between">
                     <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">

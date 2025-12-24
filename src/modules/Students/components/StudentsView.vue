@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { useVirtualList } from '@vueuse/core';
 import { Search, ArrowUpDown, ArrowUp, ArrowDown, X, Timer, Edit2, Trash2, Star, ChartPie, Mail, User, Loader2 } from 'lucide-vue-next';
 import EditStudentModal from './EditStudentModal.vue';
 import StudentProfileModal from './StudentProfileModal.vue';
@@ -54,17 +55,39 @@ const selectedGroup = ref(null);
 
 // Column visibility setup
 const columns = computed(() => [
-  { id: 'name', label: t('students.table.name'), defaultVisible: true },
-  { id: 'groups', label: t('students.table.groups'), defaultVisible: true },
-  { id: 'meetIds', label: t('students.table.meetIds'), defaultVisible: false },
-  { id: 'sessions', label: t('students.table.sessions'), defaultVisible: true },
-  { id: 'avgTime', label: t('students.table.avg') + ' %', defaultVisible: true },
-  { id: 'totalTime', label: t('students.table.total') + ' %', defaultVisible: true },
-  { id: 'avgMark', label: t('students.table.avg') + ' ★', defaultVisible: true },
-  { id: 'completion', label: t('students.table.total') + ' ✓', defaultVisible: true }
+  { id: 'select', width: '40px', fixed: true },
+  { id: 'index', width: '40px', fixed: true },
+  { id: 'name', label: t('students.table.name'), defaultVisible: true, width: 'minmax(200px, 2fr)' },
+  { id: 'groups', label: t('students.table.groups'), defaultVisible: true, width: 'minmax(150px, 1.5fr)' },
+  { id: 'meetIds', label: t('students.table.meetIds'), defaultVisible: false, width: 'minmax(100px, 1fr)' },
+  { id: 'sessions', label: t('students.table.sessions'), defaultVisible: true, width: '80px' },
+  { id: 'avgTime', label: t('students.table.avg') + ' %', defaultVisible: true, width: '80px' },
+  { id: 'totalTime', label: t('students.table.total') + ' %', defaultVisible: true, width: '80px' },
+  { id: 'avgMark', label: t('students.table.avg') + ' ★', defaultVisible: true, width: '80px' },
+  { id: 'completion', label: t('students.table.total') + ' ✓', defaultVisible: true, width: '80px' },
+  { id: 'actions', width: '100px', fixed: true }
 ]);
 
-const { visibleColumns, toggleColumn, resetColumns, isColumnVisible } = useColumnVisibility('students', columns.value);
+const { visibleColumns, toggleColumn, resetColumns, isColumnVisible } = useColumnVisibility('students', columns.value.filter(c => !c.fixed));
+
+const gridStyle = computed(() => {
+  // Always include fixed start columns
+  let cols = [columns.value.find(c => c.id === 'select').width, columns.value.find(c => c.id === 'index').width];
+  
+  // Add visible responsive columns
+  columns.value.forEach(col => {
+     if (!col.fixed && isColumnVisible(col.id)) {
+       cols.push(col.width);
+     }
+  });
+
+  // Always include fixed end column
+  cols.push(columns.value.find(c => c.id === 'actions').width);
+
+  return {
+    gridTemplateColumns: cols.join(' ')
+  };
+});
 
 useQuerySync({
   search: searchQuery,
@@ -105,7 +128,7 @@ const filteredStudents = computed(() => {
     );
   }
 
-  return result.sort((a, b) => {
+  return [...result].sort((a, b) => {
     let valA = a[sortField.value];
     let valB = b[sortField.value];
 
@@ -134,6 +157,10 @@ const allGroupsList = computed(() => {
   return Array.from(set).sort();
 });
 
+// Virtual List Setup
+const { list, containerProps, wrapperProps } = useVirtualList(filteredStudents, {
+  itemHeight: 60, // approximate height of a row
+});
 
 function openAnalytics(meetId) {
   router.push({ name: 'AnalyticsDetails', params: { id: meetId } });
@@ -176,13 +203,6 @@ async function handleSaveStudent(formData) {
 }
 
 // Delete Logic
-function openDeleteModal(id) {
-  studentToDeleteId.value = id;
-  isBulkDelete.value = false;
-  showDeleteModal.value = true;
-}
-
-// We need to modify openDeleteModal signature and usage in template
 function openDeleteModalObj(student) {
   studentToDeleteId.value = student.id;
   isBulkDelete.value = false;
@@ -215,7 +235,7 @@ async function handleDeleteConfirm() {
     <p>{{ $t('loader.loading') }}</p>
   </div>
   <div v-else class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-    <!-- ... (Header remains same) ... -->
+    <!-- Header Controls (Same) -->
     <div class="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
       <div class="space-y-1 w-full sm:w-auto">
         <div class="flex items-center gap-4">
@@ -225,7 +245,6 @@ async function handleDeleteConfirm() {
             total: students.length
           }) }}</span>
 
-          <!-- Bulk Delete -->
           <button v-if="selectedStudents.size > 0" @click="openBulkDeleteModal"
             class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-md transition-colors">
             <Trash2 class="w-4 h-4" />
@@ -254,194 +273,154 @@ async function handleDeleteConfirm() {
         <input v-model="searchQuery" type="text" :placeholder="$t('students.searchPlaceholder')"
           class="w-full pl-9 pr-4 py-2 rounded-md border bg-background text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
       </div>
-
-      <ColumnPicker :columns="columns" :visible-columns="visibleColumns" @toggle-column="toggleColumn"
-        @reset="resetColumns" />
+      <ColumnPicker :columns="columns" :visible-columns="visibleColumns" @toggle-column="toggleColumn" @reset="resetColumns" />
     </div>
 
-    <!-- Table -->
-    <div class="border rounded-lg bg-card overflow-hidden shadow-sm">
-      <div class="overflow-x-auto overflow-y-hidden">
-        <table class="w-full text-sm text-left">
-          <thead class="bg-muted/50 text-muted-foreground font-medium border-b">
-            <tr>
-              <th class="w-10 px-4 py-3">
-                <input type="checkbox"
-                  :checked="selectedStudents.size > 0 && selectedStudents.size === filteredStudents.length"
-                  @change="toggleSelectAll" class="rounded border-gray-300 text-primary focus:ring-primary" />
-              </th>
-              <th class="w-12 px-4 py-3 text-center">#</th>
-              <th v-if="isColumnVisible('name')"
-                class="px-4 py-3 cursor-pointer hover:text-foreground transition-colors" @click="toggleSort('name')"
-                :title="$t('students.table.tooltips.name')">
-                <div class="flex items-center gap-2">
-                  {{ $t('students.table.name') }}
-                  <ArrowUp v-if="sortField === 'name' && sortDirection === 'asc'" class="w-3 h-3" />
-                  <ArrowDown v-if="sortField === 'name' && sortDirection === 'desc'" class="w-3 h-3" />
-                  <ArrowUpDown v-if="sortField !== 'name'" class="w-3 h-3 opacity-50" />
-                </div>
-              </th>
-              <th v-if="isColumnVisible('groups')"
-                class="px-4 py-3 cursor-pointer hover:text-foreground transition-colors" @click="toggleSort('groups')"
-                :title="$t('students.table.tooltips.groups')">
-                <div class="flex items-center gap-2">
-                  {{ $t('students.table.groups') }}
-                  <ArrowUp v-if="sortField === 'groups' && sortDirection === 'asc'" class="w-3 h-3" />
-                  <ArrowDown v-if="sortField === 'groups' && sortDirection === 'desc'" class="w-3 h-3" />
-                  <ArrowUpDown v-if="sortField !== 'groups'" class="w-3 h-3 opacity-50" />
-                </div>
-              </th>
-              <th v-if="isColumnVisible('meetIds')"
-                class="px-4 py-3 cursor-pointer hover:text-foreground transition-colors" @click="toggleSort('meetIds')"
-                :title="$t('students.table.tooltips.meetIds')">
-                <div class="flex items-center gap-2">
-                  {{ $t('students.table.meetIds') }}
-                  <ArrowUp v-if="sortField === 'meetIds' && sortDirection === 'asc'" class="w-3 h-3" />
-                  <ArrowDown v-if="sortField === 'meetIds' && sortDirection === 'desc'" class="w-3 h-3" />
-                  <ArrowUpDown v-if="sortField !== 'meetIds'" class="w-3 h-3 opacity-50" />
-                </div>
-              </th>
-              <th v-if="isColumnVisible('sessions')"
-                class="px-4 py-3 text-center cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('sessionCount')" :title="$t('students.table.tooltips.sessions')">
-                <div class="flex items-center justify-center gap-2">
-                  {{ $t('students.table.sessions') }}
-                  <ArrowUp v-if="sortField === 'sessionCount' && sortDirection === 'asc'" class="w-3 h-3" />
-                  <ArrowDown v-if="sortField === 'sessionCount' && sortDirection === 'desc'" class="w-3 h-3" />
-                  <ArrowUpDown v-if="sortField !== 'sessionCount'" class="w-3 h-3 opacity-50" />
-                </div>
-              </th>
-              <th v-if="isColumnVisible('avgTime')"
-                class="px-4 py-3 text-center cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('averageAttendancePercent')" :title="$t('students.table.tooltips.avgTime')">
-                <div class="flex items-center justify-center gap-2">
-                  {{ $t('students.table.avg') }}
-                  <Timer class="w-3 h-3" /> %
-                  <ArrowUp v-if="sortField === 'averageAttendancePercent' && sortDirection === 'asc'" class="w-3 h-3" />
-                  <ArrowDown v-if="sortField === 'averageAttendancePercent' && sortDirection === 'desc'"
-                    class="w-3 h-3" />
-                  <ArrowUpDown v-if="sortField !== 'averageAttendancePercent'" class="w-3 h-3 opacity-50" />
-                </div>
-              </th>
-              <th v-if="isColumnVisible('totalTime')"
-                class="px-4 py-3 text-center cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('totalAttendancePercent')" :title="$t('students.table.tooltips.totalTime')">
-                <div class="flex items-center justify-center gap-2">
-                  {{ $t('students.table.total') }}
-                  <Timer class="w-3 h-3" /> %
-                  <ArrowUp v-if="sortField === 'totalAttendancePercent' && sortDirection === 'asc'" class="w-3 h-3" />
-                  <ArrowDown v-if="sortField === 'totalAttendancePercent' && sortDirection === 'desc'"
-                    class="w-3 h-3" />
-                  <ArrowUpDown v-if="sortField !== 'totalAttendancePercent'" class="w-3 h-3 opacity-50" />
-                </div>
-              </th>
-              <th v-if="isColumnVisible('avgMark')"
-                class="px-4 py-3 text-center cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('averageMark')" :title="$t('students.table.tooltips.avgMark')">
-                <div class="flex items-center justify-center gap-2">
-                  {{ $t('students.table.avg') }}
-                  <Star class="w-3 h-3" />
-                  <ArrowUp v-if="sortField === 'averageMark' && sortDirection === 'asc'" class="w-3 h-3" />
-                  <ArrowDown v-if="sortField === 'averageMark' && sortDirection === 'desc'" class="w-3 h-3" />
-                  <ArrowUpDown v-if="sortField !== 'averageMark'" class="w-3 h-3 opacity-50" />
-                </div>
-              </th>
-              <th v-if="isColumnVisible('completion')"
-                class="px-4 py-3 text-center cursor-pointer hover:text-foreground transition-colors"
-                @click="toggleSort('completionPercent')" :title="$t('students.table.tooltips.completion')">
-                <div class="flex items-center justify-center gap-2">
-                  <ChartPie class="w-3 h-3" />%
-                  <ArrowUp v-if="sortField === 'completionPercent' && sortDirection === 'asc'" class="w-3 h-3" />
-                  <ArrowDown v-if="sortField === 'completionPercent' && sortDirection === 'desc'" class="w-3 h-3" />
-                  <ArrowUpDown v-if="sortField !== 'completionPercent'" class="w-3 h-3 opacity-50" />
-                </div>
-              </th>
-              <th class="px-4 py-3 text-center">{{ $t('students.table.actions') }}</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr v-for="(student, index) in filteredStudents" :key="student.id"
-              class="hover:bg-muted/50 transition-colors table-row-animate"
-              :style="{ animationDelay: `${index * 0.0125}s` }"
-              :class="{ 'bg-muted/30': selectedStudents.has(student.id) }">
-              <td class="px-4 py-3">
-                <input type="checkbox" :checked="student.id && selectedStudents.has(student.id)"
-                  @change="toggleSelect(student.id)" :disabled="!student.id"
-                  class="rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
-                  title="Only saved members can be bulk deleted" />
-              </td>
-              <td class="px-4 py-3 text-center text-muted-foreground text-xs">{{
-                index + 1 }}</td>
-              <td v-if="isColumnVisible('name')" class="px-4 py-3 font-medium">{{ student.name }}</td>
-              <td v-if="isColumnVisible('groups')" class="px-4 py-3 text-muted-foreground max-w-xs">
-                <div class="flex flex-wrap gap-1">
-                  <button v-for="group in student.groups" :key="group" @click="selectedGroup = group"
-                    class="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium whitespace-nowrap hover:bg-secondary/80 transition-colors cursor-pointer"
-                    :class="{ 'ring-2 ring-primary': selectedGroup === group }">
-                    {{ group }}
-                  </button>
-                </div>
-              </td>
-              <td v-if="isColumnVisible('meetIds')" class="px-4 py-3 text-muted-foreground max-w-xs">
-                <div class="flex flex-wrap gap-1">
-                  <button v-for="meetId in student.meetIds" :key="meetId" @click="openAnalytics(meetId)"
-                    class="px-2 py-0.5 rounded-full bg-muted hover:bg-primary/10 hover:text-primary text-xs font-medium whitespace-nowrap transition-colors cursor-pointer border border-transparent hover:border-primary/20"
-                    title="View Analytics">
-                    {{ meetId }}
-                  </button>
-                </div>
-              </td>
-              <td v-if="isColumnVisible('sessions')" class="px-4 py-3 text-center">
-                <span class="font-medium">{{ student.sessionCount }}</span>
-                <span class="text-muted-foreground">/{{ student.totalSessions }}</span>
-              </td>
-              <td v-if="isColumnVisible('avgTime')" class="px-4 py-3 text-center font-mono"
-                :class="getScoreColor(student.averageAttendancePercent)"
-                :title="`Across ${student.sessionCount} sessions`">
-                {{ student.averageAttendancePercent.toFixed(1) }}%
-              </td>
-              <td v-if="isColumnVisible('totalTime')" class="px-4 py-3 text-center font-mono"
-                :class="getScoreColor(student.totalAttendancePercent)" :title="formatDuration(student.totalDuration)">
-                {{ student.totalAttendancePercent.toFixed(1) }}%
-              </td>
-              <td v-if="isColumnVisible('avgMark')" class="px-4 py-3 text-center font-mono"
-                :class="getScoreColor(student.averageMark * 20)"
-                :title="`Average grade: ${student.averageMark ? student.averageMark.toFixed(2) : 0}/5 (based on ${student.marks?.length || 0} marks)`">
-                {{ student.averageMark ? student.averageMark.toFixed(2) : '—' }}
-              </td>
-              <td v-if="isColumnVisible('completion')" class="px-4 py-3 text-center font-mono"
-                :class="getScoreColor(student.completionPercent)"
-                :title="`${student.completedTasks} / ${student.totalTasks} tasks`">
-                {{ student.completionPercent ? student.completionPercent.toFixed(1) : '0' }}%
-              </td>
-              <td class="px-4 py-3 text-right">
-                <div class="flex justify-end gap-2">
+    <!-- Virtual Table Container -->
+    <div class="border rounded-lg bg-card shadow-sm flex flex-col h-[calc(100vh-14rem)]">
+      <!-- Header Row (Grid) -->
+      <div class="grid gap-2 p-3 bg-muted/50 border-b font-medium text-muted-foreground text-sm sticky top-0 z-10 shrink-0 select-none items-center"
+           :style="gridStyle">
+        <!-- Checkbox -->
+        <div class="flex items-center justify-center">
+          <input type="checkbox" :checked="selectedStudents.size > 0 && selectedStudents.size === filteredStudents.length"
+            @change="toggleSelectAll" class="rounded border-gray-300 text-primary focus:ring-primary" />
+        </div>
+        <!-- Index -->
+        <div class="text-center">#</div>
+        
+        <!-- Headers -->
+        <div v-if="isColumnVisible('name')" class="cursor-pointer flex items-center gap-2 hover:text-foreground transition-colors" @click="toggleSort('name')">
+           {{ $t('students.table.name') }}
+           <ArrowUp v-if="sortField === 'name' && sortDirection === 'asc'" class="w-3 h-3" />
+           <ArrowDown v-if="sortField === 'name' && sortDirection === 'desc'" class="w-3 h-3" />
+           <ArrowUpDown v-if="sortField !== 'name'" class="w-3 h-3 opacity-50" />
+        </div>
+        
+        <div v-if="isColumnVisible('groups')" class="cursor-pointer flex items-center gap-2 hover:text-foreground transition-colors" @click="toggleSort('groups')">
+           {{ $t('students.table.groups') }}
+           <ArrowUp v-if="sortField === 'groups' && sortDirection === 'asc'" class="w-3 h-3" />
+           <ArrowDown v-if="sortField === 'groups' && sortDirection === 'desc'" class="w-3 h-3" />
+           <ArrowUpDown v-if="sortField !== 'groups'" class="w-3 h-3 opacity-50" />
+        </div>
 
-                  <button @click="openProfileModal(student)"
-                    class="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                    :title="$t('students.actions.profile')">
-                    <User class="w-4 h-4" />
-                  </button>
-                  <button @click="openEditModal(student)"
-                    class="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                    :title="$t('students.actions.edit')">
-                    <Edit2 class="w-4 h-4" />
-                  </button>
-                  <button @click="openDeleteModalObj(student)"
-                    class="p-2 hover:bg-destructive/10 rounded-md transition-colors text-destructive hover:text-destructive"
-                    :title="$t('students.actions.delete')">
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="filteredStudents.length === 0">
-              <td colspan="10" class="px-4 py-8 text-center text-muted-foreground">
+        <div v-if="isColumnVisible('meetIds')" class="cursor-pointer flex items-center gap-2 hover:text-foreground transition-colors" @click="toggleSort('meetIds')">
+           {{ $t('students.table.meetIds') }}
+           <ArrowUp v-if="sortField === 'meetIds' && sortDirection === 'asc'" class="w-3 h-3" />
+           <ArrowDown v-if="sortField === 'meetIds' && sortDirection === 'desc'" class="w-3 h-3" />
+           <ArrowUpDown v-if="sortField !== 'meetIds'" class="w-3 h-3 opacity-50" />
+        </div>
+
+        <div v-if="isColumnVisible('sessions')" class="text-center cursor-pointer flex items-center justify-center gap-2 hover:text-foreground transition-colors" @click="toggleSort('sessionCount')">
+           {{ $t('students.table.sessions') }}
+           <ArrowUp v-if="sortField === 'sessionCount' && sortDirection === 'asc'" class="w-3 h-3" />
+           <ArrowDown v-if="sortField === 'sessionCount' && sortDirection === 'desc'" class="w-3 h-3" />
+           <ArrowUpDown v-if="sortField !== 'sessionCount'" class="w-3 h-3 opacity-50" />
+        </div>
+
+        <div v-if="isColumnVisible('avgTime')" class="text-center cursor-pointer flex items-center justify-center gap-2 hover:text-foreground transition-colors" @click="toggleSort('averageAttendancePercent')">
+           {{ $t('students.table.avg') }} %
+           <ArrowUp v-if="sortField === 'averageAttendancePercent' && sortDirection === 'asc'" class="w-3 h-3" />
+           <ArrowDown v-if="sortField === 'averageAttendancePercent' && sortDirection === 'desc'" class="w-3 h-3" />
+           <ArrowUpDown v-if="sortField !== 'averageAttendancePercent'" class="w-3 h-3 opacity-50" />
+        </div>
+
+        <div v-if="isColumnVisible('totalTime')" class="text-center cursor-pointer flex items-center justify-center gap-2 hover:text-foreground transition-colors" @click="toggleSort('totalAttendancePercent')">
+           {{ $t('students.table.total') }} %
+           <ArrowUp v-if="sortField === 'totalAttendancePercent' && sortDirection === 'asc'" class="w-3 h-3" />
+           <ArrowDown v-if="sortField === 'totalAttendancePercent' && sortDirection === 'desc'" class="w-3 h-3" />
+           <ArrowUpDown v-if="sortField !== 'totalAttendancePercent'" class="w-3 h-3 opacity-50" />
+        </div>
+
+         <div v-if="isColumnVisible('avgMark')" class="text-center cursor-pointer flex items-center justify-center gap-2 hover:text-foreground transition-colors" @click="toggleSort('averageMark')">
+           {{ $t('students.table.avg') }} ★
+           <ArrowUp v-if="sortField === 'averageMark' && sortDirection === 'asc'" class="w-3 h-3" />
+           <ArrowDown v-if="sortField === 'averageMark' && sortDirection === 'desc'" class="w-3 h-3" />
+           <ArrowUpDown v-if="sortField !== 'averageMark'" class="w-3 h-3 opacity-50" />
+        </div>
+
+        <div v-if="isColumnVisible('completion')" class="text-center cursor-pointer flex items-center justify-center gap-2 hover:text-foreground transition-colors" @click="toggleSort('completionPercent')">
+           {{ $t('students.table.total') }} ✓
+           <ArrowUp v-if="sortField === 'completionPercent' && sortDirection === 'asc'" class="w-3 h-3" />
+           <ArrowDown v-if="sortField === 'completionPercent' && sortDirection === 'desc'" class="w-3 h-3" />
+           <ArrowUpDown v-if="sortField !== 'completionPercent'" class="w-3 h-3 opacity-50" />
+        </div>
+
+        <div class="text-center">{{ $t('students.table.actions') }}</div>
+      </div>
+
+      <!-- Virtual List Body -->
+      <div v-bind="containerProps" class="h-full overflow-y-auto w-full relative custom-scrollbar">
+        <div v-bind="wrapperProps" class="w-full">
+            <div v-for="{ index, data: student } in list" :key="student.id"
+              class="grid gap-2 p-3 border-b hover:bg-muted/50 transition-colors items-center text-sm"
+              :class="{ 'bg-muted/30': selectedStudents.has(student.id) }"
+              :style="{ ...gridStyle, height: '60px' }">
+              
+              <!-- Checkbox -->
+              <div class="flex items-center justify-center">
+                 <input type="checkbox" :checked="student.id && selectedStudents.has(student.id)"
+                   @change="toggleSelect(student.id)" :disabled="!student.id"
+                   class="rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50" />
+              </div>
+              <!-- Index -->
+              <div class="text-center text-muted-foreground text-xs">{{ index + 1 }}</div>
+
+              <!-- Name -->
+              <div v-if="isColumnVisible('name')" class="font-medium truncate" :title="student.name">{{ student.name }}</div>
+
+              <!-- Groups -->
+              <div v-if="isColumnVisible('groups')" class="text-muted-foreground truncate flex flex-wrap gap-1 overflow-hidden h-8">
+                 <button v-for="group in student.groups" :key="group" @click.stop="selectedGroup = group"
+                    class="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium whitespace-nowrap hover:bg-secondary/80 transition-colors truncate max-w-[100px]">
+                    {{ group }}
+                 </button>
+              </div>
+
+              <!-- Meet IDs -->
+              <div v-if="isColumnVisible('meetIds')" class="text-muted-foreground truncate">
+                 <div class="flex flex-wrap gap-1 h-8 overflow-hidden">
+                   <button v-for="meetId in student.meetIds" :key="meetId" @click.stop="openAnalytics(meetId)" class="px-2 py-0.5 text-xs bg-muted rounded truncate max-w-[80px]">{{ meetId }}</button>
+                 </div>
+              </div>
+
+              <!-- Sessions -->
+              <div v-if="isColumnVisible('sessions')" class="text-center">
+                 <span class="font-medium">{{ student.sessionCount }}</span>
+                 <span class="text-muted-foreground">/{{ student.totalSessions }}</span>
+              </div>
+
+              <!-- Avg Time -->
+              <div v-if="isColumnVisible('avgTime')" class="text-center font-mono" :class="getScoreColor(student.averageAttendancePercent)">
+                {{ student.averageAttendancePercent.toFixed(1) }}%
+              </div>
+
+              <!-- Total Time -->
+              <div v-if="isColumnVisible('totalTime')" class="text-center font-mono" :class="getScoreColor(student.totalAttendancePercent)">
+                 {{ student.totalAttendancePercent.toFixed(1) }}%
+              </div>
+
+              <!-- Avg Mark -->
+              <div v-if="isColumnVisible('avgMark')" class="text-center font-mono" :class="getScoreColor(student.averageMark * 20)">
+                 {{ student.averageMark ? student.averageMark.toFixed(2) : '—' }}
+              </div>
+
+              <!-- Completion -->
+              <div v-if="isColumnVisible('completion')" class="text-center font-mono" :class="getScoreColor(student.completionPercent)">
+                 {{ student.completionPercent ? student.completionPercent.toFixed(1) : '0' }}%
+              </div>
+
+              <!-- Actions -->
+              <div class="text-right flex justify-end gap-2">
+                  <button @click.stop="openProfileModal(student)" class="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground"><User class="w-4 h-4" /></button>
+                  <button @click.stop="openEditModal(student)" class="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground"><Edit2 class="w-4 h-4" /></button>
+                  <button @click.stop="openDeleteModalObj(student)" class="p-2 hover:bg-destructive/10 rounded-md text-destructive hover:text-destructive"><Trash2 class="w-4 h-4" /></button>
+              </div>
+            </div>
+            <div v-if="list.length === 0" class="p-8 text-center text-muted-foreground">
                 {{ $t('students.noStudents') }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+            </div>
+        </div>
       </div>
     </div>
 

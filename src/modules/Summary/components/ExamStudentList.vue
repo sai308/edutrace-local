@@ -331,7 +331,7 @@ function openProfile(student) {
         </div>
 
         <div class="border rounded-lg overflow-hidden bg-card shadow-sm">
-            <div class="overflow-x-auto overflow-visible">
+            <div class="overflow-x-auto overflow-visible custom-scrollbar">
                 <table class="w-full text-sm text-left">
                     <thead class="bg-muted/50 text-muted-foreground font-medium border-b">
                         <tr>

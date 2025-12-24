@@ -44,6 +44,16 @@ const routes = [
         component: () => import('../modules/Marks/views/MarksPage.vue')
     },
     {
+        path: '/modules',
+        name: 'Modules',
+        component: () => import('../modules/Modules/views/ModulesPage.vue')
+    },
+    {
+        path: '/documents',
+        name: 'Documents',
+        component: () => import('../modules/Documents/views/DocumentsPage.vue')
+    },
+    {
         path: '/summary',
         name: 'Summary',
         component: () => import('../modules/Summary/views/SummaryPage.vue')

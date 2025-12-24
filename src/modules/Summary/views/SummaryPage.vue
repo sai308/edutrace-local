@@ -2,11 +2,8 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
-import { List, Layers, Users, Percent, BookDashed, SquareStar, FileText } from 'lucide-vue-next';
-import { serializeModule } from '../services/examSerialization';
-import ExamConfiguration from '../components/ExamConfiguration.vue';
+import { List, Users, Percent, BookDashed, SquareStar } from 'lucide-vue-next';
 import ExamStudentList from '../components/ExamStudentList.vue';
-import DocumentsList from '../components/DocumentsList.vue';
 import CustomSelect from '@/components/CustomSelect.vue';
 import { summaryService } from '../services/summary.service';
 
@@ -36,8 +33,6 @@ const assessmentTypeOptions = computed(() => [
     { value: 'credit', label: t('summary.types.credit') }
 ]);
 
-// View mode state
-const viewMode = ref('list');
 
 let saveTimeout = null;
 
@@ -54,11 +49,6 @@ onMounted(async () => {
         }
     } else if (availableGroups.value.length > 0) {
         selectedGroup.value = availableGroups.value[0];
-    }
-
-    const viewQuery = route.query.view;
-    if (viewQuery && ['list', 'modules', 'documents'].includes(viewQuery)) {
-        viewMode.value = viewQuery;
     }
 
     const savedSettings = await summaryService.getExamSettings();
@@ -87,10 +77,7 @@ watch(selectedGroup, (newGroup) => {
     }
 });
 
-watch(viewMode, (newView) => {
-    router.replace({ query: { ...route.query, view: newView } });
-});
-
+// Load modules when group changes
 watch(selectedGroup, async (newGroup) => {
     if (newGroup?.name) {
         const groupModules = await summaryService.getModulesByGroup(newGroup.name);
@@ -100,61 +87,14 @@ watch(selectedGroup, async (newGroup) => {
     }
 }, { immediate: true });
 
-watch(modules, async (newModules) => {
-    if (!selectedGroup.value?.name) return;
-
-    if (saveTimeout) clearTimeout(saveTimeout);
-
-    saveTimeout = setTimeout(async () => {
-        for (const module of newModules) {
-            try {
-                const plainModule = serializeModule(module, selectedGroup.value);
-                await summaryService.saveModule(plainModule);
-            } catch (error) {
-                console.error('Failed to save module:', error, module);
-            }
-        }
-    }, 500);
-}, { deep: true });
-
-async function handleDeleteModule(module) {
-    if (module && module.id) {
-        await summaryService.deleteModule(module.id);
-    }
-}
 
 </script>
 
 <template>
     <div class="container mx-auto p-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <!-- Header with View Switcher -->
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div class="flex flex-col gap-2">
-                <h1 class="text-3xl font-bold tracking-tight">{{ $t('nav.summary') }}</h1>
-                <p class="text-muted-foreground">{{ $t('summary.description') }}</p>
-            </div>
-
-            <!-- View Mode Switcher -->
-            <div class="flex items-center gap-1 p-1 bg-muted rounded-lg">
-                <button @click="viewMode = 'list'"
-                    class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                    :class="viewMode === 'list' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
-                    <List class="w-4 h-4" />
-                    {{ $t('summary.views.list') }}
-                </button>
-                <button @click="viewMode = 'modules'"
-                    class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                    :class="viewMode === 'modules' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
-                    <Layers class="w-4 h-4" />
-                    {{ $t('summary.views.modules') }}
-                </button>
-                <button @click="viewMode = 'documents'"
-                    class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                    :class="viewMode === 'documents' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
-                    <FileText class="w-4 h-4" />
-                    {{ $t('summary.views.documents') }}
-                </button>
-            </div>
+        <div class="flex flex-col gap-2">
+            <h1 class="text-3xl font-bold tracking-tight">{{ $t('nav.summary') }}</h1>
+            <p class="text-muted-foreground">{{ $t('summary.description') }}</p>
         </div>
 
         <!-- Filters and Conditions Row -->
@@ -190,10 +130,9 @@ async function handleDeleteModule(module) {
             <div class="flex flex-wrap items-end gap-4 p-4 border rounded-lg bg-card">
 
                 <!-- Assessment Type Picker -->
-                <div class="flex-1 min-w-[150px]"
-                    :class="{ 'opacity-50 pointer-events-none': viewMode === 'documents' }">
+                <div class="flex-1 min-w-[150px]">
                     <CustomSelect v-model="assessmentType" :options="assessmentTypeOptions" display-key="label"
-                        value-key="value" :disabled="viewMode === 'documents'">
+                        value-key="value">
                         <template #label>
                             <BookDashed class="w-4 h-4" />
                             {{ $t('summary.assessmentType') }}
@@ -202,31 +141,27 @@ async function handleDeleteModule(module) {
                 </div>
 
                 <!-- Required Tasks -->
-                <div class="w-full min-w-[150px] sm:w-32 space-y-2"
-                    :class="{ 'opacity-50 pointer-events-none': viewMode === 'documents' }">
+                <div class="w-full min-w-[150px] sm:w-32 space-y-2">
                     <label class="text-sm font-medium flex items-center gap-2">
                         <List class="w-4 h-4" />
                         {{ $t('summary.thresholds.requiredTasks') }}
                     </label>
-                    <input v-model.number="requiredTasks" type="number" min="0" :disabled="viewMode === 'documents'"
+                    <input v-model.number="requiredTasks" type="number" min="0"
                         class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                 </div>
 
                 <!-- Completion Threshold -->
-                <div class="w-full min-w-[150px] sm:w-48 space-y-2"
-                    :class="{ 'opacity-50 pointer-events-none': viewMode === 'documents' }">
+                <div class="w-full min-w-[150px] sm:w-48 space-y-2">
                     <label class="text-sm font-medium flex items-center gap-2">
                         <Percent class="w-4 h-4" />
                         {{ $t('summary.thresholds.completion') }}
                     </label>
                     <input v-model.number="completionThreshold" type="number" min="0" max="100"
-                        :disabled="viewMode === 'documents'"
                         class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                 </div>
 
                 <!-- Attendance Threshold -->
-                <div class="w-full min-w-[150px] sm:w-48 space-y-2"
-                    :class="{ 'opacity-50 pointer-events-none': viewMode === 'documents' }">
+                <div class="w-full min-w-[150px] sm:w-48 space-y-2">
                     <div class="flex items-center justify-between">
                         <label class="text-sm font-medium flex items-center gap-2"
                             :class="{ 'opacity-50': !attendanceEnabled }">
@@ -234,27 +169,21 @@ async function handleDeleteModule(module) {
                             {{ $t('summary.thresholds.attendance') }}
                         </label>
                         <input type="checkbox" v-model="attendanceEnabled"
-                            :title="$t('summary.thresholds.attendanceTitle')" :disabled="viewMode === 'documents'"
+                            :title="$t('summary.thresholds.attendanceTitle')"
                             class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" />
                     </div>
                     <input v-model.number="attendanceThreshold" type="number" min="0" max="100"
-                        :disabled="!attendanceEnabled || viewMode === 'documents'"
+                        :disabled="!attendanceEnabled"
                         class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                 </div>
             </div>
         </div>
 
-        <!-- Modules View -->
-        <ExamConfiguration v-if="viewMode === 'modules'" :group="selectedGroup"
-            v-model:completion-threshold="completionThreshold" v-model:attendance-threshold="attendanceThreshold"
-            v-model:modules="modules" @delete="handleDeleteModule" />
 
-        <!-- List View -->
-        <ExamStudentList v-if="viewMode === 'list'" :group="selectedGroup" :completion-threshold="completionThreshold"
+
+        <!-- Student List -->
+        <ExamStudentList :group="selectedGroup" :completion-threshold="completionThreshold"
             :attendance-threshold="attendanceThreshold" :attendance-enabled="attendanceEnabled" :modules="modules"
             :grade-format="selectedFormat" :assessment-type="assessmentType" :required-tasks="requiredTasks" />
-
-        <!-- Documents View -->
-        <DocumentsList v-if="viewMode === 'documents'" :group="selectedGroup" :assessment-type="assessmentType" />
     </div>
 </template>
